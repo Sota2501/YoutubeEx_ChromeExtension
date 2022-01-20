@@ -1,0 +1,20 @@
+{
+  "name": "YoutubeEx",
+  "version": "1.0.0",
+  "permissions": [
+    "storage"
+  ],
+  "manifest_version": 2,
+  "description": "Youtubeに追加機能を提供する拡張機能。追加したい項目をチェックすると使用可能。",
+  "content_scripts": [{
+    "matches": ["https://www.youtube.com/*"],
+    "js": [
+      "jquery-3.6.0.min.js",
+      "content.js"
+    ]
+  }],
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": false
+  }
+}

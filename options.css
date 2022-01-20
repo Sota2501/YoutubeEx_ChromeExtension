@@ -1,0 +1,38 @@
+body {
+	margin: 10px 18px;
+}
+ul {
+	padding-inline-start: 0;
+	list-style: none;
+}
+dt {
+	float: left;
+}
+dd {
+	margin: 0;
+	/* padding-left: 0; */
+}
+textarea {
+	resize: none;
+}
+input[type="number"] {
+	width: 100px;
+}
+section>div {
+	padding-left: 20px;
+}
+
+#musicList dd input {
+	height: 22px;
+	font-size: 12px;
+}
+#musicList dt:nth-of-type(odd) input {
+	width: 6.5em;
+}
+#musicList dt:nth-of-type(even) input {
+	width: 180px;
+}
+#debugBtn {
+	display: flex;
+	justify-content: space-between;
+}
