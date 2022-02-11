@@ -17,6 +17,10 @@ function adObCallback(mutationList,observer){
 
 // Youtube spanner pick
 function spannerPickY(){
+	chrome.storage.sync.get({myCommentPick: "false", authorName: ""},items=>{
+		window.myCommentPick = items.myCommentPick == "true";
+		window.authorName = items.authorName;
+	});
 	let appOb = waitDOM(document,"ytd-app",app=>{
 		chatOb.stop();
 		waitDOM(app,"#chat",chat=>{
@@ -81,7 +85,13 @@ function spannerObCallback(mutationList,observer){
 				mutationList.forEach(mutation=>{
 					if(mutation.addedNodes.length){
 						mutation.addedNodes.forEach(node=>{
-							if(authorType.includes(node.getAttribute("author-type"))){
+							if(
+								authorType.includes(node.getAttribute("author-type")) || 
+								node.querySelector("div#content > yt-live-chat-author-chip[is-highlighted]") || 
+								myCommentPick && 
+								node.querySelector("#author-name") && 
+								node.querySelector("#author-name").innerText == authorName
+							){
 								const replacement = document.createElement("yt-live-chat-text-message-renderer");
 								replacement.classList.add("fixingComment");
 								replacement.height = node.clientHeight;

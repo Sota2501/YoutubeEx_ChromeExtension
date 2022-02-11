@@ -2,6 +2,9 @@ document.addEventListener("DOMContentLoaded",()=>{
 	document.querySelectorAll('input[type="checkbox"]').forEach(elm=>{
 		elm.dataset.save_type = "check";
 	});
+	document.querySelectorAll('input[type="text"]').forEach(elm=>{
+		elm.dataset.save_type = "raw";
+	});
 	document.querySelectorAll('input[type="number"]').forEach(elm=>{
 		elm.dataset.save_type = "number";
 	})

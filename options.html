@@ -25,9 +25,15 @@
 				<input class="listAddBtn" data-addto="#musicList" data-def_val='["",""]' type="button" value="追加">
 			</div>
 		</section>
-		<label>
-			<p><input class="input func" id="spannerPick" data-def_val="true" type="checkbox"> 配信のチャットのスパナ付き・配信者のコメントの下部固定</p>
-		</label>
+		<section>
+			<label>
+				<p><input class="input func" id="spannerPick" data-def_val="true" type="checkbox"> 配信のチャットのハイライト・スパナ付き・配信者のコメントの下部固定</p>
+			</label>
+			<div>
+				<p><input class="input" id="myCommentPick" data-def_val="false" type="checkbox"> 自分のコメントの固定化</p>
+				<p>自分のアカウントの名前: <input class="input" id="authorName" data-def_val="" type="text"></p>
+			</div>
+		</section>
 		<section>
 			<label>
 				<p><input class="input func" id="strtostamp" data-def_val="true" type="checkbox"> 入力からスタンプへの変換</p>
