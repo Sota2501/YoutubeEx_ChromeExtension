@@ -1,6 +1,6 @@
 {
   "name": "YoutubeEx",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "permissions": [
     "storage"
   ],
@@ -10,6 +10,7 @@
     "matches": ["https://www.youtube.com/*"],
     "js": [
       "jquery-3.6.0.min.js",
+      "initialize.js",
       "content.js"
     ]
   }],
