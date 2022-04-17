@@ -4,7 +4,7 @@
   "permissions": [
     "storage"
   ],
-  "manifest_version": 2,
+  "manifest_version": 3,
   "description": "Youtubeに追加機能を提供する拡張機能。追加したい項目をチェックすると使用可能。",
   "content_scripts": [{
     "matches": ["https://www.youtube.com/*"],

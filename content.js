@@ -7,20 +7,16 @@ function adAutoSkipP(){
 	});
 }
 function adObCallback(mutationList,observer){
-	chrome.storage.sync.get({adTimeoutMilisec:5000},items=>{
-		setTimeout(()=>{
-			const adSkipBtn = document.querySelector(".video-ads.ytp-ad-module .ytp-ad-skip-button.ytp-button");
-			if(adSkipBtn) adSkipBtn.click();
-		}, items.adTimeoutMilisec);
-	});
+	setTimeout(()=>{
+		const adSkipBtn = document.querySelector(".video-ads.ytp-ad-module .ytp-ad-skip-button.ytp-button");
+		if(adSkipBtn) adSkipBtn.click();
+	}, window.options.adTimeoutMilisec);
 }
 
 // Youtube spanner pick
 function spannerPickY(){
-	chrome.storage.sync.get({myCommentPick: "false", authorName: ""},items=>{
-		window.myCommentPick = items.myCommentPick == "true";
-		window.authorName = items.authorName;
-	});
+	window.myCommentPick = window.options.myCommentPick == "true";
+	window.authorName = window.options.authorName;
 	let appOb = waitDOM(document,"ytd-app",app=>{
 		chatOb.stop();
 		waitDOM(app,"#chat",chat=>{
@@ -95,6 +91,8 @@ function spannerObCallback(mutationList,observer){
 								const replacement = document.createElement("yt-live-chat-text-message-renderer");
 								replacement.classList.add("fixingComment");
 								replacement.height = node.clientHeight;
+								replacement.style.backgroundColor = "var(--yt-live-chat-message-highlight-background-color)";
+								replacement.style.visibility = "hidden";
 								replacement.dataset.commentId = node.id;
 								setTimeout(()=>{
 									const fixingComment = chatframe.querySelector("yt-live-chat-text-message-renderer.fixingComment")

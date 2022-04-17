@@ -1,49 +1,74 @@
 // ページロード時
+/**
+ * optionsを登録
+ */
+chrome.storage.sync.get(null,items=>{
+	window.options = items;
+});
+
+/**
+ * デバッグ
+ */
+window.debug_indent = 0;
+
+/**
+ * イベント登録
+ */
 window.addEventListener("load",pageLoaded);
 document.addEventListener("yt-navigate-finish",ytLoaded);
 
+/**
+ * storageが変更されたとき実行
+ */
+chrome.storage.onChange.addListener(message=>{
+	for(let key in message){
+		if(message[key].newValue != undefined){
+			window.options[key] = message[key].newValue;			
+		}else{
+			delete window.options[key];
+		}
+	}
+});
+
+
+
 // ページロード完了時実行
 function pageLoaded(){
-	chrome.storage.sync.get(null,items=>{
-		window.debuging = items.debug;
-		let appOb = waitDOM(document,"ytd-app",app=>{
-			chatOb.stop();
-			app.addEventListener("yt-visibility-refresh",ytVisRefreshed);
-		});
-		let chatOb = waitDOM(document,"yt-live-chat-app",chat=>{
-			appOb.stop();
-			chat.addEventListener("yt-visibility-refresh",ytVisRefreshed);
-		});
-		debug("S - pageLoaded");
-		items.func.forEach(func=>{
-			if(items[func] == "true"){
-				if(window[func+"P"]){
-					debug("S - "+func+"P");
-					window[func+"P"]();
-					debug("F - "+func+"P");
-				}
-			}
-		});
-		debug("F - pageLoaded");
+	let appOb = waitDOM(document,"ytd-app",app=>{
+		chatOb.stop();
+		app.addEventListener("yt-visibility-refresh",ytVisRefreshed);
 	});
+	let chatOb = waitDOM(document,"yt-live-chat-app",chat=>{
+		appOb.stop();
+		chat.addEventListener("yt-visibility-refresh",ytVisRefreshed);
+	});
+	debug("pageLoaded",1);
+	window.options.func.forEach(func=>{
+		if(window.options[func] == "true"){
+			if(window[func+"P"]){
+				debug(func+"P",1);
+				window[func+"P"]();
+				debug(func+"P",-1);
+			}
+		}
+	});
+	debug("pageLoaded",-1);
 }
 
 // ページロード完了時とYoutube疑似ページ遷移完了時に実行
 function ytLoaded(){
 	window.layout = undefined;
-	chrome.storage.sync.get(null,items=>{
-		debug("S - ytLoaded");
-		items.func.forEach(func=>{
-			if(items[func] == "true"){
-				if(window[func+"Y"]){
-					debug("S - "+func+"Y");
-					window[func+"Y"]();
-					debug("F - "+func+"Y");
-				}
+	debug("ytLoaded",1);
+	window.options.func.forEach(func=>{
+		if(window.options[func] == "true"){
+			if(window[func+"Y"]){
+				debug(func+"Y",1);
+				window[func+"Y"]();
+				debug(func+"Y",-1);
 			}
-		});
-		debug("F - ytLoaded");
-	})
+		}
+	});
+	debug("ytLoaded",-1);
 }
 
 // Youtubeリフレッシュ時に実行
@@ -64,19 +89,17 @@ function ytVisRefreshed(e){
 		}
 		window.layout = 3;
 	}
-	chrome.storage.sync.get(null,items=>{
-		debug("S - ytVisRefreshed");
-		items.func.forEach(func=>{
-			if(items[func] == "true"){
-				if(window[func+"R"]){
-					debug("S - "+func+"R");
-					window[func+"R"]();
-					debug("F - "+func+"R");
-				}
+	debug("ytVisRefreshed",1);
+	window.options.func.forEach(func=>{
+		if(window.options[func] == "true"){
+			if(window[func+"R"]){
+				debug(func+"R",1);
+				window[func+"R"]();
+				debug(func+"R",-1);
 			}
-		});
-		debug("F - ytVisRefreshed");
+		}
 	});
+	debug("ytVisRefreshed",-1);
 }
 
 /**
@@ -86,7 +109,7 @@ function ytVisRefreshed(e){
  * @param {*|Array} params callback関数の第三引数以降(配列にすると展開されたものになる)
  */
 function waitDOM(base, query, callback, params=[]){
-	debug("S - waitDOM " + query);
+	debug("waitDOM S "+query);
 	function obCallback(mutationList,observer){
 		let nodes = [];
 		for(let q of observer.x.query){
@@ -100,7 +123,7 @@ function waitDOM(base, query, callback, params=[]){
 		}
 		observer.x.callback(nodes,observer,...observer.x.params);
 		observer.stop();
-		debug("F - waitDOM " + observer.x.query);
+		debug("waitDOM F "+observer.x.query,-1);
 	}
 	const observer = new MutationObserver(obCallback);
 	observer.x = {
@@ -115,7 +138,7 @@ function waitDOM(base, query, callback, params=[]){
 			observer.observe(observer.x.base, {childList:true,subtree:true});
 			setTimeout(()=>{
 				if(!observer.x.disconnected){
-					debug("R - waitDOMobserve " + observer.x.query.toString());
+					debug("waitDOMobserve R " + observer.x.query.toString());
 					obCallback([],observer);
 				}
 			})
@@ -131,7 +154,7 @@ function waitDOM(base, query, callback, params=[]){
 	observer.observe(base, {childList:true,subtree:true});
 	setTimeout(()=>{
 		if(!observer.x.disconnected){
-			debug("S - waitDOMobserve " + observer.x.query.toString());
+			debug("waitDOMobserve S "+observer.x.query.toString(),1);
 			obCallback([],observer);
 		}
 	});
@@ -140,14 +163,21 @@ function waitDOM(base, query, callback, params=[]){
 
 /**
  * debug時のみ実行されるconsole.log
- * @param {*} data ログデータ
+ * @param {string} data ログデータ
+ * @param {int} def インデントスペース数
  */
-function debug(data){
-	if(window.debuging == "true"){
-		if(data instanceof Array){
-			console.log(...data);
-		}else{
-			console.log(data);
+function debug(data,def){
+	if(def < 0){
+		window.debug_indent += def;
+	}
+	if(window.options.debug == "true"){
+		let out = "";
+		for(let i = 0; i < window.debug_indent; i++){
+			out += "  ";
 		}
+		console.log(out + data);
+	}
+	if(def > 0){
+		window.debug_indent += def;
 	}
 }
