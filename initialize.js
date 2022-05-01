@@ -4,6 +4,13 @@
  */
 chrome.storage.sync.get(null,items=>{
 	window.options = items;
+	while(events.length > 0){
+		events.pop()();
+	}
+	window.removeEventListener("load",pushLoadEvent);
+	document.removeEventListener("yt-navigate-finish",pushYtLoadEvent);
+	window.addEventListener("load",pageLoaded);
+	document.addEventListener("yt-navigate-finish",ytLoaded);
 });
 
 /**
@@ -14,13 +21,16 @@ window.debug_indent = 0;
 /**
  * イベント登録
  */
-window.addEventListener("load",pageLoaded);
-document.addEventListener("yt-navigate-finish",ytLoaded);
+let events = [];
+function pushLoadEvent(){events.push(pageLoaded)}
+function pushYtLoadEvent(){events.push(ytLoaded)}
+window.addEventListener("load",pushLoadEvent);
+document.addEventListener("yt-navigate-finish",pushYtLoadEvent);
 
 /**
  * storageが変更されたとき実行
  */
-chrome.storage.onChange.addListener(message=>{
+chrome.storage.onChanged.addListener(message=>{
 	for(let key in message){
 		if(message[key].newValue != undefined){
 			window.options[key] = message[key].newValue;			
@@ -167,7 +177,7 @@ function waitDOM(base, query, callback, params=[]){
  * @param {int} def インデントスペース数
  */
 function debug(data,def){
-	if(def < 0){
+	if(window.debug_indent > 0 && def < 0){
 		window.debug_indent += def;
 	}
 	if(window.options.debug == "true"){
