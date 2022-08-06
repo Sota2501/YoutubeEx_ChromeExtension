@@ -8,8 +8,8 @@
   "description": "Youtubeに追加機能を提供する拡張機能。追加したい項目をチェックすると使用可能。",
   "content_scripts": [{
     "matches": ["https://www.youtube.com/*"],
+    "all_frames": true,
     "js": [
-      "jquery-3.6.0.min.js",
       "initialize.js",
       "content.js"
     ]
