@@ -145,6 +145,20 @@ body.no-scroll ytd-live-chat-frame#chat :not(iframe#chatframe) {
 `,
 		popup: ``,
 		iframe: `
+html.fullscreen:not([dark]) {
+    --yt-live-chat-background-color: rgba(249,249,249,${alpha1})!important;
+    --yt-live-chat-header-background-color: rgba(255,255,255,${alpha1})!important;
+    --yt-live-chat-action-panel-background-color: rgba(255,255,255,${alpha1})!important;
+    --yt-spec-brand-background-primary: rgba(255,255,255,${alpha1})!important;
+	--yt-live-chat-vem-background-color: rgba(252,252,252,${alpha1})!important;
+}
+html.fullscreen:not([dark]):hover {
+    --yt-live-chat-background-color: rgba(249,249,249,${alpha2})!important;
+    --yt-live-chat-header-background-color: rgba(255,255,255,${alpha2})!important;
+    --yt-live-chat-action-panel-background-color: rgba(255,255,255,${alpha2})!important;
+    --yt-spec-brand-background-primary: rgba(255,255,255,${alpha2})!important;
+	--yt-live-chat-vem-background-color: rgba(252,252,252,${alpha2})!important;
+}
 html.fullscreen[dark] {
     --yt-live-chat-background-color: rgba(25,25,25,${alpha1})!important;
     --yt-live-chat-header-background-color: rgba(40,40,40,${alpha1})!important;
