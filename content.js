@@ -266,7 +266,7 @@ html.fullscreen yt-live-chat-ninja-message-renderer {
 		style.innerHTML = styles.base;
 		document.head.appendChild(style);
 
-		let iframeWin;
+		let iframeWin = null;
 		const fullscreen_check = function(){
 			if(document.body.classList.contains("no-scroll")){
 				iframeWin.document.documentElement.classList.add("fullscreen");
@@ -275,12 +275,14 @@ html.fullscreen yt-live-chat-ninja-message-renderer {
 			}
 		}
 		document.addEventListener("regist_iframe_window",e=>{
+			if(iframeWin == null){
+				const chat_frame = document.querySelector("ytd-live-chat-frame#chat");
+				chat_frame.style.top = "0";
+				chat_frame.style.left = "0";
+				chat_frame.style.width = "400px";	
+			}
 			iframeWin = e.detail;
 			iframeWin.dispatchEvent(new Event("regist_iframe_window_ok"));
-			const chat_frame = document.querySelector("ytd-live-chat-frame#chat");
-			chat_frame.style.top = "0";
-			chat_frame.style.left = "0";
-			chat_frame.style.width = "400px";
 
 			new MutationObserver(fullscreen_check)
 				.observe(document.body, {attributes: true, attributeFilter: ["class"]});
