@@ -132,7 +132,7 @@ body:not(.no-scroll) ytd-live-chat-frame#chat {
 }
 
 body.no-scroll ytd-live-chat-frame#chat {
-	margin: 2px;
+	margin: 0;
     position: absolute;
 	border: none;
     border-radius: 6px;
