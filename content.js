@@ -243,7 +243,7 @@ html.fullscreen yt-live-chat-ninja-message-renderer {
 
 	if(location.pathname == "/live_chat" && top == window){		// ポップアップ表示
 
-	}else if(location.pathname == "/live_chat"){				// 埋め込み表示
+	}else if(location.pathname == "/live_chat" || location.pathname == "/live_chat_replay"){				// 埋め込み表示
 		const iID = setInterval(()=>{
 			top.document.dispatchEvent(new CustomEvent("regist_iframe_window",{detail:window}));
 		},500);
