@@ -7,8 +7,22 @@ class YoutubeInit {
 		
 		chrome.storage.sync.get(null,stg=>{
 			extensions.forEach(e=>{
+				const stgFunc = (keys,def)=>{
+					let dir = stg[e.name];
+					if(dir == undefined){
+						return def;
+					}
+					keys = keys.split(".");
+					for(let key of keys){
+						dir = dir[key];
+						if(dir == undefined){
+							return def;
+						}
+					}
+					return dir;
+				}
 				if(e.initOpt){
-					e.initOpt(stg);
+					e.initOpt(stgFunc);
 				}
 			});
 		});
@@ -265,11 +279,6 @@ class FullscreenChat extends Ext {
 			}else{
 				this.setStyle(this.styles.top);
 
-				const chatFrame = document.querySelector("ytd-live-chat-frame#chat");
-				chatFrame.style.top = "0";
-				chatFrame.style.left = "0";
-				chatFrame.style.width = "400px";
-
 				document.addEventListener("ext-yc-iframe-grab",e=>{
 					const chatFrame = document.querySelector("ytd-live-chat-frame#chat");
 					this.basePos = {
@@ -284,6 +293,19 @@ class FullscreenChat extends Ext {
 				document.addEventListener("ext-yc-iframe-ungrab",e=>{
 					document.removeEventListener("ext-yc-iframe-move",this.moveIframe);
 				});
+			}
+		});
+	}
+	static initOpt(stg){
+		YoutubeEvent.addEventListener("connected",()=>{
+			if(YoutubeState.isChildFrame()){
+
+			}else{
+				console.log("initOpt")
+				const chatFrame = document.querySelector("ytd-live-chat-frame#chat");
+				chatFrame.style.top = stg("chatFrame.top","0");
+				chatFrame.style.left = stg("chatFrame.left","0");
+				chatFrame.style.width = stg("chatFrame.top","400px");
 			}
 		});
 	}
