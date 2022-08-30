@@ -1,193 +1,260 @@
-// ページロード時
-/**
- * optionsを登録
- */
-chrome.storage.sync.get(null,items=>{
-	window.options = items;
-	while(events.length > 0){
-		events.pop()();
+class YoutubeState {
+	/**
+	 * フレームがiframeかどうか
+	 */
+	static isChildFrame(){
+		return top != window;
 	}
-	window.removeEventListener("load",pushLoadEvent);
-	document.removeEventListener("yt-navigate-finish",pushYtLoadEvent);
-	window.addEventListener("load",pageLoaded);
-	document.addEventListener("yt-navigate-finish",ytLoaded);
-});
-
-/**
- * デバッグ
- */
-window.debug_indent = 0;
-
-/**
- * イベント登録
- */
-let events = [];
-function pushLoadEvent(){events.push(pageLoaded)}
-function pushYtLoadEvent(){events.push(ytLoaded)}
-window.addEventListener("load",pushLoadEvent);
-document.addEventListener("yt-navigate-finish",pushYtLoadEvent);
-
-/**
- * storageが変更されたとき実行
- */
-chrome.storage.onChanged.addListener(message=>{
-	for(let key in message){
-		if(message[key].newValue != undefined){
-			window.options[key] = message[key].newValue;			
-		}else{
-			delete window.options[key];
-		}
-	}
-});
-
-
-
-// ページロード完了時実行
-function pageLoaded(){
-	let appOb = waitDOM(document,"ytd-app",app=>{
-		chatOb.stop();
-		app.addEventListener("yt-visibility-refresh",ytVisRefreshed);
-	});
-	let chatOb = waitDOM(document,"yt-live-chat-app",chat=>{
-		appOb.stop();
-		chat.addEventListener("yt-visibility-refresh",ytVisRefreshed);
-	});
-	debug("pageLoaded",1);
-	window.options.func.forEach(func=>{
-		if(window.options[func] == "true"){
-			if(window[func+"P"]){
-				debug(func+"P",1);
-				window[func+"P"]();
-				debug(func+"P",-1);
-			}
-		}
-	});
-	debug("pageLoaded",-1);
 }
 
-// ページロード完了時とYoutube疑似ページ遷移完了時に実行
-function ytLoaded(){
-	window.layout = undefined;
-	debug("ytLoaded",1);
-	window.options.func.forEach(func=>{
-		if(window.options[func] == "true"){
-			if(window[func+"Y"]){
-				debug(func+"Y",1);
-				window[func+"Y"]();
-				debug(func+"Y",-1);
-			}
-		}
-	});
-	debug("ytLoaded",-1);
-}
-
-// Youtubeリフレッシュ時に実行
-function ytVisRefreshed(e){
-	if(e.currentTarget.querySelector("#columns #primary-inner #related")){
-		if(window.layout == 1){
-			return;
-		}
-		window.layout = 1;
-	}else if(e.currentTarget.querySelector("#columns #secondary-inner #related")){
-		if(window.layout == 2){
-			return;
-		}
-		window.layout = 2;
-	}else{
-		if(window.layout == 3){
-			return;
-		}
-		window.layout = 3;
-	}
-	debug("ytVisRefreshed",1);
-	window.options.func.forEach(func=>{
-		if(window.options[func] == "true"){
-			if(window[func+"R"]){
-				debug(func+"R",1);
-				window[func+"R"]();
-				debug(func+"R",-1);
-			}
-		}
-	});
-	debug("ytVisRefreshed",-1);
-}
-
-/**
- * @param {node} base この要素の子孫要素を監視する
- * @param {string|Array} query 監視する要素のセレクタ
- * @param {function} callback セレクタが見つかった時実行する関数,第一引数は監視ノードまたはそのリスト,第二引数はオブザーバー
- * @param {*|Array} params callback関数の第三引数以降(配列にすると展開されたものになる)
- */
-function waitDOM(base, query, callback, params=[]){
-	debug("waitDOM S "+query);
-	function obCallback(mutationList,observer){
-		let nodes = [];
-		for(let q of observer.x.query){
-			nodes.push(observer.x.base.querySelector(q));
-			if(!nodes[nodes.length-1]){
-				return;
-			}
-		}
-		if(nodes.length == 1){
-			nodes = nodes[0];
-		}
-		observer.x.callback(nodes,observer,...observer.x.params);
-		observer.stop();
-		debug("waitDOM F "+observer.x.query,-1);
-	}
-	const observer = new MutationObserver(obCallback);
-	observer.x = {
-		base: base,
-		query: query instanceof Array ? query : [query],
-		callback: callback,
-		params: params instanceof Array ? params : [params],
-		disconnected: false
-	};
-	observer.start = ()=>{
-		if(observer.x.disconnected){
-			observer.observe(observer.x.base, {childList:true,subtree:true});
-			setTimeout(()=>{
-				if(!observer.x.disconnected){
-					debug("waitDOMobserve R " + observer.x.query.toString());
-					obCallback([],observer);
+class YoutubeEvent {
+	static events = {
+		once: {
+			load: {
+				type: "load",
+				window: true,
+				options: {
+					once: true
 				}
-			})
+			},
+			allLoad: {
+				type: "ext-yc-all-load",
+				window: true,
+				options: {
+					once: true
+				}
+			},
+			connected: {
+				type: "ext-yc-connected",
+				window: true,
+				options: {
+					once: true
+				}
+			}
+		},
+		youtube: {
+			ytLoad: {
+				type: "yt-navigate-finish",
+				window: false
+			},
+			ytFullscreen: {
+				type: "yt-action",
+				window: false,
+				query: "ytd-app",
+				func: (e,c)=>{
+					if(e.detail?.actionName == 'yt-fullscreen-change-action'){
+						c(e);
+					}
+				}
+			},
+			ytDebug: {
+				type: "yt-action",
+				window: false,
+				query: "ytd-app",
+				func: (e,c)=>{
+					if(e.detail){
+						c(e.detail);
+					}
+				}
+			}
+		},
+		signal: {
+			regist: {
+				type: "ext-yt-sig-regist",
+				window: true,
+				func: (e,c)=>{
+					this.frame = e.detail.window;
+					c(e);
+				}
+			},
+			dispatch: {
+				type: "ext-yc-sig-dispatch",
+				window: true,
+				func: e=>{
+					this.dispatchEvent(e.detail.type);
+				}
+			}
 		}
-		observer.x.disconnected = false;
 	}
-	observer.stop = ()=>{
-		if(!observer.x.disconnected){
-			observer.disconnect();
+	static frame = null;
+	static init(){
+		for(const type in this.events.once){
+			this.addEventListener(type, e=>{this.events.once[type] = e});
 		}
-		observer.x.disconnected = true;
+		if(YoutubeState.isChildFrame()){
+			this.addEventListener("allLoad",e=>{
+				let id;
+				this.#addEventListener(this.events.signal.regist,e=>{
+					clearInterval(id);
+					this.dispatchEvent("connected");
+				},{once:true});
+				id = setInterval(()=>{
+					this.#dispatchEvent(this.events.signal.regist,{
+						window: window
+					},top);
+				},500);
+			});
+		}else{
+			this.addEventListener("allLoad",e=>{
+				this.#addEventListener(this.events.signal.regist,()=>{
+					this.#addEventListener(this.events.signal.dispatch);
+					this.#dispatchEvent(this.events.signal.regist,{
+						window: window
+					},this.frame);
+					this.dispatchEvent("connected");
+				});
+			});
+		}
 	}
-	observer.observe(base, {childList:true,subtree:true});
-	setTimeout(()=>{
-		if(!observer.x.disconnected){
-			debug("waitDOMobserve S "+observer.x.query.toString(),1);
-			obCallback([],observer);
+	static #query(detail,options){
+		const base = options?.pair == true ? 
+			detail.window ? this.frame : this.frame.document : 
+			detail.window ? window : document;
+		if(!detail.window){
+			let ret;
+			if(detail.query instanceof Array){
+				let i = 0;
+				do{
+					ret = base.querySelector(detail.query[i]);
+				}while(!ret && i < detail.query.length)
+			}else{
+				ret = base.querySelector(detail.query);
+			}
+			return ret;
+		}else{
+			return base;
 		}
-	});
-	return observer;
+	}
+	static #addEventListener(detail,callback,options,dom){
+		options = options ? options : detail.options;
+		if(!dom)
+			dom = this.#query(detail,options);
+		if(dom){
+			const f = detail.func ? e=>{detail.func(e,callback)} : callback;
+			dom.addEventListener(detail.type, f, options);
+			return f;
+		}else{
+			return false;
+		}
+	}
+	static #removeEventListener(detail,callback,dom){
+		if(!dom)
+			dom = this.#query(detail);
+		if(dom){
+			dom.removeEventListener(detail.type, callback);
+			return true;
+		}else{
+			return false;
+		}
+	}
+	static #dispatchEvent(detail,options,dom){
+		if(!dom)
+			dom = this.#query(detail);
+		if(dom){
+			if(options){
+				dom.dispatchEvent(new CustomEvent(detail.type,{detail: options}));
+			}else{
+				dom.dispatchEvent(new Event(detail.type));
+			}
+			return true;
+		}else{
+			return false;
+		}
+	}
+	/**
+	 * 設定済みイベントを登録する
+	 * @param {string} type イベントタイプ
+	 * @param {function|null} callback コールバック関数
+	 * @param {object} options イベントオプション
+	 * @returns 登録されたかどうか
+	 */
+	static addEventListener(type,callback,options){
+		if(!callback){
+			callback = ()=>{};
+		}
+		const cb = e=>{
+			callback(e);
+		}
+		if(Object.keys(this.events.once).indexOf(type) >= 0){
+			const detail = this.events.once[type];
+			if(detail instanceof Event){
+				cb(detail);
+				return true;
+			}else{
+				return this.#addEventListener(detail,cb,options);
+			}
+		}else if(Object.keys(this.events.youtube).indexOf(type) >= 0){
+			const detail = this.events.youtube[type];
+			return this.#addEventListener(detail,cb,options);
+		}else if(type == "storage"){
+			chrome.storage.onChanged.addListener(cb);
+		}
+	}
+	/**
+	 * 登録されたイベントを削除する
+	 * イベントリスナーでは関数を書き換えているので返された関数を使用する必要がある
+	 * @param {string} type イベントタイプ
+	 * @param {function} callback イベントリスナーから返された関数
+	 * @returns 削除できたかどうか
+	 */
+	static removeEventListener(type,callback){
+		if(Object.keys(this.events.once).indexOf(type) >= 0){
+			const detail = this.events.once[type];
+			if(!(detail instanceof Event)){
+				return this.#removeEventListener(detail,callback);
+			}
+		}else if(Object.keys(this.events.youtube).indexOf(type) >= 0){
+			const detail = this.events.youtube[type];
+			return this.#removeEventListener(detail,callback);
+		}
+		return false;
+	}
+	/**
+	 * 設定済みイベントをdispatchする
+	 * typeにdispatch,options.typeにイベントタイプを指定するとペアのフレームにdispatchする
+	 * @param {string} type イベントタイプ
+	 * @param {object} options カスタムイベント送信用
+	 * @returns dispatchしたかどうか(onceは実行済みの場合dispatchされない)
+	 */
+	static dispatchEvent(type,options){
+		if(Object.keys(this.events.once).indexOf(type) >= 0){
+			const detail = this.events.once[type];
+			if(detail instanceof Event){
+				return false;
+			}else{
+				return this.#dispatchEvent(detail,options);
+			}
+		}else if(Object.keys(this.events.youtube).indexOf(type) >= 0){
+			const detail = this.events.youtube[type];
+			return this.#dispatchEvent(detail,options);
+		}else if(type == "dispatch"){
+			const detail = this.events.signal.dispatch;
+			return this.#dispatchEvent(detail,options,this.frame);
+		}
+		return false;
+	}
 }
+YoutubeEvent.init();
 
-/**
- * debug時のみ実行されるconsole.log
- * @param {string} data ログデータ
- * @param {int} def インデントスペース数
- */
-function debug(data,def){
-	if(window.debug_indent > 0 && def < 0){
-		window.debug_indent += def;
+class Ext {
+	static styleNum = 1;
+	static tagAddedDOM(dom){
+		dom.setAttribute("data-ext-yc",this.name);
 	}
-	if(window.options.debug == "true"){
-		let out = "";
-		for(let i = 0; i < window.debug_indent; i++){
-			out += "  ";
-		}
-		console.log(out + data);
+	static setStyle(css){
+		const style = document.createElement("style");
+		this.tagAddedDOM(style);
+		style.setAttribute("data-style-id",this.styleNum);
+		style.innerHTML = css;
+		document.head.appendChild(style);
+		return this.styleNum++;
 	}
-	if(def > 0){
-		window.debug_indent += def;
+	static removeStyle(id){
+		const styles = document.querySelectorAll('style[data-ext-yc="'+this.name+'"]'+(id?'[data-style-id="'+id+'"]':''));
+		styles.forEach(e=>e.remove());
+	}
+	static removeAddedDOM(){
+		const dom = document.querySelectorAll(`[data-ext-yc="${this.name}"]`);
+		dom.forEach(e=>e.remove());
 	}
 }
