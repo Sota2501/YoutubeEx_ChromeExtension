@@ -230,7 +230,7 @@ class FullscreenChat extends Ext {
 			</g>
 		</svg>
 	`;
-	static base_pos = {};
+	static basePos = {};
 	static init(){
 		YoutubeEvent.addEventListener("connected",()=>{
 			if(YoutubeState.isChildFrame()){
@@ -265,17 +265,17 @@ class FullscreenChat extends Ext {
 			}else{
 				this.setStyle(this.styles.top);
 
-				const chat_frame = document.querySelector("ytd-live-chat-frame#chat");
-				chat_frame.style.top = "0";
-				chat_frame.style.left = "0";
-				chat_frame.style.width = "400px";
+				const chatFrame = document.querySelector("ytd-live-chat-frame#chat");
+				chatFrame.style.top = "0";
+				chatFrame.style.left = "0";
+				chatFrame.style.width = "400px";
 
 				document.addEventListener("ext-yc-iframe-grab",e=>{
-					const chat_frame = document.querySelector("ytd-live-chat-frame#chat");
-					this.base_pos = {
-						offsetLeft: chat_frame.offsetLeft,
-						offsetTop: chat_frame.offsetTop,
-						offsetRight: document.body.clientWidth - chat_frame.offsetLeft - chat_frame.offsetWidth,
+					const chatFrame = document.querySelector("ytd-live-chat-frame#chat");
+					this.basePos = {
+						offsetLeft: chatFrame.offsetLeft,
+						offsetTop: chatFrame.offsetTop,
+						offsetRight: document.body.clientWidth - chatFrame.offsetLeft - chatFrame.offsetWidth,
 						grabX: e.detail.screenX,
 						grabY: e.detail.screenY
 					};
@@ -291,10 +291,10 @@ class FullscreenChat extends Ext {
 		if(YoutubeState.isChildFrame()){
 
 		}else{
-			const chat_frame = document.querySelector("ytd-live-chat-frame#chat");
-			chat_frame.style.top = "";
-			chat_frame.style.left = "";
-			chat_frame.style.width = "";
+			const chatFrame = document.querySelector("ytd-live-chat-frame#chat");
+			chatFrame.style.top = "";
+			chatFrame.style.left = "";
+			chatFrame.style.width = "";
 		}
 		this.removeAddedDOM();
 	}
@@ -302,21 +302,22 @@ class FullscreenChat extends Ext {
 		top.document.dispatchEvent(new CustomEvent("ext-yc-iframe-move",{detail:e}));
 	}
 	static moveIframe(e){
-		const chat_frame = document.querySelector("ytd-live-chat-frame#chat");
-		const moveX = e.detail.screenX - this.base_pos.grabX;
-		const moveY = e.detail.screenY - this.base_pos.grabY;
-		if(this.base_pos.offsetLeft + moveX < 0){
-			chat_frame.style.left = "0px";
-		}else if(this.base_pos.offsetRight - moveX < 0){
-			chat_frame.style.left = this.base_pos.offsetLeft + this.base_pos.offsetRight + "px";
+		const chatFrame = document.querySelector("ytd-live-chat-frame#chat");
+		const moveX = e.detail.screenX - this.basePos.grabX;
+		const moveY = e.detail.screenY - this.basePos.grabY;
+		if(this.basePos.offsetTop + moveY < 0){
+			chatFrame.style.top = "0px";
 		}else{
-			chat_frame.style.left = this.base_pos.offsetLeft + moveX + "px";
+			chatFrame.style.top = this.basePos.offsetTop + moveY + "px";
 		}
-		if(this.base_pos.offsetTop + moveY < 0){
-			chat_frame.style.top = "0px";
+		if(this.basePos.offsetLeft + moveX < 0){
+			chatFrame.style.left = "0px";
+		}else if(this.basePos.offsetRight - moveX < 0){
+			chatFrame.style.left = this.basePos.offsetLeft + this.basePos.offsetRight + "px";
 		}else{
-			chat_frame.style.top = this.base_pos.offsetTop + moveY + "px";
+			chatFrame.style.left = this.basePos.offsetLeft + moveX + "px";
 		}
+		chatFrame.style.width = "400px";
 	}
 }
 
