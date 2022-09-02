@@ -268,6 +268,11 @@ class FullscreenChat extends Ext {
 						document.documentElement.classList.remove("fullscreen");
 					}
 				},{pair:true});
+				if(top.document.body.classList.contains("no-scroll")){
+					document.documentElement.classList.add("fullscreen");
+				}else{
+					document.documentElement.classList.remove("fullscreen");
+				}
 				grabBtnOut.addEventListener("mousedown",e=>{
 					top.document.dispatchEvent(new CustomEvent("ext-yc-iframe-grab",{detail:e}));
 					document.addEventListener("mousemove",this.iframeMoveEvent);
@@ -284,7 +289,8 @@ class FullscreenChat extends Ext {
 					this.basePos = {
 						offsetLeft: chatFrame.offsetLeft,
 						offsetTop: chatFrame.offsetTop,
-						offsetRight: document.body.clientWidth - chatFrame.offsetLeft - chatFrame.offsetWidth,
+						offsetRight: window.screen.width - chatFrame.offsetLeft - chatFrame.offsetWidth,
+						offsetBottom: window.screen.height - chatFrame.offsetTop - chatFrame.offsetHeight,
 						grabX: e.detail.screenX,
 						grabY: e.detail.screenY
 					};
@@ -297,17 +303,16 @@ class FullscreenChat extends Ext {
 		});
 	}
 	static initOpt(stg){
-		YoutubeEvent.addEventListener("connected",()=>{
-			if(YoutubeState.isChildFrame()){
-
-			}else{
-				console.log("initOpt")
-				const chatFrame = document.querySelector("ytd-live-chat-frame#chat");
-				chatFrame.style.top = stg("chatFrame.top","0");
-				chatFrame.style.left = stg("chatFrame.left","0");
-				chatFrame.style.width = stg("chatFrame.top","400px");
-			}
-		});
+		if(!YoutubeState.isChildFrame()){
+			YoutubeEvent.addEventListener("ytLoad",()=>{
+				YoutubeEvent.addEventListener("connected",()=>{
+					const chatFrame = document.querySelector("ytd-live-chat-frame#chat");
+					chatFrame.style.top = stg("chatFrame.top","0");
+					chatFrame.style.left = stg("chatFrame.left","0");
+					chatFrame.style.width = stg("chatFrame.top","400px");
+				},{overlapDeny:"FullscreenChat"});
+			});
+		}
 	}
 	static deinit(){
 		if(YoutubeState.isChildFrame()){
@@ -317,6 +322,7 @@ class FullscreenChat extends Ext {
 			chatFrame.style.top = "";
 			chatFrame.style.left = "";
 			chatFrame.style.width = "";
+			document.documentElement.classList.remove("fullscreen");
 		}
 		this.removeAddedDOM();
 	}
@@ -329,6 +335,8 @@ class FullscreenChat extends Ext {
 		const moveY = e.detail.screenY - this.basePos.grabY;
 		if(this.basePos.offsetTop + moveY < 0){
 			chatFrame.style.top = "0px";
+		}else if(this.basePos.offsetBottom - moveY < 0){
+			chatFrame.style.top = this.basePos.offsetTop + this.basePos.offsetBottom + "px";
 		}else{
 			chatFrame.style.top = this.basePos.offsetTop + moveY + "px";
 		}
