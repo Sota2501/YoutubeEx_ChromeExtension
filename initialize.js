@@ -114,7 +114,7 @@ class YoutubeEvent {
 				},500);
 			});
 		}else{
-			this.addEventListener("allLoad",e=>{
+			this.addEventListener("allLoad",()=>{
 				this.#addEventListener(this.events.signal.regist,()=>{
 					this.#addEventListener(this.events.signal.dispatch);
 					this.#dispatchEvent(this.events.signal.regist,undefined,this.frame,{
