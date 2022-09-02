@@ -126,8 +126,6 @@ class SpannerPick extends Ext {
 // Youtube fullscreenChat
 class FullscreenChat extends Ext {
 	static name = "FullscreenChat";
-	static alpha1 = 0.6;
-	static alpha2 = 0.9;
 	static styles = {
 		top: `
 			body:not(.no-scroll) ytd-live-chat-frame#chat {
@@ -149,33 +147,115 @@ class FullscreenChat extends Ext {
 			}
 		`,
 		child: `
-		html.fullscreen:not([dark]) {
-			--yt-live-chat-background-color: rgba(249,249,249,${this.alpha1})!important;
-			--yt-live-chat-header-background-color: rgba(255,255,255,${this.alpha1})!important;
-			--yt-live-chat-action-panel-background-color: rgba(255,255,255,${this.alpha1})!important;
-			--yt-spec-brand-background-primary: rgba(255,255,255,${this.alpha1})!important;
-			--yt-live-chat-vem-background-color: rgba(252,252,252,${this.alpha1})!important;
+		html.fullscreen yt-live-chat-pinned-message-renderer > #message {
+			z-index: 0;
 		}
-		html.fullscreen:not([dark]):hover {
-			--yt-live-chat-background-color: rgba(249,249,249,${this.alpha2})!important;
-			--yt-live-chat-header-background-color: rgba(255,255,255,${this.alpha2})!important;
-			--yt-live-chat-action-panel-background-color: rgba(255,255,255,${this.alpha2})!important;
-			--yt-spec-brand-background-primary: rgba(255,255,255,${this.alpha2})!important;
-			--yt-live-chat-vem-background-color: rgba(252,252,252,${this.alpha2})!important;
+		html.fullscreen yt-live-chat-text-message-renderer > #menu {
+			background: none;
 		}
-		html.fullscreen[dark] {
-			--yt-live-chat-background-color: rgba(25,25,25,${this.alpha1})!important;
-			--yt-live-chat-header-background-color: rgba(40,40,40,${this.alpha1})!important;
-			--yt-live-chat-action-panel-background-color: rgba(40,40,40,${this.alpha1})!important;
-			--yt-spec-brand-background-primary: rgba(40,40,40,${this.alpha1})!important;
-			--yt-live-chat-vem-background-color: rgba(62,62,62,${this.alpha1})!important;
+
+		html.fullscreen :is(
+			yt-live-chat-renderer,
+			yt-live-chat-header-renderer,
+			yt-live-chat-message-input-renderer,
+			yt-live-chat-text-message-renderer[author-is-owner],
+			yt-live-chat-ticker-renderer,
+			yt-live-chat-viewer-engagement-message-renderer > #card,
+			yt-live-chat-paid-message-renderer > #card > #header,
+			yt-live-chat-paid-message-renderer > #card > #content,
+			yt-live-chat-paid-sticker-renderer > #card,
+			yt-live-chat-membership-item-renderer > #card > #header,
+			yt-live-chat-membership-item-renderer > #card > #content
+		) {
+			position: relative;
+			background: none;
+			overflow: hidden;
 		}
-		html.fullscreen[dark]:hover {
-			--yt-live-chat-background-color: rgba(25,25,25,${this.alpha2})!important;
-			--yt-live-chat-header-background-color: rgba(40,40,40,${this.alpha2})!important;
-			--yt-live-chat-action-panel-background-color: rgba(40,40,40,${this.alpha2})!important;
-			--yt-spec-brand-background-primary: rgba(40,40,40,${this.alpha2})!important;
-			--yt-live-chat-vem-background-color: rgba(62,62,62,${this.alpha2})!important;
+
+		html.fullscreen :is(
+			yt-live-chat-renderer,
+			yt-live-chat-header-renderer,
+			yt-live-chat-message-input-renderer,
+			yt-live-chat-text-message-renderer[author-is-owner],
+			yt-live-chat-ticker-renderer,
+			yt-live-chat-viewer-engagement-message-renderer > #card,
+			yt-live-chat-paid-message-renderer > #card > #header,
+			yt-live-chat-paid-message-renderer > #card > #content,
+			yt-live-chat-paid-sticker-renderer > #card,
+			yt-live-chat-membership-item-renderer > #card > #header,
+			yt-live-chat-membership-item-renderer > #card > #content
+		):before {
+			content: "";
+			position: absolute;
+			width: 100%;
+			height: 100%;
+			top: 0;
+			left: 0;
+			z-index: -1;
+			opacity: 0.6;
+		}
+		html.fullscreen :is(
+			yt-live-chat-viewer-engagement-message-renderer > #card,
+			yt-live-chat-paid-message-renderer > #card > #header,
+			yt-live-chat-paid-message-renderer > #card > #content,
+			yt-live-chat-paid-sticker-renderer > #card,
+			yt-live-chat-membership-item-renderer > #card > #header,
+			yt-live-chat-membership-item-renderer > #card > #content
+		):before {
+			opacity: 0.7;
+		}
+		html.fullscreen:hover :is(
+			yt-live-chat-renderer,
+			yt-live-chat-header-renderer,
+			yt-live-chat-message-input-renderer,
+			yt-live-chat-text-message-renderer[author-is-owner],
+			yt-live-chat-ticker-renderer,
+			yt-live-chat-viewer-engagement-message-renderer > #card,
+			yt-live-chat-paid-message-renderer > #card > #header,
+			yt-live-chat-paid-message-renderer > #card > #content,
+			yt-live-chat-paid-sticker-renderer > #card,
+			yt-live-chat-membership-item-renderer > #card > #header,
+			yt-live-chat-membership-item-renderer > #card > #content
+		):before {
+			opacity: 0.9;
+			transition: opacity .2s;
+		}
+
+		html.fullscreen yt-live-chat-renderer:before {
+			background-color: var(--yt-live-chat-background-color);
+		}
+		html.fullscreen yt-live-chat-header-renderer:before {
+			background-color: var(--yt-live-chat-header-background-color,var(--yt-deprecated-opalescence-soft-grey-opacity-lighten-3));
+		}
+		html.fullscreen yt-live-chat-message-input-renderer:before {
+			background-color: var(--yt-live-chat-action-panel-background-color,var(--yt-deprecated-opalescence-soft-grey-opacity-lighten-3));
+		}
+		html.fullscreen yt-live-chat-text-message-renderer[author-is-owner]:before {
+			background-color: var(--yt-live-chat-message-highlight-background-color);
+		}
+		html.fullscreen yt-live-chat-ticker-renderer:before {
+			background-color: var(--yt-live-chat-header-background-color);
+		}
+		html.fullscreen yt-live-chat-viewer-engagement-message-renderer > #card:before {
+			background-color: var(--yt-live-chat-vem-background-color);
+		}
+		html.fullscreen yt-live-chat-paid-message-renderer > #card > #header:before {
+			background-color: var(--yt-live-chat-paid-message-header-background-color,#125aac);
+		}
+		html.fullscreen yt-live-chat-paid-message-renderer > #card > #content:before {
+			background-color: var(--yt-live-chat-paid-message-background-color,#1565c0);
+		}
+		html.fullscreen yt-live-chat-paid-sticker-renderer > #card:before {
+			background-color: var(--yt-live-chat-paid-sticker-background-color);
+		}
+		html.fullscreen yt-live-chat-membership-item-renderer > #card > #header:before {
+			background-color: var(--yt-live-chat-sponsor-header-color);
+		}
+		html.fullscreen yt-live-chat-membership-item-renderer[show-only-header] > #card > #header:before {
+			background-color: var(--yt-live-chat-sponsor-color);
+		}
+		html.fullscreen yt-live-chat-membership-item-renderer > #card > #content:before {
+			background-color: var(--yt-live-chat-sponsor-color);
 		}
 		
 		html.fullscreen #chat {
