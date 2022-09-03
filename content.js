@@ -2,7 +2,8 @@ class YoutubeInit {
 	static init(){
 		const extensions = [
 			SpannerPick,
-			FullscreenChat
+			FullscreenChat,
+			ChatTickerScroll
 		];
 		
 		chrome.storage.sync.get(null,stg=>{
@@ -426,6 +427,48 @@ class FullscreenChat extends Ext {
 			chatFrame.style.left = this.basePos.offsetLeft + moveX + "px";
 		}
 		chatFrame.style.width = "400px";
+	}
+}
+// Youtube chatTickerScroll
+class ChatTickerScroll extends Ext {
+	static name = "ChatTickerScroll";
+	static ticker = document.querySelector("#ticker yt-live-chat-ticker-renderer");
+	static buttons = {
+		true: document.querySelector("#ticker #left-arrow-container yt-icon"),
+		false: document.querySelector("#ticker #right-arrow-container yt-icon")
+	};
+	static timeoutHandlers = {
+		true: null,
+		false: null
+	};
+	static init(){
+		if(YoutubeState.isChildFrame()){
+			YoutubeEvent.addEventListener("connected",()=>{
+				this.ticker.addEventListener("wheel",this.scrollTicker);
+			});
+		}
+	}
+	static deinit(){
+		if(YoutubeState.isChildFrame()){
+			this.ticker.removeEventListener("wheel",this.scrollTicker);
+		}
+	}
+	static scrollTicker = (e)=>{
+		const left = e.wheelDelta >= 0;
+		if(this.timeoutHandlers[left]){
+			clearTimeout(this.timeoutHandlers[left]);
+		}else{
+			if(this.timeoutHandlers[!left]){
+				clearTimeout(this.timeoutHandlers[!left]);
+				this.timeoutHandlers[!left] = null;
+				this.buttons[!left].dispatchEvent(new Event("up"));
+			}
+			this.buttons[left].dispatchEvent(new Event("down"));
+		}
+		this.timeoutHandlers[left] = setTimeout(()=>{
+			this.timeoutHandlers[left] = null;
+			this.buttons[left].dispatchEvent(new Event("up"));
+		},500);
 	}
 }
 
