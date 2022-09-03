@@ -5,6 +5,9 @@ class YoutubeState {
 	static isChildFrame(){
 		return top != window;
 	}
+	static isFullscreen(){
+		return top.document.body.classList.contains("no-scroll")
+	}
 }
 
 class YoutubeEvent {
@@ -19,6 +22,7 @@ class YoutubeEvent {
 	 */
 	static events = {
 		once: {
+			// ページ読み込み時
 			load: {
 				type: "load",
 				window: true,
@@ -27,6 +31,7 @@ class YoutubeEvent {
 				},
 				called: false
 			},
+			// 拡張機能がロードされたとき
 			allLoad: {
 				type: "ext-yc-all-load",
 				window: true,
@@ -35,6 +40,8 @@ class YoutubeEvent {
 				},
 				called: false
 			},
+			// 親フレームと子フレームの拡張機能がイベント送受信可能になったとき
+			// Youtubeでページ遷移するとリセットされる
 			connected: {
 				type: "ext-yc-connected",
 				window: true,
@@ -45,16 +52,19 @@ class YoutubeEvent {
 			}
 		},
 		youtube: {
+			// ページ遷移が終わったとき
 			ytLoad: {
 				type: "yt-navigate-finish",
 				window: false,
 				query: "ytd-app"
 			},
+			// ページ遷移が始まったとき
 			ytUnload: {
 				type: "yt-navigate-start",
 				window: false,
 				query: "ytd-app"
 			},
+			// フルスクリーンに切り替わったら
 			ytFullscreen: {
 				type: "yt-action",
 				window: false,
@@ -77,6 +87,7 @@ class YoutubeEvent {
 			}
 		},
 		signal: {
+			// 親フレーム・子フレームに互いのWindowを登録するためのもの
 			regist: {
 				type: "ext-yt-sig-regist",
 				window: true,
@@ -85,6 +96,7 @@ class YoutubeEvent {
 					c(e);
 				}
 			},
+			// 互いのWindowにイベントを送信するためのもの
 			dispatch: {
 				type: "ext-yc-sig-dispatch",
 				window: true,

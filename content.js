@@ -101,8 +101,6 @@ class SpannerPick extends Ext {
 						const replacement = document.createElement("yt-live-chat-text-message-renderer");
 						replacement.classList.add("fixedComment");
 						replacement.height = node.clientHeight;
-						// replacement.style.backgroundColor = "var(--yt-live-chat-message-highlight-background-color)";
-						// replacement.style.visibility = "hidden";
 						replacement.dataset.commentId = node.id;
 						node.after(replacement);
 						fixedCommentList.appendChild(node);
@@ -147,7 +145,7 @@ class FullscreenChat extends Ext {
 			}
 		`,
 		child: `
-		html.fullscreen yt-live-chat-pinned-message-renderer > #message {
+		html.fullscreen yt-live-chat-pinned-message-renderer > #message > * {
 			z-index: 0;
 		}
 		html.fullscreen yt-live-chat-text-message-renderer > #menu {
@@ -348,7 +346,7 @@ class FullscreenChat extends Ext {
 						document.documentElement.classList.remove("fullscreen");
 					}
 				},{pair:true});
-				if(top.document.body.classList.contains("no-scroll")){
+				if(YoutubeState.isFullscreen()){
 					document.documentElement.classList.add("fullscreen");
 				}else{
 					document.documentElement.classList.remove("fullscreen");
