@@ -151,6 +151,9 @@ class FullscreenChat extends Ext {
 		html.fullscreen yt-live-chat-pinned-message-renderer > #message > * {
 			z-index: 0;
 		}
+		html.fullscreen yt-live-chat-toast-renderer {
+			z-index: -1;
+		}
 		html.fullscreen yt-live-chat-text-message-renderer > #menu {
 			background: none;
 		}
@@ -161,12 +164,15 @@ class FullscreenChat extends Ext {
 			yt-live-chat-message-input-renderer,
 			yt-live-chat-text-message-renderer[author-is-owner],
 			yt-live-chat-ticker-renderer,
+			yt-live-chat-toast-renderer[is-showing-message],
+			yt-live-chat-restricted-participation-renderer > #container,
 			yt-live-chat-viewer-engagement-message-renderer > #card,
 			yt-live-chat-paid-message-renderer > #card > #header,
 			yt-live-chat-paid-message-renderer > #card > #content,
 			yt-live-chat-paid-sticker-renderer > #card,
 			yt-live-chat-membership-item-renderer > #card > #header,
-			yt-live-chat-membership-item-renderer > #card > #content
+			yt-live-chat-membership-item-renderer > #card > #content,
+			yt-live-chat-participant-list-renderer > #header
 		):not(.yt-live-chat-banner-renderer) {
 			position: relative;
 			background: none;
@@ -179,12 +185,15 @@ class FullscreenChat extends Ext {
 			yt-live-chat-message-input-renderer,
 			yt-live-chat-text-message-renderer[author-is-owner],
 			yt-live-chat-ticker-renderer,
+			yt-live-chat-toast-renderer[is-showing-message],
+			yt-live-chat-restricted-participation-renderer > #container,
 			yt-live-chat-viewer-engagement-message-renderer > #card,
 			yt-live-chat-paid-message-renderer > #card > #header,
 			yt-live-chat-paid-message-renderer > #card > #content,
 			yt-live-chat-paid-sticker-renderer > #card,
 			yt-live-chat-membership-item-renderer > #card > #header,
-			yt-live-chat-membership-item-renderer > #card > #content
+			yt-live-chat-membership-item-renderer > #card > #content,
+			yt-live-chat-participant-list-renderer > #header
 		):not(.yt-live-chat-banner-renderer):before {
 			content: "";
 			position: absolute;
@@ -213,12 +222,15 @@ class FullscreenChat extends Ext {
 			yt-live-chat-message-input-renderer,
 			yt-live-chat-text-message-renderer[author-is-owner],
 			yt-live-chat-ticker-renderer,
+			yt-live-chat-toast-renderer[is-showing-message],
+			yt-live-chat-restricted-participation-renderer > #container,
 			yt-live-chat-viewer-engagement-message-renderer > #card,
 			yt-live-chat-paid-message-renderer > #card > #header,
 			yt-live-chat-paid-message-renderer > #card > #content,
 			yt-live-chat-paid-sticker-renderer > #card,
 			yt-live-chat-membership-item-renderer > #card > #header,
-			yt-live-chat-membership-item-renderer > #card > #content
+			yt-live-chat-membership-item-renderer > #card > #content,
+			yt-live-chat-participant-list-renderer > #header
 		):before {
 			opacity: 0.9;
 			transition: opacity .2s;
@@ -238,6 +250,12 @@ class FullscreenChat extends Ext {
 		}
 		html.fullscreen yt-live-chat-ticker-renderer:before {
 			background-color: var(--yt-live-chat-header-background-color);
+		}
+		html.fullscreen yt-live-chat-toast-renderer[is-showing-message]:before {
+			background-color: var(--yt-live-chat-toast-background-color);
+		}
+		html.fullscreen yt-live-chat-restricted-participation-renderer > #container:before {
+			background-color: var(--yt-live-chat-action-panel-background-color,var(--yt-deprecated-opalescence-soft-grey-opacity-lighten-3));
 		}
 		html.fullscreen yt-live-chat-viewer-engagement-message-renderer > #card:before {
 			background-color: var(--yt-live-chat-vem-background-color);
@@ -260,21 +278,39 @@ class FullscreenChat extends Ext {
 		html.fullscreen yt-live-chat-membership-item-renderer > #card > #content:before {
 			background-color: var(--yt-live-chat-sponsor-color);
 		}
+		html.fullscreen yt-live-chat-participant-list-renderer > #header:before {
+			background-color: var(--yt-live-chat-action-panel-background-color,var(--yt-deprecated-opalescence-soft-grey-opacity-lighten-3));
+		}
 		
-		html.fullscreen #chat {
+		html.fullscreen :is(
+			#chat,
+			yt-live-chat-participant-list-renderer
+		) {
 			padding-right: 10px;
 		}
 		
-		html.fullscreen #item-scroller {
+		html.fullscreen :is(
+			#item-scroller,
+			#participants
+		) {
 			--scrollbar-width: 5px;
 		}
-		html.fullscreen #item-scroller::-webkit-scrollbar {
+		html.fullscreen :is(
+			#item-scroller,
+			#participants
+		)::-webkit-scrollbar {
 			width: var(--scrollbar-width);
 		}
-		html.fullscreen #item-scroller::-webkit-scrollbar-track {
+		html.fullscreen :is(
+			#item-scroller,
+			#participants
+		)::-webkit-scrollbar-track {
 			background-color: transparent;
 		}
-		html.fullscreen #item-scroller::-webkit-scrollbar-thumb {
+		html.fullscreen :is(
+			#item-scroller,
+			#participants
+		)::-webkit-scrollbar-thumb {
 			border-radius: 10px;
 			border-color: transparent;
 			background-color: rgba(240, 240, 240, 0.3);
