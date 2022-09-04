@@ -193,6 +193,7 @@ class FullscreenChat extends Ext {
 			z-index: -1;
 			opacity: 0.6;
 		}
+		html.fullscreen yt-live-chat-banner-renderer > yt-live-interactivity-component-background,
 		html.fullscreen :is(
 			yt-live-chat-viewer-engagement-message-renderer > #card,
 			yt-live-chat-paid-message-renderer > #card > #header,
@@ -203,6 +204,7 @@ class FullscreenChat extends Ext {
 		):before {
 			opacity: 0.7;
 		}
+		html.fullscreen:hover yt-live-chat-banner-renderer > yt-live-interactivity-component-background,
 		html.fullscreen:hover :is(
 			yt-live-chat-renderer,
 			yt-live-chat-header-renderer,
