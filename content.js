@@ -63,7 +63,7 @@ class SpannerPick extends Ext {
 				items.style.marginBottom = "0px";
 				items.after(fixedCommentList);
 				fixedCommentList.id = "fixedCommentList";
-				YoutubeEvent.addEventListener("ytFullscreen",e=>{
+				this.fullscreenHandler = YoutubeEvent.addEventListener("ytFullscreen",e=>{
 					items.style.marginBottom = fixedCommentList.clientHeight + "px";
 				},{pair:true});
 				this.observerCallback([{addedNodes:Array(...items.children),removedNodes:[]}]);
@@ -80,6 +80,8 @@ class SpannerPick extends Ext {
 			const fixedCommentList = document.querySelector("div#fixedCommentList");
 			items.style.marginBottom = "";
 			this.observer.disconnect();
+			YoutubeEvent.removeEventListener("ytFullscreen", this.fullscreenHandler,{pair:true});
+			this.fullscreenHandler = null;
 			Array.from(fixedCommentList.childNodes).forEach(node=>{
 				const replacement = items.querySelector('*[data-comment-id="'+node.id+'"]');
 				replacement.after(node);
@@ -332,17 +334,17 @@ class FullscreenChat extends Ext {
 				this.setStyle(this.styles.child);
 
 				// 移動アイコン追加
-				const grabBtnOut = document.createElement("yt-icon-button");
-				this.tagAddedDOM(grabBtnOut);
-				grabBtnOut.id = "overflow";
-				grabBtnOut.classList.add("style-scope","yt-live-chat-header-renderer");
-				document.querySelector("#chat-messages > yt-live-chat-header-renderer > yt-icon-button#overflow:last-child").before(grabBtnOut);
+				this.grabBtnOut = document.createElement("yt-icon-button");
+				this.tagAddedDOM(this.grabBtnOut);
+				this.grabBtnOut.id = "overflow";
+				this.grabBtnOut.classList.add("style-scope","yt-live-chat-header-renderer");
+				document.querySelector("#chat-messages > yt-live-chat-header-renderer > yt-icon-button#overflow:last-child").before(this.grabBtnOut);
 				const grabBtnIn = document.createElement("yt-icon");
 				grabBtnIn.classList.add("style-scope","yt-live-chat-header-renderer");
-				grabBtnOut.querySelector("#button").appendChild(grabBtnIn);
+				this.grabBtnOut.querySelector("#button").appendChild(grabBtnIn);
 				grabBtnIn.insertAdjacentHTML("afterbegin",this.grabIcon);
 
-				YoutubeEvent.addEventListener("ytFullscreen",e=>{
+				this.fullscreenHandler = YoutubeEvent.addEventListener("ytFullscreen",e=>{
 					if(e.detail.args[0]){
 						document.documentElement.classList.add("fullscreen");
 					}else{
@@ -354,32 +356,12 @@ class FullscreenChat extends Ext {
 				}else{
 					document.documentElement.classList.remove("fullscreen");
 				}
-				grabBtnOut.addEventListener("mousedown",e=>{
-					top.document.dispatchEvent(new CustomEvent("ext-yc-iframe-grab",{detail:e}));
-					document.addEventListener("mousemove",this.iframeMoveEvent);
-					document.addEventListener("mouseup",e=>{
-						document.removeEventListener("mousemove",this.iframeMoveEvent);
-						top.document.dispatchEvent(new CustomEvent("ext-yc-iframe-ungrab",{detail:e}));
-					},{once:true});
-				});
+				this.grabBtnOut.addEventListener("mousedown",this.iframeDownEvent);
 			}else{
 				this.setStyle(this.styles.top);
 
-				document.addEventListener("ext-yc-iframe-grab",e=>{
-					const chatFrame = document.querySelector("ytd-live-chat-frame#chat");
-					this.basePos = {
-						offsetLeft: chatFrame.offsetLeft,
-						offsetTop: chatFrame.offsetTop,
-						offsetRight: window.screen.width - chatFrame.offsetLeft - chatFrame.offsetWidth,
-						offsetBottom: window.screen.height - chatFrame.offsetTop - chatFrame.offsetHeight,
-						grabX: e.detail.screenX,
-						grabY: e.detail.screenY
-					};
-					document.addEventListener("ext-yc-iframe-move",this.moveIframe.bind(this));
-				});
-				document.addEventListener("ext-yc-iframe-ungrab",e=>{
-					document.removeEventListener("ext-yc-iframe-move",this.moveIframe);
-				});
+				document.addEventListener("ext-yc-iframe-grab",this.iframeGrabed);
+				document.addEventListener("ext-yc-iframe-ungrab",this.iframeUngrabed);
 			}
 		});
 	}
@@ -397,8 +379,15 @@ class FullscreenChat extends Ext {
 	}
 	static deinit(){
 		if(YoutubeState.isChildFrame()){
-
+			YoutubeEvent.removeEventListener("ytFullscreen",this.fullscreenHandler,{pair:true});
+			this.fullscreenHandler = null;
+			this.grabBtnOut.removeEventListener("mousedown",this.iframeDownEvent);
+			document.removeEventListener("mousemove",this.iframeMoveEvent);
+			document.removeEventListener("mouseup",this.iframeUpEvent);
 		}else{
+			document.removeEventListener("ext-yc-iframe-grab",this.iframeGrabed);
+			document.removeEventListener("ext-yc-iframe-ungrab",this.iframeUngrabed);
+			document.removeEventListener("ext-yc-iframe-move",this.moveIframe);
 			const chatFrame = document.querySelector("ytd-live-chat-frame#chat");
 			chatFrame.style.top = "";
 			chatFrame.style.left = "";
@@ -407,10 +396,34 @@ class FullscreenChat extends Ext {
 		}
 		this.removeAddedDOM();
 	}
-	static iframeMoveEvent(e){
+	static iframeDownEvent = (e)=>{
+		top.document.dispatchEvent(new CustomEvent("ext-yc-iframe-grab",{detail:e}));
+		document.addEventListener("mousemove",this.iframeMoveEvent);
+		document.addEventListener("mouseup",this.iframeUpEvent,{once:true});
+	}
+	static iframeMoveEvent = (e)=>{
 		top.document.dispatchEvent(new CustomEvent("ext-yc-iframe-move",{detail:e}));
 	}
-	static moveIframe(e){
+	static iframeUpEvent = (e)=>{
+		document.removeEventListener("mousemove",this.iframeMoveEvent);
+		top.document.dispatchEvent(new CustomEvent("ext-yc-iframe-ungrab",{detail:e}));
+	}
+	static iframeGrabed = (e)=>{
+		const chatFrame = document.querySelector("ytd-live-chat-frame#chat");
+		this.basePos = {
+			offsetLeft: chatFrame.offsetLeft,
+			offsetTop: chatFrame.offsetTop,
+			offsetRight: window.screen.width - chatFrame.offsetLeft - chatFrame.offsetWidth,
+			offsetBottom: window.screen.height - chatFrame.offsetTop - chatFrame.offsetHeight,
+			grabX: e.detail.screenX,
+			grabY: e.detail.screenY
+		};
+		document.addEventListener("ext-yc-iframe-move",this.moveIframe);
+	}
+	static iframeUngrabed = (e)=>{
+		document.removeEventListener("ext-yc-iframe-move",this.moveIframe);
+	}
+	static moveIframe = (e)=>{
 		const chatFrame = document.querySelector("ytd-live-chat-frame#chat");
 		const moveX = e.detail.screenX - this.basePos.grabX;
 		const moveY = e.detail.screenY - this.basePos.grabY;
