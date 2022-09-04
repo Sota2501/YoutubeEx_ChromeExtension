@@ -165,7 +165,7 @@ class FullscreenChat extends Ext {
 			yt-live-chat-paid-sticker-renderer > #card,
 			yt-live-chat-membership-item-renderer > #card > #header,
 			yt-live-chat-membership-item-renderer > #card > #content
-		) {
+		):not(.yt-live-chat-banner-renderer) {
 			position: relative;
 			background: none;
 			overflow: hidden;
@@ -183,7 +183,7 @@ class FullscreenChat extends Ext {
 			yt-live-chat-paid-sticker-renderer > #card,
 			yt-live-chat-membership-item-renderer > #card > #header,
 			yt-live-chat-membership-item-renderer > #card > #content
-		):before {
+		):not(.yt-live-chat-banner-renderer):before {
 			content: "";
 			position: absolute;
 			width: 100%;
