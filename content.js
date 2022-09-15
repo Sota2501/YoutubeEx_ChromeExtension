@@ -154,7 +154,10 @@ class FullscreenChat extends Ext {
 		html.fullscreen yt-live-chat-toast-renderer {
 			z-index: -1;
 		}
-		html.fullscreen yt-live-chat-text-message-renderer > #menu {
+		html.fullscreen :is(
+			yt-live-chat-banner-manager,
+			yt-live-chat-text-message-renderer > #menu
+		) {
 			background: none;
 		}
 
@@ -282,33 +285,47 @@ class FullscreenChat extends Ext {
 			background-color: var(--yt-live-chat-action-panel-background-color,var(--yt-deprecated-opalescence-soft-grey-opacity-lighten-3));
 		}
 		
+
 		html.fullscreen :is(
 			#chat,
 			yt-live-chat-participant-list-renderer
 		) {
-			padding-right: 10px;
+			padding-right: 7px;
 		}
 		
 		html.fullscreen :is(
-			#item-scroller,
+			#chat #item-scroller,
 			#participants
 		) {
-			--scrollbar-width: 5px;
+			--scrollbar-width: 7px;
+			padding-right: 7px;
 		}
 		html.fullscreen :is(
-			#item-scroller,
+			#chat #item-scroller,
+			#participants
+		):hover {
+			padding-right: 0;
+		}
+		html.fullscreen :is(
+			#chat #item-scroller,
 			#participants
 		)::-webkit-scrollbar {
+			width: 0;
+		}
+		html.fullscreen :is(
+			#chat #item-scroller,
+			#participants
+		):hover::-webkit-scrollbar {
 			width: var(--scrollbar-width);
 		}
 		html.fullscreen :is(
-			#item-scroller,
+			#chat #item-scroller,
 			#participants
 		)::-webkit-scrollbar-track {
 			background-color: transparent;
 		}
 		html.fullscreen :is(
-			#item-scroller,
+			#chat #item-scroller,
 			#participants
 		)::-webkit-scrollbar-thumb {
 			border-radius: 10px;
@@ -316,6 +333,7 @@ class FullscreenChat extends Ext {
 			background-color: rgba(240, 240, 240, 0.3);
 		}
 		
+
 		html:not(.fullscreen) #chat-messages yt-live-chat-header-renderer > yt-icon-button#overflow:first-of-type {
 			display: none;
 		}
@@ -327,6 +345,7 @@ class FullscreenChat extends Ext {
 		#chat-messages yt-live-chat-header-renderer > yt-icon-button#overflow:first-of-type button:active {
 			cursor: grabbing;
 		}
+		
 		
 		html.fullscreen yt-live-chat-text-message-renderer {
 			font-size: 16px;
