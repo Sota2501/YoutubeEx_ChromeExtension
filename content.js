@@ -27,7 +27,9 @@ class YoutubeInit {
 				}
 			});
 		});
+		window.extensions = {};
 		extensions.forEach(e=>{
+			window.extensions[e.name] = e;
 			if(e.init){
 				e.init();
 			}
@@ -83,7 +85,7 @@ class SpannerPick extends Ext {
 			YoutubeEvent.removeEventListener("ytFullscreen", this.fullscreenHandler,{pair:true});
 			this.fullscreenHandler = null;
 			Array.from(fixedCommentList.childNodes).forEach(node=>{
-				const replacement = items.querySelector('*[data-comment-id="'+node.id+'"]');
+				const replacement = items.querySelector(`*[data-comment-id="${node.id}"]`);
 				replacement.after(node);
 				replacement.remove();
 			});
@@ -107,7 +109,8 @@ class SpannerPick extends Ext {
 						replacement.dataset.commentId = node.id;
 						node.after(replacement);
 						fixedCommentList.appendChild(node);
-						replacement.querySelector("#content > #message").innerText = "固定化されたコメントです"
+						replacement.querySelector("#content > #message").innerText = "固定化されたコメントです";
+						replacement.querySelector("#menu").setAttribute("hidden","");
 						items.style.marginBottom = fixedCommentList.clientHeight + "px";
 						fixedCommentList.scrollTo({"top":fixedCommentList.scrollHeight, "behavior":"smooth"});
 					}
@@ -115,7 +118,7 @@ class SpannerPick extends Ext {
 			}else if(mutation.removedNodes.length){
 				mutation.removedNodes.forEach(node=>{
 					if(Array.from(node.classList).includes("fixedComment")){
-						fixedCommentList.querySelector('*[id="'+node.dataset.commentId+'"]').remove();
+						fixedCommentList.querySelector(`*[id="${node.dataset.commentId}"]`).remove();
 						items.style.marginBottom = fixedCommentList.clientHeight + "px";
 					}
 				})
@@ -175,7 +178,8 @@ class FullscreenChat extends Ext {
 			yt-live-chat-paid-sticker-renderer > #card,
 			yt-live-chat-membership-item-renderer > #card > #header,
 			yt-live-chat-membership-item-renderer > #card > #content,
-			yt-live-chat-participant-list-renderer > #header
+			yt-live-chat-participant-list-renderer > #header,
+			#ext-yc-options-wrapper > #header
 		):not(.yt-live-chat-banner-renderer) {
 			position: relative;
 			background: none;
@@ -196,7 +200,8 @@ class FullscreenChat extends Ext {
 			yt-live-chat-paid-sticker-renderer > #card,
 			yt-live-chat-membership-item-renderer > #card > #header,
 			yt-live-chat-membership-item-renderer > #card > #content,
-			yt-live-chat-participant-list-renderer > #header
+			yt-live-chat-participant-list-renderer > #header,
+			#ext-yc-options-wrapper > #header
 		):not(.yt-live-chat-banner-renderer):before {
 			content: "";
 			position: absolute;
@@ -233,7 +238,8 @@ class FullscreenChat extends Ext {
 			yt-live-chat-paid-sticker-renderer > #card,
 			yt-live-chat-membership-item-renderer > #card > #header,
 			yt-live-chat-membership-item-renderer > #card > #content,
-			yt-live-chat-participant-list-renderer > #header
+			yt-live-chat-participant-list-renderer > #header,
+			#ext-yc-options-wrapper > #header
 		):before {
 			opacity: 0.9;
 			transition: opacity .2s;
@@ -284,49 +290,60 @@ class FullscreenChat extends Ext {
 		html.fullscreen yt-live-chat-participant-list-renderer > #header:before {
 			background-color: var(--yt-live-chat-action-panel-background-color,var(--yt-deprecated-opalescence-soft-grey-opacity-lighten-3));
 		}
+		html.fullscreen #ext-yc-options-wrapper > #header:before {
+			background-color: var(--yt-live-chat-action-panel-background-color,var(--yt-deprecated-opalescence-soft-grey-opacity-lighten-3));
+		}
 		
 
 		html.fullscreen :is(
 			#chat,
-			yt-live-chat-participant-list-renderer
+			yt-live-chat-participant-list-renderer #participants,
+			#ext-yc-options
 		) {
-			padding-right: 7px;
+			margin-right: 7px;
 		}
 		
 		html.fullscreen :is(
 			#chat #item-scroller,
-			#participants
+			#participants,
+			#ext-yc-options
 		) {
 			--scrollbar-width: 7px;
 			padding-right: 7px;
 		}
 		html.fullscreen :is(
 			#chat #item-scroller,
-			#participants
+			#participants,
+			#ext-yc-options
 		):hover {
+			overflow-y: scroll;
 			padding-right: 0;
 		}
 		html.fullscreen :is(
 			#chat #item-scroller,
-			#participants
+			#participants,
+			#ext-yc-options
 		)::-webkit-scrollbar {
 			width: 0;
 		}
 		html.fullscreen :is(
 			#chat #item-scroller,
-			#participants
+			#participants,
+			#ext-yc-options
 		):hover::-webkit-scrollbar {
 			width: var(--scrollbar-width);
 		}
 		html.fullscreen :is(
 			#chat #item-scroller,
-			#participants
+			#participants,
+			#ext-yc-options
 		)::-webkit-scrollbar-track {
 			background-color: transparent;
 		}
 		html.fullscreen :is(
 			#chat #item-scroller,
-			#participants
+			#participants,
+			#ext-yc-options
 		)::-webkit-scrollbar-thumb {
 			border-radius: 10px;
 			border-color: transparent;
@@ -366,19 +383,14 @@ class FullscreenChat extends Ext {
 		<svg viewBox="0 0 24 24" focusable="false" class="style-scope yt-icon" style="pointer-events: none; display: block; width: 100%; height: 100%;">
 			<style>
 				yt-icon-button.yt-live-chat-header-renderer yt-icon.yt-live-chat-header-renderer {
-					stroke: var(--yt-spec-icon-inactive)
+					fill: var(--yt-spec-icon-inactive)
 				}
 				yt-icon-button.yt-live-chat-header-renderer:hover yt-icon.yt-live-chat-header-renderer {
-					stroke: var(--yt-spec-icon-active-other)
+					fill: var(--yt-spec-icon-active-other)
 				}
 			</style>
 			<g class="style-scope yt-icon">
-				<line x1="3" y1="12" x2="21" y2="12" stroke-linecap="round" class="style-scope yt-icon"></line>
-				<line x1="12" y1="3" x2="12" y2="21" stroke-linecap="round" class="style-scope yt-icon"></line>
-				<line x1="3" y1="12" x2="12" y2="3" stroke-linecap="round" stroke-dasharray="4 4" class="style-scope yt-icon"></line>
-				<line x1="12" y1="3" x2="21" y2="12" stroke-linecap="round" stroke-dasharray="4 4" class="style-scope yt-icon"></line>
-				<line x1="3" y1="12" x2="12" y2="21" stroke-linecap="round" stroke-dasharray="4 4" class="style-scope yt-icon"></line>
-				<line x1="12" y1="21" x2="21" y2="12" stroke-linecap="round" stroke-dasharray="4 4" class="style-scope yt-icon"></line>
+				<path d="M12.5,12.5v7.086l2-2l.707,.707L12.5,21h-1l-2.707-2.707l.707-.707l2,2V12.5h-7.086l2,2l-.707,.707L3,12.5v-1l2.707-2.707l.707,.707l-2,2H11.5v-7.086l-2,2l-.707-.707L11.5,3h1l2.707,2.707l-.707,.707l-2-2V11.5h7.086l-2-2l.707-.707L21,11.5v1l-2.707,2.707l-.707-.707l2-2H12.5Z"></path>
 			</g>
 		</svg>
 	`;

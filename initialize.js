@@ -70,10 +70,15 @@ class YoutubeEvent {
 				window: false,
 				query: "ytd-app",
 				func: (e,c)=>{
-					if(e.detail?.actionName == 'yt-fullscreen-change-action'){
+					if(e.detail?.actionName == "yt-fullscreen-change-action"){
 						c(e);
 					}
 				}
+			},
+			// オプションが変更されたら
+			optionChanged: {
+				type: "ext-yc-option-changed",
+				window: true
 			},
 			ytDebug: {
 				type: "yt-action",
@@ -101,7 +106,7 @@ class YoutubeEvent {
 				type: "ext-yc-sig-dispatch",
 				window: true,
 				func: e=>{
-					this.dispatchEvent(e.detail.type);
+					this.dispatchEvent(e.detail.type,e.detail.options,e.detail.data);
 				}
 			}
 		}
@@ -265,7 +270,7 @@ class YoutubeEvent {
 	}
 	/**
 	 * 設定済みイベントをdispatchする
-	 * typeにdispatch,options.typeにイベントタイプを指定するとペアのフレームにdispatchする
+	 * typeにdispatch,dataにtype,options,dataを指定するとペアのフレームにdispatchする
 	 * @param {string} type イベントタイプ
 	 * @param {object} options イベントオプション
 	 * @param {object} data カスタムイベント送信用
@@ -293,6 +298,9 @@ YoutubeEvent.init();
 
 class Ext {
 	static styleNum = 1;
+	static init(){}
+	static deinit(){}
+	static optionAdapt(){}
 	static tagAddedDOM(dom){
 		dom.setAttribute("data-ext-yc",this.name);
 	}
@@ -305,7 +313,7 @@ class Ext {
 		return this.styleNum++;
 	}
 	static removeStyle(id){
-		const styles = document.querySelectorAll('style[data-ext-yc="'+this.name+'"]'+(id?'[data-style-id="'+id+'"]':''));
+		const styles = document.querySelectorAll(`style[data-ext-yc="${this.name}"]`+(id?`[data-style-id="${id}"]`:""));
 		styles.forEach(e=>e.remove());
 	}
 	static removeAddedDOM(){
@@ -313,3 +321,288 @@ class Ext {
 		dom.forEach(e=>e.remove());
 	}
 }
+
+class Options extends Ext {
+	static name = "Options";
+	static styles = {
+		toggleButton: `
+			#toggle {
+				touch-action: pan-y;
+				margin: 0 8px;
+			}
+			#toggle-container {
+				display: inline-block;
+				position: relative;
+				width: 36px;
+				height: 14px;
+				margin: 4px 1px;
+			}
+			#toggle-bar {
+				position: absolute;
+				height: 100%;
+				width: 100%;
+				border-radius: 8px;
+				pointer-events: none;
+				transition: background-color linear 0.08s;
+				background-color: #717171;
+				opacity: 0.4;
+			}
+			#toggle[disabled] #toggle-bar {
+				background-color: #000;
+				opacity: 0.12;
+			}
+			#toggle-button {
+				position: absolute;
+				top: -3px;
+				left: 0;
+				right: auto;
+				height: 20px;
+				width: 20px;
+				border-radius: 50%;
+				transition: transform linear 0.08s, background-color linear 0.08s;
+				will-change: transform;
+				background-color: #fff;
+			}
+			@keyframes toggle-button-shadow-on {
+				from {
+					box-shadow: 0 0 0 0 rgba(0 0 0 / 10%);
+				}
+				to {
+					box-shadow: 0 0 0 13.5px rgba(0 0 0 / 10%);
+				}
+			}
+			@keyframes toggle-button-shadow-off {
+				from {
+					box-shadow: 0 0 0 13.5px rgba(0 0 0 / 10%);
+				}
+				to {
+					box-shadow: 0 0 0 13.5px rgba(0 0 0 / 0%);
+				}
+			}
+			#toggle:not(:focus) #toggle-button {
+				animation: toggle-button-shadow-off 0.08s linear both;
+			}
+			#toggle:focus #toggle-button {
+				animation: toggle-button-shadow-on 0.08s linear both;
+			}
+			#toggle[checked] #toggle-button {
+				transform: translate(16px, 0);
+			}
+			#toggle[checked]:not([disabled]) #toggle-button {
+				background-color: #3ea6ff;
+			}
+			#toggle[disabled] #toggle-button {
+				background: #bdbdbd;
+				opacity: 1;
+			}
+		`,
+		child: `
+			#ext-yc-menu-item {
+				cursor: pointer;
+				display: flex;
+				flex-direction: column;
+			}
+			#ext-yc-menu-item[use-icons] {
+				--yt-menu-item-icon-display: inline-block;
+			}
+			#ext-yc-options-wrapper {
+				color: var(--yt-live-chat-primary-text-color,var(--yt-spec-text-primary));
+				z-index: 0;
+				flex: 1;
+				flex-basis: 1e-9px;
+				display: flex;
+				flex-direction: column;
+			}
+			#ext-yc-options {
+				overflow-y: auto;
+				flex: 1;
+				flex-basis: 1e-9px;
+			}
+			#ext-yc-options #items {
+				padding: 8px 16px;
+			}
+			#ext-yc-options-wrapper #header {
+				padding: 8px;
+				height: 48px;
+				box-sizing: border-box;
+				background-color: var(--yt-live-chat-action-panel-background-color,var(--yt-deprecated-opalescence-soft-grey-opacity-lighten-3));
+				font-size: var(--yt-live-chat-header-font-size,18px);
+				line-height: 24px;
+				box-shadow: var(--yt-live-chat-header-box-shadow);
+				display: flex;
+				flex-direction: row;
+				align-items: center;
+				flex: none;
+				z-index: 1;
+			}
+			#ext-yc-options-wrapper #back-button {
+				margin: 0 8px;
+			}
+			#ext-yc-options-wrapper #back-button > * {
+				--yt-button-color: var( --yt-live-chat-primary-text-color, var(--yt-deprecated-luna-black-opacity-lighten-3) );
+			}
+			#description {
+				color: var(--yt-spec-text-primary);
+				margin: 8px 0 16px;
+				font-family: "Roboto","Arial",sans-serif;
+				font-size: 1.4rem;
+				line-height: 2rem;
+				font-weight: 400;
+			}
+			#caption-container {
+				display: flex;
+				flex-direction: row;
+				align-items: center;
+				margin: 8px 0;
+			}
+			#caption {
+				color: var(--yt-spec-text-secondary);
+				font-size: var(--ytd-tab-system-font-size);
+				font-weight: var(--ytd-tab-system-font-weight);
+				letter-spacing: var(--ytd-tab-system-letter-spacing);
+				text-transfoorm: var(--ytd-tab-system-text-transform);
+				flex: 1;
+				flex-basis: 1e-9px;
+			}
+		`
+	};
+	static extIcon = `
+		<svg viewBox="0 0 24 24" focusable="false" class="style-scope yt-icon" style="pointer-events: none; display: block; width: 100%; height: 100%;">
+			<style>
+				div.ytd-menu-popup-renderer yt-icon.ytd-menu-service-item-renderer {
+					fill: var(--yt-spec-text-primary)
+				}
+			</style>
+			<g class="style-scope yt-icon">
+				<path d="M7,21l4-4h8c1.1,0,2-.9,2-2v-10c0-1.1-0.9-2-2-2h-14c-1.1,0-2,.9-2,2v10c0,1.1,.9,2,2,2h2v4ZM6,6h12v2h-12v-2ZM6,9h12v2h-12v-2ZM6,12h12v2h-12v-2Z"></path>
+			</g>
+		</svg>
+	`;
+	static backIcon = `
+		<svg viewBox="0 0 24 24" preserveAspectRatio="xMidYMid meet" focusable="false" class="style-scope yt-icon" style="pointer-events: none; display: block; width: 100%; height: 100%;">
+			<g mirror-in-rtl="" class="style-scope yt-icon">
+				<path d="M21,11v1H5.64l6.72,6.72l-0.71,0.71L3.72,11.5l7.92-7.92l0.71,0.71L5.64,11H21z" class="style-scope yt-icon"></path>
+			</g>
+		</svg>
+	`;
+	static menuItem = `
+		<div id="ext-yc-menu-item" class="style-scope ytd-menu-popup-renderer" use-icons="" system-icons="" role="menuitem">
+			<tp-yt-paper-item class="style-scope ytd-menu-service-item-renderer" style-target="host" role="option" tabindex="0" aria-disabled="false">
+				<yt-icon class="style-scope ytd-menu-service-item-renderer"></yt-icon>
+				<yt-formatted-string class="style-scope ytd-menu-service-item-renderer"></yt-formatted-string>
+			</tp-yt-paper-item>
+		</div>
+	`;
+	static optionsPage = `
+		<div id="ext-yc-options-wrapper" class="style-scope yt-live-chat-renderer">
+			<div id="header" role="heading" class="style-scope yt-live-chat-renderer" aria-label="拡張機能の設定">
+				<div id="back-button" class="style-scope yt-live-chat-renderer">
+					<yt-button-renderer class="style-scope yt-live-chat-renderer" is-icon-button="" has-no-text=""></yt-button-renderer>
+				</div>
+				拡張機能の設定
+			</div>
+			<div id="ext-yc-options" class="style-scope yt-live-chat-renderer">
+				<div id="items" class="style-scope yt-live-chat-renderer"></div>
+			</div>
+		</div>
+	`;
+	static backButton = `
+		<a class="yt-simple-endpoint style-scope yt-button-renderer">
+			<yt-icon-button id="button" class="style-scope yt-button-renderer" aria-label="戻る"></yt-icon-button>
+		</a>
+	`;
+	static toggleButton = `
+		<div id="caption-container" class="style-scope">
+			<div id="caption" class="style-scope">[[description]]</div>
+			<div id="toggle" class="style-scope" role="button" tabindex="0" data-option="[[option-name]]"[[checked]]>
+				<div id="toggle-container" class="style-scope">
+					<div id="toggle-bar" class="style-scope"></div>
+					<div id="toggle-button" class="style-scope"></div>
+				</div>
+			</div>
+		</div>
+	`;
+	static init(){
+		if(YoutubeState.isChildFrame()){
+			this.setStyle(this.styles.toggleButton);
+			this.setStyle(this.styles.child);
+			document.querySelector("yt-live-chat-ninja-message-renderer").insertAdjacentHTML("beforebegin",this.optionsPage);
+			document.querySelector("#ext-yc-options-wrapper yt-button-renderer").insertAdjacentHTML("afterbegin",this.backButton);
+			document.querySelector("#ext-yc-options-wrapper yt-icon-button").addEventListener("click",this.backToChat);
+			const ytIcon = document.createElement("yt-icon");
+			ytIcon.classList.add("style-scope","yt-button-renderer");
+			document.querySelector("#ext-yc-options-wrapper button").appendChild(ytIcon);
+			ytIcon.insertAdjacentHTML("afterbegin",this.backIcon);
+			this.loadOptions();
+
+			document.querySelector("#chat-messages > yt-live-chat-header-renderer > yt-icon-button#overflow:last-child").addEventListener("click",()=>{
+				const wrapper = document.querySelector("yt-live-chat-app > tp-yt-iron-dropdown tp-yt-paper-listbox");
+				wrapper.insertAdjacentHTML("beforeend",this.menuItem);
+				const menuItem = wrapper.querySelector("#ext-yc-menu-item");
+				menuItem.querySelector("yt-icon").insertAdjacentHTML("afterbegin",this.extIcon);
+				menuItem.querySelector("yt-formatted-string").innerHTML = "拡張機能の設定";
+				menuItem.querySelector("yt-formatted-string").removeAttribute("is-empty");
+				menuItem.addEventListener("click",this.openOptions);
+			});
+		}else{
+			YoutubeEvent.addEventListener("optionChanged",e=>this.optionAdapt(e.detail));
+		}
+	}
+	static openOptions = ()=>{
+		document.querySelector("#ext-yc-options-wrapper").click();
+		document.querySelector("#ext-yc-options-wrapper").classList.add("iron-selected");
+		document.querySelector("#chat-messages").classList.remove("iron-selected");
+	}
+	static backToChat = ()=>{
+		document.querySelector("#chat-messages").classList.add("iron-selected");
+		document.querySelector("#ext-yc-options-wrapper").classList.remove("iron-selected");
+		const itemOffset = document.querySelector("#chat-messages #item-offset");
+		if(itemOffset.style.height == "0px"){
+			setTimeout(()=>itemOffset.parentElement.scrollTo(0,itemOffset.children.item(0).scrollHeight));
+		}
+		itemOffset.style.height = itemOffset.children.item(0).clientHeight + "px";
+		itemOffset.style.minHeight = itemOffset.parentElement.clientHeight + "px";
+	}
+	static loadOptions(){
+		const options = document.querySelector("#ext-yc-options #items");
+		options.innerHTML = "";
+		let description = document.createElement("div");
+		description.id = "description";
+		description.classList.add("style-scope");
+		description.innerText = "この設定画面では設定項目はすぐに反映されます。ただし、設定項目は現在のページのみに適用されるため、設定を永続的に反映させたい場合は保存する必要があります。また、保存した内容を他のページで利用する場合は再読み込みをする必要があります。";
+		options.appendChild(description);
+		// TODO: 読み込み
+		options.insertAdjacentHTML("beforeend",this.toggleButton.replace("[[option-name]]","SpannerPick").replace("[[description]]","モデレーターなどからのコメントの下部固定化").replace("[[checked]]","checked"));
+		options.insertAdjacentHTML("beforeend",this.toggleButton.replace("[[option-name]]","FullscreenChat").replace("[[description]]","フルスクリーンでのチャット覧表示").replace("[[checked]]","checked"));
+		options.insertAdjacentHTML("beforeend",this.toggleButton.replace("[[option-name]]","ChatTickerScroll").replace("[[description]]","スーパーチャット一覧の横スクロール").replace("[[checked]]","checked"));
+
+		document.querySelectorAll("#toggle").forEach(e=>e.addEventListener("click",this.toggle));
+	}
+	static saveOptions(){}
+	static toggle = e=>{
+		if(e.currentTarget.getAttribute("disabled") == null){
+			if(e.currentTarget.getAttribute("checked") == null){
+				e.currentTarget.setAttribute("checked","");
+				YoutubeEvent.dispatchEvent("dispatch",undefined,{type:"optionChanged",data:{scope:"local",option:e.currentTarget.dataset.option,val:true}});
+				this.optionAdapt({scope:"local",option:e.currentTarget.dataset.option,val:true});
+			}else{
+				e.currentTarget.removeAttribute("checked");
+				YoutubeEvent.dispatchEvent("dispatch",undefined,{type:"optionChanged",data:{scope:"local",option:e.currentTarget.dataset.option,val:false}});
+				this.optionAdapt({scope:"local",option:e.currentTarget.dataset.option,val:false});
+			}
+		}
+	}
+	static optionAdapt(data){
+		const opt = data.option.split("-");
+		if(opt.length == 1){
+			if(data.val){
+				window.extensions[data.option].init();
+			}else{
+				window.extensions[data.option].deinit();
+			}
+		}else{
+			window.extensions[opt[0]].optionAdapt(data);
+		}
+	}
+}
+Options.init();
