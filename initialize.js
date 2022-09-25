@@ -297,10 +297,13 @@ class YoutubeEvent {
 YoutubeEvent.init();
 
 class Ext {
+	static name = "";
+	static description = "";
 	static styleNum = 1;
 	static init(){}
 	static deinit(){}
-	static optionAdapt(){}
+	static adaptOption(){}
+	static appendOptions(){}
 	static tagAddedDOM(dom){
 		dom.setAttribute("data-ext-yc",this.name);
 	}
@@ -319,6 +322,26 @@ class Ext {
 	static removeAddedDOM(){
 		const dom = document.querySelectorAll(`[data-ext-yc="${this.name}"]`);
 		dom.forEach(e=>e.remove());
+	}
+	static replace(html,placeholders){
+		for(let placeholder in placeholders){
+			html = html.replace("[["+placeholder+"]]",placeholders[placeholder]);
+		}
+		return html;
+	}
+}
+
+class Storage {
+	static localOptions = {};
+	static localStorage = {};
+	static syncStorage = {};
+	static init(){
+		chrome.storage.local.get(null,items=>{
+			this.localStorage = items;
+		});
+		chrome.storage.sync.get(null,items=>{
+			this.syncStorage = items;
+		});
 	}
 }
 
@@ -522,6 +545,8 @@ class Options extends Ext {
 			</div>
 		</div>
 	`;
+	static localOptions = {};
+	static modifiedOptions = {};
 	static init(){
 		if(YoutubeState.isChildFrame()){
 			this.setStyle(this.styles.toggleButton);
@@ -533,7 +558,22 @@ class Options extends Ext {
 			ytIcon.classList.add("style-scope","yt-button-renderer");
 			document.querySelector("#ext-yc-options-wrapper button").appendChild(ytIcon);
 			ytIcon.insertAdjacentHTML("afterbegin",this.backIcon);
-			this.loadOptions();
+			
+			const options = document.querySelector("#ext-yc-options #items");
+			options.innerHTML = "";
+			const description = document.createElement("div");
+			description.id = "description";
+			description.classList.add("style-scope");
+			description.innerText = "この設定画面では設定項目はすぐに反映されます。ただし、設定項目は現在のページのみに適用されるため、設定を永続的に反映させたい場合は保存する必要があります。また、保存した内容を他のページで利用する場合は再読み込みをする必要があります。";
+			options.appendChild(description);
+			
+			YoutubeEvent.addEventListener("allLoad",()=>{
+				for(let ex in YoutubeInit.extensions){
+					options.insertAdjacentHTML("beforeend",this.replace(this.toggleButton,{"option-name":ex,description:YoutubeInit.extensions[ex].description,checked:"checked"}));
+					YoutubeInit.extensions[ex].appendOptions(options);
+				}
+				document.querySelectorAll("#toggle").forEach(e=>e.addEventListener("click",this.toggle));
+			});
 
 			document.querySelector("#chat-messages > yt-live-chat-header-renderer > yt-icon-button#overflow:last-child").addEventListener("click",()=>{
 				const wrapper = document.querySelector("yt-live-chat-app > tp-yt-iron-dropdown tp-yt-paper-listbox");
@@ -545,7 +585,19 @@ class Options extends Ext {
 				menuItem.addEventListener("click",this.openOptions);
 			});
 		}else{
-			YoutubeEvent.addEventListener("optionChanged",e=>this.optionAdapt(e.detail));
+			YoutubeEvent.addEventListener("optionChanged",e=>this.adaptOption(e.detail));
+		}
+	}
+	static adaptOption(data){
+		const opts = data.option.split("-");
+		if(opts.length == 1){
+			if(data.val){
+				YoutubeInit.extensions[data.option].init();
+			}else{
+				YoutubeInit.extensions[data.option].deinit();
+			}
+		}else{
+			YoutubeInit.extensions[opts[0]].adaptOption(data);
 		}
 	}
 	static openOptions = ()=>{
@@ -563,45 +615,17 @@ class Options extends Ext {
 		itemOffset.style.height = itemOffset.children.item(0).clientHeight + "px";
 		itemOffset.style.minHeight = itemOffset.parentElement.clientHeight + "px";
 	}
-	static loadOptions(){
-		const options = document.querySelector("#ext-yc-options #items");
-		options.innerHTML = "";
-		let description = document.createElement("div");
-		description.id = "description";
-		description.classList.add("style-scope");
-		description.innerText = "この設定画面では設定項目はすぐに反映されます。ただし、設定項目は現在のページのみに適用されるため、設定を永続的に反映させたい場合は保存する必要があります。また、保存した内容を他のページで利用する場合は再読み込みをする必要があります。";
-		options.appendChild(description);
-		// TODO: 読み込み
-		options.insertAdjacentHTML("beforeend",this.toggleButton.replace("[[option-name]]","SpannerPick").replace("[[description]]","モデレーターなどからのコメントの下部固定化").replace("[[checked]]","checked"));
-		options.insertAdjacentHTML("beforeend",this.toggleButton.replace("[[option-name]]","FullscreenChat").replace("[[description]]","フルスクリーンでのチャット覧表示").replace("[[checked]]","checked"));
-		options.insertAdjacentHTML("beforeend",this.toggleButton.replace("[[option-name]]","ChatTickerScroll").replace("[[description]]","スーパーチャット一覧の横スクロール").replace("[[checked]]","checked"));
-
-		document.querySelectorAll("#toggle").forEach(e=>e.addEventListener("click",this.toggle));
-	}
-	static saveOptions(){}
 	static toggle = e=>{
 		if(e.currentTarget.getAttribute("disabled") == null){
 			if(e.currentTarget.getAttribute("checked") == null){
 				e.currentTarget.setAttribute("checked","");
 				YoutubeEvent.dispatchEvent("dispatch",undefined,{type:"optionChanged",data:{scope:"local",option:e.currentTarget.dataset.option,val:true}});
-				this.optionAdapt({scope:"local",option:e.currentTarget.dataset.option,val:true});
+				this.adaptOption({scope:"local",option:e.currentTarget.dataset.option,val:true});
 			}else{
 				e.currentTarget.removeAttribute("checked");
 				YoutubeEvent.dispatchEvent("dispatch",undefined,{type:"optionChanged",data:{scope:"local",option:e.currentTarget.dataset.option,val:false}});
-				this.optionAdapt({scope:"local",option:e.currentTarget.dataset.option,val:false});
+				this.adaptOption({scope:"local",option:e.currentTarget.dataset.option,val:false});
 			}
-		}
-	}
-	static optionAdapt(data){
-		const opt = data.option.split("-");
-		if(opt.length == 1){
-			if(data.val){
-				window.extensions[data.option].init();
-			}else{
-				window.extensions[data.option].deinit();
-			}
-		}else{
-			window.extensions[opt[0]].optionAdapt(data);
 		}
 	}
 }

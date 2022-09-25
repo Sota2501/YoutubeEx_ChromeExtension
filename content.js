@@ -41,6 +41,7 @@ class YoutubeInit {
 // Youtube spanner pick
 class SpannerPick extends Ext {
 	static name = "SpannerPick";
+	static description = "モデレーターなどからのコメントの下部固定化"
 	static style = `
 		#fixedCommentList {
 			left: 0;
@@ -130,6 +131,7 @@ class SpannerPick extends Ext {
 // Youtube fullscreenChat
 class FullscreenChat extends Ext {
 	static name = "FullscreenChat";
+	static description = "フルスクリーンでのチャット覧表示";
 	static styles = {
 		top: `
 			body:not(.no-scroll) ytd-live-chat-frame#chat {
@@ -514,6 +516,7 @@ class FullscreenChat extends Ext {
 // Youtube chatTickerScroll
 class ChatTickerScroll extends Ext {
 	static name = "ChatTickerScroll";
+	static description = "スーパーチャット一覧の横スクロール";
 	static ticker = document.querySelector("#ticker yt-live-chat-ticker-renderer");
 	static buttons = {
 		true: document.querySelector("#ticker #left-arrow-container yt-icon"),
