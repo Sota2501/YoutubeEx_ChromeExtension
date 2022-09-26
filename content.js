@@ -435,9 +435,6 @@ class FullscreenChat extends Ext {
 		}
 		this.removeAddedDOM();
 	}
-	static optionsUpdated(opts){
-		console.log("optionsUpdated", opts);
-	}
 	static iframeDownEvent = (e)=>{
 		top.document.dispatchEvent(new CustomEvent("ext-yc-iframe-grab",{detail:e}));
 		document.addEventListener("mousemove",this.iframeMoveEvent);
