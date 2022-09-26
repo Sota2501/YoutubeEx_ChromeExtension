@@ -663,7 +663,7 @@ class Options extends Ext {
 			YoutubeEvent.addEventListener("allLoad",()=>{
 				for(let ex in extensions){
 					// 設定内容追加
-					options.insertAdjacentHTML("beforeend",this.replace(this.toggleButton,{"option-name":ex,description:extensions[ex].description,checked:"checked"}));
+					options.insertAdjacentHTML("beforeend",this.replace(this.toggleButton,{"option-name":ex,description:extensions[ex].description,checked:(Storage.getOption(ex)?" checked":"")}));
 					extensions[ex].registOptions(options);
 					// 初期化処理
 					if(Storage.getOption(ex)){
