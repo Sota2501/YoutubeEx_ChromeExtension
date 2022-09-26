@@ -1,11 +1,23 @@
 {
+  "manifest_version": 3,
   "name": "YoutubeEx",
   "version": "1.3.0",
-  "permissions": [
-    "storage"
-  ],
-  "manifest_version": 3,
+
+  "action": {
+    "default_icon": {
+      "16": "images/icon16.png",
+      "24": "images/icon24.png",
+      "32": "images/icon32.png"
+    }
+  },
   "description": "Youtubeに追加機能を提供する拡張機能。追加したい項目をチェックすると使用可能。",
+  "icons": {
+    "16": "images/icon16.png",
+    "32": "images/icon32.png",
+    "48": "images/icon48.png",
+    "128": "images/icon128.png"
+  },
+
   "content_scripts": [{
     "matches": ["https://www.youtube.com/*"],
     "all_frames": true,
@@ -14,8 +26,7 @@
       "content.js"
     ]
   }],
-  "options_ui": {
-    "page": "options.html",
-    "open_in_tab": false
-  }
+  "permissions": [
+    "storage"
+  ]
 }
