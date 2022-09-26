@@ -31,6 +31,15 @@ class YoutubeEvent {
 				},
 				called: false
 			},
+			// Storage初期化完了時
+			storageLoad: {
+				type: "ext-yc-storage-load",
+				window: true,
+				options: {
+					once: true
+				},
+				called: false
+			},
 			// 拡張機能がロードされたとき
 			allLoad: {
 				type: "ext-yc-all-load",
@@ -42,6 +51,7 @@ class YoutubeEvent {
 			},
 			// 親フレームと子フレームの拡張機能がイベント送受信可能になったとき
 			// Youtubeでページ遷移するとリセットされる
+			// 呼び出しされたあとでもdispatch可能
 			connected: {
 				type: "ext-yc-connected",
 				window: true,
@@ -76,7 +86,7 @@ class YoutubeEvent {
 				}
 			},
 			// オプションが変更されたら
-			optionChanged: {
+			optionsChanged: {
 				type: "ext-yc-option-changed",
 				window: true
 			},
@@ -101,13 +111,10 @@ class YoutubeEvent {
 					c(e);
 				}
 			},
-			// 互いのWindowにイベントを送信するためのもの
+			// 互いにデータをやりとりするためのもの
 			dispatch: {
 				type: "ext-yc-sig-dispatch",
-				window: true,
-				func: e=>{
-					this.dispatchEvent(e.detail.type,e.detail.options,e.detail.data);
-				}
+				window: true
 			}
 		}
 	}
@@ -125,18 +132,19 @@ class YoutubeEvent {
 					this.addEventListener("ytUnload",()=>{this.events.once.connected.called = false});
 				},{once:true});
 				id = setInterval(()=>{
-					this.#dispatchEvent(this.events.signal.regist,undefined,top,{
+					this.#dispatchEvent(this.events.signal.regist,{
 						window: window
-					});
+					},undefined,top);
 				},500);
 			});
 		}else{
 			this.addEventListener("allLoad",()=>{
 				this.#addEventListener(this.events.signal.regist,()=>{
 					this.#addEventListener(this.events.signal.dispatch);
-					this.#dispatchEvent(this.events.signal.regist,undefined,this.frame,{
+					this.#dispatchEvent(this.events.signal.regist,{
 						window: window
-					});
+					},undefined,this.frame);
+					this.events.once.connected.called = false;
 					this.dispatchEvent("connected");
 					this.addEventListener("ytUnload",()=>{this.events.once.connected.called = false});
 				});
@@ -176,7 +184,7 @@ class YoutubeEvent {
 				callback(e);
 				let id = detail.overlapDenyIds.indexOf(options.overlapDeny);
 				if(id >= 0){
-					detail.overlapDenyIds[id] = null;
+					delete detail.overlapDenyIds[id];
 				}
 			}
 		}
@@ -188,9 +196,13 @@ class YoutubeEvent {
 			return false;
 		}
 	}
-	static #removeEventListener(detail,callback,options=detail.options,dom=undefined){
-		if(!dom)
-			dom = this.#query(detail, options);
+	static #removeEventListener(detail,callback,options=detail.options,dom=this.#query(detail,options)){
+		if(options?.overlapDeny){
+			let id = detail.overlapDenyIds.indexOf(options.overlapDeny);
+			if(id >= 0){
+				delete detail.overlapDenyIds[id];
+			}
+		}
 		if(dom){
 			dom.removeEventListener(detail.type, callback);
 			return true;
@@ -198,9 +210,7 @@ class YoutubeEvent {
 			return false;
 		}
 	}
-	static #dispatchEvent(detail,options,dom,data){
-		if(!dom)
-			dom = this.#query(detail,options);
+	static #dispatchEvent(detail,data,options,dom=this.#query(detail,options)){
 		if(dom){
 			if(data){
 				dom.dispatchEvent(new CustomEvent(detail.type,{detail: data}));
@@ -216,19 +226,19 @@ class YoutubeEvent {
 	 * 設定済みイベントを登録する
 	 * @param {string} type イベントタイプ(複数イベントはスペース区切り)
 	 * @param {function|null} callback コールバック関数
-	 * @param {object} options イベントオプション
+	 * @param {object} options イベントオプション {pair:bool,overlapDeny:string}
 	 * @returns イベントハンドラ
 	 */
 	static addEventListener(types,callback,options){
 		let res = [];
 		if(!callback){
-			callback = ()=>{};
+			return null;
 		}
 		for(let type of types.split(" ")){
 			if(Object.keys(this.events.once).indexOf(type) >= 0){
 				const detail = this.events.once[type];
 				if(detail.called instanceof Event){
-					callback(detail);
+					callback(detail.called);
 					res.push(true);
 				}else{
 					res.push(this.#addEventListener(detail,callback,options));
@@ -236,8 +246,9 @@ class YoutubeEvent {
 			}else if(Object.keys(this.events.youtube).indexOf(type) >= 0){
 				const detail = this.events.youtube[type];
 				res.push(this.#addEventListener(detail,callback,options));
-			}else if(type == "storage"){
-				chrome.storage.onChanged.addListener(callback);
+			}else if(type == "dispatch"){
+				const detail = this.events.signal.dispatch;
+				res.push(this.#addEventListener(detail,callback,options));
 			}
 		}
 		if(res.length == 0){
@@ -253,13 +264,13 @@ class YoutubeEvent {
 	 * イベントリスナーでは関数を書き換えているので返された関数を使用する必要がある
 	 * @param {string} type イベントタイプ
 	 * @param {function} callback イベントリスナーから返された関数
-	 * @param {object} options イベントオプション
+	 * @param {object} options イベントオプション {pair:bool,overlapDeny:string}
 	 * @returns 削除できたかどうか
 	 */
 	static removeEventListener(type,callback,options){
 		if(Object.keys(this.events.once).indexOf(type) >= 0){
 			const detail = this.events.once[type];
-			if(!(detail instanceof Event)){
+			if(!(detail.called instanceof Event)){
 				return this.#removeEventListener(detail,callback,options);
 			}
 		}else if(Object.keys(this.events.youtube).indexOf(type) >= 0){
@@ -270,26 +281,25 @@ class YoutubeEvent {
 	}
 	/**
 	 * 設定済みイベントをdispatchする
-	 * typeにdispatch,dataにtype,options,dataを指定するとペアのフレームにdispatchする
 	 * @param {string} type イベントタイプ
-	 * @param {object} options イベントオプション
 	 * @param {object} data カスタムイベント送信用
+	 * @param {object} options イベントオプション {pair:bool}
 	 * @returns dispatchしたかどうか(onceは実行済みの場合dispatchされない)
 	 */
-	static dispatchEvent(type,options,data){
+	static dispatchEvent(type,data,options){
 		if(Object.keys(this.events.once).indexOf(type) >= 0){
 			const detail = this.events.once[type];
 			if(detail.called instanceof Event){
 				return false;
 			}else{
-				return this.#dispatchEvent(detail,options,undefined,data);
+				return this.#dispatchEvent(detail,data,options);
 			}
 		}else if(Object.keys(this.events.youtube).indexOf(type) >= 0){
 			const detail = this.events.youtube[type];
-			return this.#dispatchEvent(detail,options,undefined,data);
+			return this.#dispatchEvent(detail,data,options);
 		}else if(type == "dispatch"){
 			const detail = this.events.signal.dispatch;
-			return this.#dispatchEvent(detail,options,this.frame,data);
+			return this.#dispatchEvent(detail,data,{pair:true});
 		}
 		return false;
 	}
@@ -302,8 +312,8 @@ class Ext {
 	static styleNum = 1;
 	static init(){}
 	static deinit(){}
-	static adaptOption(){}
-	static appendOptions(){}
+	static optionsUpdated(){}
+	static registOptions(){}
 	static tagAddedDOM(dom){
 		dom.setAttribute("data-ext-yc",this.name);
 	}
@@ -332,18 +342,101 @@ class Ext {
 }
 
 class Storage {
-	static localOptions = {};
-	static localStorage = {};
-	static syncStorage = {};
+	static v = 1;
+	static useLocal;
+	static stage = {};
+	static options;
 	static init(){
+		let sync, local;
+		let setOptions = (sync,local)=>{
+			if(local["v"] == undefined){
+				let def = {v:this.v};
+				for(let ex in extensions){
+					def[ex] = true;
+				}
+				chrome.storage.local.set(Object.assign({"flag-use-local":false},def));
+				if(sync["v"] == undefined){
+					chrome.storage.sync.set(Object.assign({},def));
+					this.options = def;
+				}else{
+					this.options = sync;
+				}
+				this.useLocal = false;
+			}else if(local["flag-use-local"]){
+				this.useLocal = true;
+				this.options = local;
+			}else{
+				this.useLocal = false;
+				this.options = sync;
+			}
+			delete this.options["v"];
+			delete this.options["flag-use-local"];
+			YoutubeEvent.dispatchEvent("storageLoad");
+		}
 		chrome.storage.local.get(null,items=>{
-			this.localStorage = items;
+			local = items;
+			if(sync){
+				setOptions(sync,local);
+			}
 		});
 		chrome.storage.sync.get(null,items=>{
-			this.syncStorage = items;
+			sync = items;
+			if(local){
+				setOptions(sync,local);
+			}
+		});
+		YoutubeEvent.addEventListener("dispatch",e=>{
+			if(e.detail.type == "Storage-sync"){
+				for(let k in e.detail.data){
+					this.options[k] = e.detail.data[k];
+				}
+			}
 		});
 	}
+	static getOption(name,def){
+		return this.options[name] || def;
+	}
+	static setOption(name,val){
+		let data = {};
+		data[name] = val;
+		this.setOptions(data);
+	}
+	static setOptions(data){
+		YoutubeEvent.dispatchEvent("dispatch",{type:"Storage-sync",data:data});
+		for(let k in data){
+			this.options[k] = data[k];
+		}
+	}
+	static saveOption(name,val){
+		let data = {};
+		data[name] = val;
+		this.saveOptions(data);
+	}
+	static saveOptions(data){
+		this.setOptions(data);
+		chrome.storage[this.useLocal?"local":"sync"].set(data);
+	}
+
+	// オプション画面時に使用
+	static setStage(name,val){
+		if(this.options[name] != val){
+			this.stage[name] = val;
+		}else{
+			delete this.stage[name];
+		}
+	}
+	static reflectStage(){
+		YoutubeEvent.dispatchEvent("optionsChanged",this.stage);
+		YoutubeEvent.dispatchEvent("optionsChanged",Object.assign({},this.stage),{pair:true});
+		this.setOptions(Object.assign({},this.stage));
+		this.stage = {};
+	}
+	static saveStorage(useLocal){
+		let data = Object.assign(Object.assign({},this.options),this.stage);
+		chrome.storage[useLocal?"local":"sync"].set(data);
+	}
 }
+Storage.init();
 
 class Options extends Ext {
 	static name = "Options";
@@ -545,12 +638,11 @@ class Options extends Ext {
 			</div>
 		</div>
 	`;
-	static localOptions = {};
-	static modifiedOptions = {};
 	static init(){
 		if(YoutubeState.isChildFrame()){
 			this.setStyle(this.styles.toggleButton);
 			this.setStyle(this.styles.child);
+			// 設定画面作成
 			document.querySelector("yt-live-chat-ninja-message-renderer").insertAdjacentHTML("beforebegin",this.optionsPage);
 			document.querySelector("#ext-yc-options-wrapper yt-button-renderer").insertAdjacentHTML("afterbegin",this.backButton);
 			document.querySelector("#ext-yc-options-wrapper yt-icon-button").addEventListener("click",this.backToChat);
@@ -567,14 +659,22 @@ class Options extends Ext {
 			description.innerText = "この設定画面では設定項目はすぐに反映されます。ただし、設定項目は現在のページのみに適用されるため、設定を永続的に反映させたい場合は保存する必要があります。また、保存した内容を他のページで利用する場合は再読み込みをする必要があります。";
 			options.appendChild(description);
 			
+			// 拡張機能設定初期化処理
 			YoutubeEvent.addEventListener("allLoad",()=>{
-				for(let ex in YoutubeInit.extensions){
-					options.insertAdjacentHTML("beforeend",this.replace(this.toggleButton,{"option-name":ex,description:YoutubeInit.extensions[ex].description,checked:"checked"}));
-					YoutubeInit.extensions[ex].appendOptions(options);
+				for(let ex in extensions){
+					// 設定内容追加
+					options.insertAdjacentHTML("beforeend",this.replace(this.toggleButton,{"option-name":ex,description:extensions[ex].description,checked:"checked"}));
+					extensions[ex].registOptions(options);
+					// 初期化処理
+					if(Storage.getOption(ex)){
+						extensions[ex].init();
+					}
 				}
+				YoutubeEvent.addEventListener("optionsChanged",this.optionsUpdated);
 				document.querySelectorAll("#toggle").forEach(e=>e.addEventListener("click",this.toggle));
 			});
 
+			// ポップアップのメニューアイテム作成
 			document.querySelector("#chat-messages > yt-live-chat-header-renderer > yt-icon-button#overflow:last-child").addEventListener("click",()=>{
 				const wrapper = document.querySelector("yt-live-chat-app > tp-yt-iron-dropdown tp-yt-paper-listbox");
 				wrapper.insertAdjacentHTML("beforeend",this.menuItem);
@@ -585,19 +685,46 @@ class Options extends Ext {
 				menuItem.addEventListener("click",this.openOptions);
 			});
 		}else{
-			YoutubeEvent.addEventListener("optionChanged",e=>this.adaptOption(e.detail));
+			YoutubeEvent.addEventListener("allLoad",()=>{
+				for(let ex in extensions){
+					if(Storage.getOption(ex)){
+						extensions[ex].init();
+					}
+				}
+				YoutubeEvent.addEventListener("optionsChanged",this.optionsUpdated);
+			});
 		}
 	}
-	static adaptOption(data){
-		const opts = data.option.split("-");
-		if(opts.length == 1){
-			if(data.val){
-				YoutubeInit.extensions[data.option].init();
-			}else{
-				YoutubeInit.extensions[data.option].deinit();
+	static optionsUpdated = (e)=>{
+		for(let ex in extensions){
+			const st = this.getExUpdated(ex,e.detail);
+			if(typeof st == "boolean"){
+				if(st){
+					extensions[ex].init();
+				}else{
+					extensions[ex].deinit();
+				}
+			}else if(st != null){
+				extensions[ex].optionsUpdated(st);
 			}
+		}
+	}
+	static getExUpdated = (name,stage)=>{
+		let data = {};
+		for(let k in stage){
+			const m = k.match(new RegExp(`^(${name})\\-?(.*)`));
+			if(m){
+				if(m[2] == ""){
+					return stage[k];
+				}else{
+					data[m[2]] = stage[k];
+				}
+			}
+		}
+		if(Object.keys(data).length == 0){
+			return null;
 		}else{
-			YoutubeInit.extensions[opts[0]].adaptOption(data);
+			return data;
 		}
 	}
 	static openOptions = ()=>{
@@ -606,6 +733,9 @@ class Options extends Ext {
 		document.querySelector("#chat-messages").classList.remove("iron-selected");
 	}
 	static backToChat = ()=>{
+		// Storage変更適用
+		Storage.reflectStage();
+
 		document.querySelector("#chat-messages").classList.add("iron-selected");
 		document.querySelector("#ext-yc-options-wrapper").classList.remove("iron-selected");
 		const itemOffset = document.querySelector("#chat-messages #item-offset");
@@ -615,16 +745,14 @@ class Options extends Ext {
 		itemOffset.style.height = itemOffset.children.item(0).clientHeight + "px";
 		itemOffset.style.minHeight = itemOffset.parentElement.clientHeight + "px";
 	}
-	static toggle = e=>{
+	static toggle = (e)=>{
 		if(e.currentTarget.getAttribute("disabled") == null){
 			if(e.currentTarget.getAttribute("checked") == null){
 				e.currentTarget.setAttribute("checked","");
-				YoutubeEvent.dispatchEvent("dispatch",undefined,{type:"optionChanged",data:{scope:"local",option:e.currentTarget.dataset.option,val:true}});
-				this.adaptOption({scope:"local",option:e.currentTarget.dataset.option,val:true});
+				Storage.setStage(e.currentTarget.dataset.option,true);
 			}else{
 				e.currentTarget.removeAttribute("checked");
-				YoutubeEvent.dispatchEvent("dispatch",undefined,{type:"optionChanged",data:{scope:"local",option:e.currentTarget.dataset.option,val:false}});
-				this.adaptOption({scope:"local",option:e.currentTarget.dataset.option,val:false});
+				Storage.setStage(e.currentTarget.dataset.option,false);
 			}
 		}
 	}

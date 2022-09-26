@@ -1,41 +1,16 @@
-class YoutubeInit {
-	static init(){
-		const extensions = [
-			SpannerPick,
-			FullscreenChat,
-			ChatTickerScroll
-		];
-		
-		chrome.storage.sync.get(null,stg=>{
-			extensions.forEach(e=>{
-				const stgFunc = (keys,def)=>{
-					let dir = stg[e.name];
-					if(dir == undefined){
-						return def;
-					}
-					keys = keys.split(".");
-					for(let key of keys){
-						dir = dir[key];
-						if(dir == undefined){
-							return def;
-						}
-					}
-					return dir;
-				}
-				if(e.initOpt){
-					e.initOpt(stgFunc);
-				}
-			});
-		});
-		window.extensions = {};
-		extensions.forEach(e=>{
-			window.extensions[e.name] = e;
-			if(e.init){
-				e.init();
-			}
-		});
-		YoutubeEvent.dispatchEvent("allLoad");
+const extensions = {};
+function init(){
+	const exts = [
+		SpannerPick,
+		FullscreenChat,
+		ChatTickerScroll
+	];
+	for(let ex of exts){
+		extensions[ex.name] = ex;
 	}
+	YoutubeEvent.addEventListener("storageLoad",()=>{
+		YoutubeEvent.dispatchEvent("allLoad");
+	});
 }
 
 // Youtube spanner pick
@@ -66,7 +41,7 @@ class SpannerPick extends Ext {
 				items.style.marginBottom = "0px";
 				items.after(fixedCommentList);
 				fixedCommentList.id = "fixedCommentList";
-				this.fullscreenHandler = YoutubeEvent.addEventListener("ytFullscreen",e=>{
+				this.fullscreenHandler = YoutubeEvent.addEventListener("ytFullscreen",()=>{
 					items.style.marginBottom = fixedCommentList.clientHeight + "px";
 				},{pair:true});
 				this.observerCallback([{addedNodes:Array(...items.children),removedNodes:[]}]);
@@ -398,8 +373,8 @@ class FullscreenChat extends Ext {
 	`;
 	static basePos = {};
 	static init(){
-		YoutubeEvent.addEventListener("connected",()=>{
-			if(YoutubeState.isChildFrame()){
+		if(YoutubeState.isChildFrame()){
+			YoutubeEvent.addEventListener("connected",()=>{
 				this.setStyle(this.styles.child);
 
 				// 移動アイコン追加
@@ -426,24 +401,19 @@ class FullscreenChat extends Ext {
 					document.documentElement.classList.remove("fullscreen");
 				}
 				this.grabBtnOut.addEventListener("mousedown",this.iframeDownEvent);
-			}else{
-				this.setStyle(this.styles.top);
-
-				document.addEventListener("ext-yc-iframe-grab",this.iframeGrabed);
-				document.addEventListener("ext-yc-iframe-ungrab",this.iframeUngrabed);
-			}
-		});
-	}
-	static initOpt(stg){
-		if(!YoutubeState.isChildFrame()){
-			YoutubeEvent.addEventListener("ytLoad",()=>{
-				YoutubeEvent.addEventListener("connected",()=>{
-					const chatFrame = document.querySelector("ytd-live-chat-frame#chat");
-					chatFrame.style.top = stg("chatFrame.top","0");
-					chatFrame.style.left = stg("chatFrame.left","0");
-					chatFrame.style.width = stg("chatFrame.top","400px");
-				},{overlapDeny:"FullscreenChat"});
 			});
+		}else{
+			this.setStyle(this.styles.top);
+			
+			YoutubeEvent.addEventListener("connected",()=>{
+				const chatFrame = document.querySelector("ytd-live-chat-frame#chat");
+				chatFrame.style.top = Storage.getOption("FullscreenChat-frame-top","0");
+				chatFrame.style.left = Storage.getOption("FullscreenChat-frame-left","0");
+				chatFrame.style.width = Storage.getOption("FullscreenChat-frame-width","400px");
+			},{overlapDeny:"FullscreenChat"});
+
+			document.addEventListener("ext-yc-iframe-grab",this.iframeGrabed);
+			document.addEventListener("ext-yc-iframe-ungrab",this.iframeUngrabed);
 		}
 	}
 	static deinit(){
@@ -464,6 +434,9 @@ class FullscreenChat extends Ext {
 			document.documentElement.classList.remove("fullscreen");
 		}
 		this.removeAddedDOM();
+	}
+	static optionsUpdated(opts){
+		console.log("optionsUpdated", opts);
 	}
 	static iframeDownEvent = (e)=>{
 		top.document.dispatchEvent(new CustomEvent("ext-yc-iframe-grab",{detail:e}));
@@ -490,27 +463,41 @@ class FullscreenChat extends Ext {
 		document.addEventListener("ext-yc-iframe-move",this.moveIframe);
 	}
 	static iframeUngrabed = (e)=>{
+		const pos = this.calcFramePos(e);
+		Storage.saveOptions({
+			"FullscreenChat-frame-top": pos.top,
+			"FullscreenChat-frame-left": pos.left,
+			"FullscreenChat-frame-width": pos.width
+		});
 		document.removeEventListener("ext-yc-iframe-move",this.moveIframe);
 	}
 	static moveIframe = (e)=>{
+		const pos = this.calcFramePos(e);
 		const chatFrame = document.querySelector("ytd-live-chat-frame#chat");
+		chatFrame.style.top = pos.top;
+		chatFrame.style.left = pos.left;
+		chatFrame.style.width = pos.width;
+	}
+	static calcFramePos = (e)=>{
+		let calced = {};
 		const moveX = e.detail.screenX - this.basePos.grabX;
 		const moveY = e.detail.screenY - this.basePos.grabY;
 		if(this.basePos.offsetTop + moveY < 0){
-			chatFrame.style.top = "0px";
+			calced.top = "0px";
 		}else if(this.basePos.offsetBottom - moveY < 0){
-			chatFrame.style.top = this.basePos.offsetTop + this.basePos.offsetBottom + "px";
+			calced.top = this.basePos.offsetTop + this.basePos.offsetBottom + "px";
 		}else{
-			chatFrame.style.top = this.basePos.offsetTop + moveY + "px";
+			calced.top = this.basePos.offsetTop + moveY + "px";
 		}
 		if(this.basePos.offsetLeft + moveX < 0){
-			chatFrame.style.left = "0px";
+			calced.left = "0px";
 		}else if(this.basePos.offsetRight - moveX < 0){
-			chatFrame.style.left = this.basePos.offsetLeft + this.basePos.offsetRight + "px";
+			calced.left = this.basePos.offsetLeft + this.basePos.offsetRight + "px";
 		}else{
-			chatFrame.style.left = this.basePos.offsetLeft + moveX + "px";
+			calced.left = this.basePos.offsetLeft + moveX + "px";
 		}
-		chatFrame.style.width = "400px";
+		calced.width = "400px";
+		return calced;
 	}
 }
 // Youtube chatTickerScroll
@@ -557,4 +544,4 @@ class ChatTickerScroll extends Ext {
 	}
 }
 
-YoutubeInit.init();
+init();
