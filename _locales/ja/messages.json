@@ -1,0 +1,33 @@
+{
+	"extName": {
+		"message": "YoutubeEx"
+	},
+	"extDescription": {
+		"message": "Youtubeに追加機能を提供する拡張機能。追加したい項目をチェックすると使用可能。"
+	},
+
+	"optionsTitle": {
+		"message": "拡張機能の設定"
+	},
+	"optionsBack": {
+		"message": "戻る"
+	},
+	"optionsDescription": {
+		"message": "この設定画面では設定項目はすぐに反映されます。ただし、設定項目は現在のページのみに適用されるため、設定を永続的に反映させたい場合は保存する必要があります。また、保存した内容を他のページで利用する場合は再読み込みをする必要があります。"
+	},
+
+	"SpannerPickDescription": {
+		"message": "モデレーターなどからのコメントの下部固定化"
+	},
+	"SpannerPickReplaceText": {
+		"message": "固定化されたコメントです"
+	},
+
+	"FullscreenChatDescription": {
+		"message": "フルスクリーンでのチャット覧表示"
+	},
+
+	"ChatTickerScrollDescription": {
+		"message": "スーパーチャット一覧の横スクロール"
+	}
+}

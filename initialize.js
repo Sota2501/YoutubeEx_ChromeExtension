@@ -611,11 +611,11 @@ class Options extends Ext {
 	`;
 	static optionsPage = `
 		<div id="ext-yc-options-wrapper" class="style-scope yt-live-chat-renderer">
-			<div id="header" role="heading" class="style-scope yt-live-chat-renderer" aria-label="拡張機能の設定">
+			<div id="header" role="heading" class="style-scope yt-live-chat-renderer" aria-label="${chrome.i18n.getMessage("optionsTitle")}">
 				<div id="back-button" class="style-scope yt-live-chat-renderer">
 					<yt-button-renderer class="style-scope yt-live-chat-renderer" is-icon-button="" has-no-text=""></yt-button-renderer>
 				</div>
-				拡張機能の設定
+				${chrome.i18n.getMessage("optionsTitle")}
 			</div>
 			<div id="ext-yc-options" class="style-scope yt-live-chat-renderer">
 				<div id="items" class="style-scope yt-live-chat-renderer"></div>
@@ -624,7 +624,7 @@ class Options extends Ext {
 	`;
 	static backButton = `
 		<a class="yt-simple-endpoint style-scope yt-button-renderer">
-			<yt-icon-button id="button" class="style-scope yt-button-renderer" aria-label="戻る"></yt-icon-button>
+			<yt-icon-button id="button" class="style-scope yt-button-renderer" aria-label="${chrome.i18n.getMessage("optionsBack")}"></yt-icon-button>
 		</a>
 	`;
 	static toggleButton = `
@@ -656,7 +656,7 @@ class Options extends Ext {
 			const description = document.createElement("div");
 			description.id = "description";
 			description.classList.add("style-scope");
-			description.innerText = "この設定画面では設定項目はすぐに反映されます。ただし、設定項目は現在のページのみに適用されるため、設定を永続的に反映させたい場合は保存する必要があります。また、保存した内容を他のページで利用する場合は再読み込みをする必要があります。";
+			description.innerText = chrome.i18n.getMessage("optionsDescription");
 			options.appendChild(description);
 			
 			// 拡張機能設定初期化処理
@@ -680,7 +680,7 @@ class Options extends Ext {
 				wrapper.insertAdjacentHTML("beforeend",this.menuItem);
 				const menuItem = wrapper.querySelector("#ext-yc-menu-item");
 				menuItem.querySelector("yt-icon").insertAdjacentHTML("afterbegin",this.extIcon);
-				menuItem.querySelector("yt-formatted-string").innerHTML = "拡張機能の設定";
+				menuItem.querySelector("yt-formatted-string").innerHTML = chrome.i18n.getMessage("optionsTitle");
 				menuItem.querySelector("yt-formatted-string").removeAttribute("is-empty");
 				menuItem.addEventListener("click",this.openOptions);
 			});

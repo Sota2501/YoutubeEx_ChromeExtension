@@ -16,7 +16,7 @@ function init(){
 // Youtube spanner pick
 class SpannerPick extends Ext {
 	static name = "SpannerPick";
-	static description = "モデレーターなどからのコメントの下部固定化"
+	static description = chrome.i18n.getMessage("SpannerPickDescription");
 	static style = `
 		#fixedCommentList {
 			left: 0;
@@ -85,7 +85,7 @@ class SpannerPick extends Ext {
 						replacement.dataset.commentId = node.id;
 						node.after(replacement);
 						fixedCommentList.appendChild(node);
-						replacement.querySelector("#content > #message").innerText = "固定化されたコメントです";
+						replacement.querySelector("#content > #message").innerText = chrome.i18n.getMessage("SpannerPickReplaceText");
 						replacement.querySelector("#menu").setAttribute("hidden","");
 						items.style.marginBottom = fixedCommentList.clientHeight + "px";
 						fixedCommentList.scrollTo({"top":fixedCommentList.scrollHeight, "behavior":"smooth"});
@@ -106,7 +106,7 @@ class SpannerPick extends Ext {
 // Youtube fullscreenChat
 class FullscreenChat extends Ext {
 	static name = "FullscreenChat";
-	static description = "フルスクリーンでのチャット覧表示";
+	static description = chrome.i18n.getMessage("FullscreenChatDescription");
 	static styles = {
 		top: `
 			body:not(.no-scroll) ytd-live-chat-frame#chat {
@@ -500,7 +500,7 @@ class FullscreenChat extends Ext {
 // Youtube chatTickerScroll
 class ChatTickerScroll extends Ext {
 	static name = "ChatTickerScroll";
-	static description = "スーパーチャット一覧の横スクロール";
+	static description = chrome.i18n.getMessage("ChatTickerScrollDescription");
 	static ticker = document.querySelector("#ticker yt-live-chat-ticker-renderer");
 	static buttons = {
 		true: document.querySelector("#ticker #left-arrow-container yt-icon"),
