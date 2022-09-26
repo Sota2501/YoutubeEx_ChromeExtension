@@ -733,9 +733,6 @@ class Options extends Ext {
 		document.querySelector("#chat-messages").classList.remove("iron-selected");
 	}
 	static backToChat = ()=>{
-		// Storage変更適用
-		Storage.reflectStage();
-
 		document.querySelector("#chat-messages").classList.add("iron-selected");
 		document.querySelector("#ext-yc-options-wrapper").classList.remove("iron-selected");
 		const itemOffset = document.querySelector("#chat-messages #item-offset");
@@ -744,6 +741,9 @@ class Options extends Ext {
 		}
 		itemOffset.style.height = itemOffset.children.item(0).clientHeight + "px";
 		itemOffset.style.minHeight = itemOffset.parentElement.clientHeight + "px";
+		
+		// Storage変更適用
+		Storage.reflectStage();
 	}
 	static toggle = (e)=>{
 		if(e.currentTarget.getAttribute("disabled") == null){
