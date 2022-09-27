@@ -1,7 +1,10 @@
 class YoutubeState {
-	/**
-	 * フレームがiframeかどうか
-	 */
+	static isMainFrame(){
+		return window.document.querySelector("ytd-app") != null;
+	}
+	static isChatFrame(){
+		return window.document.querySelector("yt-live-chat-app") != null;
+	}
 	static isChildFrame(){
 		return top != window;
 	}
@@ -123,7 +126,19 @@ class YoutubeEvent {
 		for(const type in this.events.once){
 			this.addEventListener(type, e=>{this.events.once[type].called = e});
 		}
-		if(YoutubeState.isChildFrame()){
+		if(YoutubeState.isMainFrame()){
+			this.addEventListener("allLoad",()=>{
+				this.#addEventListener(this.events.signal.regist,()=>{
+					this.#addEventListener(this.events.signal.dispatch);
+					this.#dispatchEvent(this.events.signal.regist,{
+						window: window
+					},undefined,this.frame);
+					this.events.once.connected.called = false;
+					this.dispatchEvent("connected");
+					this.addEventListener("ytUnload",()=>{this.events.once.connected.called = false});
+				});
+			});
+		}else if(YoutubeState.isChatFrame()){
 			this.addEventListener("allLoad",()=>{
 				let id;
 				this.#addEventListener(this.events.signal.regist,()=>{
@@ -136,18 +151,6 @@ class YoutubeEvent {
 						window: window
 					},undefined,top);
 				},500);
-			});
-		}else{
-			this.addEventListener("allLoad",()=>{
-				this.#addEventListener(this.events.signal.regist,()=>{
-					this.#addEventListener(this.events.signal.dispatch);
-					this.#dispatchEvent(this.events.signal.regist,{
-						window: window
-					},undefined,this.frame);
-					this.events.once.connected.called = false;
-					this.dispatchEvent("connected");
-					this.addEventListener("ytUnload",()=>{this.events.once.connected.called = false});
-				});
 			});
 		}
 	}
@@ -639,7 +642,16 @@ class Options extends Ext {
 		</div>
 	`;
 	static init(){
-		if(YoutubeState.isChildFrame()){
+		if(YoutubeState.isMainFrame()){
+			YoutubeEvent.addEventListener("allLoad",()=>{
+				for(let ex in extensions){
+					if(Storage.getOption(ex)){
+						extensions[ex].init();
+					}
+				}
+				YoutubeEvent.addEventListener("optionsChanged",this.optionsUpdated);
+			});
+		}else if(YoutubeState.isChatFrame()){
 			this.setStyle(this.styles.toggleButton);
 			this.setStyle(this.styles.child);
 			// 設定画面作成
@@ -683,15 +695,6 @@ class Options extends Ext {
 				menuItem.querySelector("yt-formatted-string").innerHTML = chrome.i18n.getMessage("optionsTitle");
 				menuItem.querySelector("yt-formatted-string").removeAttribute("is-empty");
 				menuItem.addEventListener("click",this.openOptions);
-			});
-		}else{
-			YoutubeEvent.addEventListener("allLoad",()=>{
-				for(let ex in extensions){
-					if(Storage.getOption(ex)){
-						extensions[ex].init();
-					}
-				}
-				YoutubeEvent.addEventListener("optionsChanged",this.optionsUpdated);
 			});
 		}
 	}

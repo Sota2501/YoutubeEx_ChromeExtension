@@ -32,7 +32,7 @@ class SpannerPick extends Ext {
 		}
 	`;
 	static init(){
-		if(YoutubeState.isChildFrame()){
+		if(YoutubeState.isChatFrame()){
 			YoutubeEvent.addEventListener("connected",()=>{
 				this.setStyle(this.style);
 				const items = document.querySelector("#items.yt-live-chat-item-list-renderer");
@@ -53,7 +53,7 @@ class SpannerPick extends Ext {
 		}
 	}
 	static deinit(){
-		if(YoutubeState.isChildFrame()){
+		if(YoutubeState.isChatFrame()){
 			const items = document.querySelector("#items.yt-live-chat-item-list-renderer");
 			const fixedCommentList = document.querySelector("div#fixedCommentList");
 			items.style.marginBottom = "";
@@ -373,7 +373,19 @@ class FullscreenChat extends Ext {
 	`;
 	static basePos = {};
 	static init(){
-		if(YoutubeState.isChildFrame()){
+		if(YoutubeState.isMainFrame()){
+			this.setStyle(this.styles.top);
+			
+			YoutubeEvent.addEventListener("connected",()=>{
+				const chatFrame = document.querySelector("ytd-live-chat-frame#chat");
+				chatFrame.style.top = Storage.getOption("FullscreenChat-frame-top","0");
+				chatFrame.style.left = Storage.getOption("FullscreenChat-frame-left","0");
+				chatFrame.style.width = Storage.getOption("FullscreenChat-frame-width","400px");
+			},{overlapDeny:"FullscreenChat"});
+
+			document.addEventListener("ext-yc-iframe-grab",this.iframeGrabed);
+			document.addEventListener("ext-yc-iframe-ungrab",this.iframeUngrabed);
+		}else if(YoutubeState.isChatFrame()){
 			YoutubeEvent.addEventListener("connected",()=>{
 				this.setStyle(this.styles.child);
 
@@ -402,28 +414,10 @@ class FullscreenChat extends Ext {
 				}
 				this.grabBtnOut.addEventListener("mousedown",this.iframeDownEvent);
 			});
-		}else{
-			this.setStyle(this.styles.top);
-			
-			YoutubeEvent.addEventListener("connected",()=>{
-				const chatFrame = document.querySelector("ytd-live-chat-frame#chat");
-				chatFrame.style.top = Storage.getOption("FullscreenChat-frame-top","0");
-				chatFrame.style.left = Storage.getOption("FullscreenChat-frame-left","0");
-				chatFrame.style.width = Storage.getOption("FullscreenChat-frame-width","400px");
-			},{overlapDeny:"FullscreenChat"});
-
-			document.addEventListener("ext-yc-iframe-grab",this.iframeGrabed);
-			document.addEventListener("ext-yc-iframe-ungrab",this.iframeUngrabed);
 		}
 	}
 	static deinit(){
-		if(YoutubeState.isChildFrame()){
-			YoutubeEvent.removeEventListener("ytFullscreen",this.fullscreenHandler,{pair:true});
-			this.fullscreenHandler = null;
-			this.grabBtnOut.removeEventListener("mousedown",this.iframeDownEvent);
-			document.removeEventListener("mousemove",this.iframeMoveEvent);
-			document.removeEventListener("mouseup",this.iframeUpEvent);
-		}else{
+		if(YoutubeState.isMainFrame()){
 			document.removeEventListener("ext-yc-iframe-grab",this.iframeGrabed);
 			document.removeEventListener("ext-yc-iframe-ungrab",this.iframeUngrabed);
 			document.removeEventListener("ext-yc-iframe-move",this.moveIframe);
@@ -432,6 +426,12 @@ class FullscreenChat extends Ext {
 			chatFrame.style.left = "";
 			chatFrame.style.width = "";
 			document.documentElement.classList.remove("fullscreen");
+		}else if(YoutubeState.isChatFrame()){
+			YoutubeEvent.removeEventListener("ytFullscreen",this.fullscreenHandler,{pair:true});
+			this.fullscreenHandler = null;
+			this.grabBtnOut.removeEventListener("mousedown",this.iframeDownEvent);
+			document.removeEventListener("mousemove",this.iframeMoveEvent);
+			document.removeEventListener("mouseup",this.iframeUpEvent);
 		}
 		this.removeAddedDOM();
 	}
@@ -511,14 +511,14 @@ class ChatTickerScroll extends Ext {
 		false: null
 	};
 	static init(){
-		if(YoutubeState.isChildFrame()){
+		if(YoutubeState.isChatFrame()){
 			YoutubeEvent.addEventListener("connected",()=>{
 				this.ticker.addEventListener("wheel",this.scrollTicker);
 			});
 		}
 	}
 	static deinit(){
-		if(YoutubeState.isChildFrame()){
+		if(YoutubeState.isChatFrame()){
 			this.ticker.removeEventListener("wheel",this.scrollTicker);
 		}
 	}
