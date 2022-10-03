@@ -9,7 +9,7 @@ function init(){
 		extensions[ex.name] = ex;
 	}
 	YoutubeEvent.addEventListener("storageLoad",()=>{
-		YoutubeEvent.dispatchEvent("allLoad");
+		YoutubeEvent.dispatchEvent("exLoad");
 	});
 }
 
@@ -43,7 +43,7 @@ class SpannerPick extends Ext {
 				fixedCommentList.id = "fixedCommentList";
 				this.fullscreenHandler = YoutubeEvent.addEventListener("ytFullscreen",()=>{
 					items.style.marginBottom = fixedCommentList.clientHeight + "px";
-				},{pair:true});
+				},{frame:"main"});
 				this.observerCallback([{addedNodes:Array(...items.children),removedNodes:[]}]);
 				if(!this.observer){
 					this.observer = new MutationObserver(this.observerCallback);
@@ -58,7 +58,7 @@ class SpannerPick extends Ext {
 			const fixedCommentList = document.querySelector("div#fixedCommentList");
 			items.style.marginBottom = "";
 			this.observer.disconnect();
-			YoutubeEvent.removeEventListener("ytFullscreen", this.fullscreenHandler,{pair:true});
+			YoutubeEvent.removeEventListener("ytFullscreen", this.fullscreenHandler,{frame:"main"});
 			this.fullscreenHandler = null;
 			Array.from(fixedCommentList.childNodes).forEach(node=>{
 				const replacement = items.querySelector(`*[data-comment-id="${node.id}"]`);
@@ -128,7 +128,7 @@ class FullscreenChat extends Ext {
 			}
 		`,
 		child: `
-		html.fullscreen yt-live-chat-pinned-message-renderer > #message > * {
+		html.fullscreen yt-live-chat-pinned-message-renderer > #message {
 			z-index: 0;
 		}
 		html.fullscreen yt-live-chat-toast-renderer {
@@ -155,6 +155,7 @@ class FullscreenChat extends Ext {
 			yt-live-chat-paid-sticker-renderer > #card,
 			yt-live-chat-membership-item-renderer > #card > #header,
 			yt-live-chat-membership-item-renderer > #card > #content,
+			ytd-sponsorships-live-chat-gift-purchase-announcement-renderer > #header > #header,
 			yt-live-chat-participant-list-renderer > #header,
 			#ext-yc-options-wrapper > #header
 		):not(.yt-live-chat-banner-renderer) {
@@ -177,6 +178,7 @@ class FullscreenChat extends Ext {
 			yt-live-chat-paid-sticker-renderer > #card,
 			yt-live-chat-membership-item-renderer > #card > #header,
 			yt-live-chat-membership-item-renderer > #card > #content,
+			ytd-sponsorships-live-chat-gift-purchase-announcement-renderer > #header > #header,
 			yt-live-chat-participant-list-renderer > #header,
 			#ext-yc-options-wrapper > #header
 		):not(.yt-live-chat-banner-renderer):before {
@@ -196,7 +198,8 @@ class FullscreenChat extends Ext {
 			yt-live-chat-paid-message-renderer > #card > #content,
 			yt-live-chat-paid-sticker-renderer > #card,
 			yt-live-chat-membership-item-renderer > #card > #header,
-			yt-live-chat-membership-item-renderer > #card > #content
+			yt-live-chat-membership-item-renderer > #card > #content,
+			ytd-sponsorships-live-chat-gift-purchase-announcement-renderer > #header > #header
 		):before {
 			opacity: 0.7;
 		}
@@ -215,6 +218,7 @@ class FullscreenChat extends Ext {
 			yt-live-chat-paid-sticker-renderer > #card,
 			yt-live-chat-membership-item-renderer > #card > #header,
 			yt-live-chat-membership-item-renderer > #card > #content,
+			ytd-sponsorships-live-chat-gift-purchase-announcement-renderer > #header > #header,
 			yt-live-chat-participant-list-renderer > #header,
 			#ext-yc-options-wrapper > #header
 		):before {
@@ -262,6 +266,9 @@ class FullscreenChat extends Ext {
 			background-color: var(--yt-live-chat-sponsor-color);
 		}
 		html.fullscreen yt-live-chat-membership-item-renderer > #card > #content:before {
+			background-color: var(--yt-live-chat-sponsor-color);
+		}
+		html.fullscreen ytd-sponsorships-live-chat-gift-purchase-announcement-renderer > #header > #header:before {
 			background-color: var(--yt-live-chat-sponsor-color);
 		}
 		html.fullscreen yt-live-chat-participant-list-renderer > #header:before {
@@ -385,7 +392,7 @@ class FullscreenChat extends Ext {
 
 			document.addEventListener("ext-yc-iframe-grab",this.iframeGrabed);
 			document.addEventListener("ext-yc-iframe-ungrab",this.iframeUngrabed);
-		}else if(YoutubeState.isChatFrame()){
+		}else if(YoutubeState.isIframeChatFrame()){
 			YoutubeEvent.addEventListener("connected",()=>{
 				this.setStyle(this.styles.child);
 
@@ -406,7 +413,7 @@ class FullscreenChat extends Ext {
 					}else{
 						document.documentElement.classList.remove("fullscreen");
 					}
-				},{pair:true});
+				},{frame:"main"});
 				if(YoutubeState.isFullscreen()){
 					document.documentElement.classList.add("fullscreen");
 				}else{
@@ -426,8 +433,8 @@ class FullscreenChat extends Ext {
 			chatFrame.style.left = "";
 			chatFrame.style.width = "";
 			document.documentElement.classList.remove("fullscreen");
-		}else if(YoutubeState.isChatFrame()){
-			YoutubeEvent.removeEventListener("ytFullscreen",this.fullscreenHandler,{pair:true});
+		}else if(YoutubeState.isIframeChatFrame()){
+			YoutubeEvent.removeEventListener("ytFullscreen",this.fullscreenHandler,{frame:"main"});
 			this.fullscreenHandler = null;
 			this.grabBtnOut.removeEventListener("mousedown",this.iframeDownEvent);
 			document.removeEventListener("mousemove",this.iframeMoveEvent);
