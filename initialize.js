@@ -180,6 +180,7 @@ class YoutubeEvent {
 			this.frames.main = window;
 			this.#addEventListener(this.events.signal.requestWindow,()=>{});
 			this.#addEventListener(this.events.signal.regist,()=>{});
+			this.addEventListener("ytUnload",()=>{this.events.once.connected.called = false});
 		}else if(YoutubeState.isIframeChatFrame()){
 			this.addEventListener("exLoad",()=>{
 				let id;
@@ -207,7 +208,6 @@ class YoutubeEvent {
 				});
 			})
 		}
-		this.addEventListener("ytUnload",()=>{this.events.once.connected.called = false});
 	}
 	static #getWindow(name){
 		let res;
@@ -221,29 +221,67 @@ class YoutubeEvent {
 		return res;
 	}
 	static #query(detail,options){
-		let base = window;
-		if(options){
+		let res = [];
+		if(options?.window || options?.windows){
 			if(options.window){
-				base = options.window;
-			}else if(options.frame){
-				base = this.#getWindow(options.frame);
+				options.windows = [options.window];
+			}
+			for(let win of options.windows){
+				if(detail.window){
+					res.push(win);
+				}else{
+					if(detail.query instanceof Array){
+						let i = 0;
+						let d;
+						do{
+							d = win.document.querySelector(detail.query[i]);
+						}while(!d && ++i < detail.query.length);
+						res.push(d);
+					}else{
+						res.push(win.document.querySelector(detail.query));
+					}
+				}
 			}
 		}
-		base = detail.window ? base : base.document;
-
-		if(base && !detail.window){
-			let ret;
-			if(detail.query instanceof Array){
-				let i = 0;
-				do{
-					ret = base.querySelector(detail.query[i]);
-				}while(!ret && ++i < detail.query.length);
-			}else{
-				ret = base.querySelector(detail.query);
+		if(options?.frame || options?.frames){
+			if(options.frame){
+				options.frames = [options.frame];
 			}
-			return ret;
+			for(let frm of options.frames){
+				if(detail.window){
+					res.push(this.#getWindow(frm));
+				}else{
+					let win = this.#getWindow(frm);
+					if(detail.query instanceof Array){
+						let i = 0;
+						let d;
+						do{
+							d = win.document.querySelector(detail.query[i]);
+						}while(!d && ++i < detail.query.length);
+						res.push(d);
+					}else{
+						res.push(win.document.querySelector(detail.query));
+					}
+				}
+			}
+		}
+		if(res.length == 0){
+			if(detail.window){
+				return [window];
+			}else{
+				if(detail.query instanceof Array){
+					let i = 0;
+					let d;
+					do{
+						d = document.querySelector(detail.query[i]);
+					}while(!d && ++i < detail.query.length);
+					return [d];
+				}else{
+					return [document.querySelector(detail.query)];
+				}
+			}
 		}else{
-			return base;
+			return res;
 		}
 	}
 	static #addEventListener(detail,callback,options=detail.options,dom=this.#query(detail,options)){
@@ -253,7 +291,7 @@ class YoutubeEvent {
 				detail.overlapDenyIds = [];
 			}
 			if(detail.overlapDenyIds.indexOf(options.overlapDeny) >= 0){
-				return false;
+				return null;
 			}
 			detail.overlapDenyIds.push(options.overlapDeny);
 			delOverlapDenyIdCallback = e=>{
@@ -264,9 +302,16 @@ class YoutubeEvent {
 				}
 			}
 		}
+		if(!(dom instanceof Array)){
+			dom = [dom];
+		}
 		if(dom){
 			const f = detail.func ? e=>{detail.func(e,delOverlapDenyIdCallback)} : delOverlapDenyIdCallback;
-			dom.addEventListener(detail.type, f, options);
+			for(let d of dom){
+				if(d){
+					d.addEventListener(detail.type, f, options);
+				}
+			}
 			return f;
 		}else{
 			return false;
@@ -279,19 +324,33 @@ class YoutubeEvent {
 				delete detail.overlapDenyIds[id];
 			}
 		}
+		if(!(dom instanceof Array)){
+			dom = [dom];
+		}
 		if(dom){
-			dom.removeEventListener(detail.type, callback);
+			for(let d of dom){
+				if(d){
+					d.removeEventListener(detail.type, callback);
+				}
+			}
 			return true;
 		}else{
 			return false;
 		}
 	}
 	static #dispatchEvent(detail,data,options,dom=this.#query(detail,options)){
+		if(!(dom instanceof Array)){
+			dom = [dom];
+		}
 		if(dom){
-			if(data){
-				dom.dispatchEvent(new CustomEvent(detail.type,{detail: data}));
-			}else{
-				dom.dispatchEvent(new Event(detail.type));
+			for(let d of dom){
+				if(d){
+					if(data){
+						d.dispatchEvent(new CustomEvent(detail.type,{detail: data}));
+					}else{
+						d.dispatchEvent(new Event(detail.type));
+					}
+				}
 			}
 			return true;
 		}else{
@@ -306,31 +365,29 @@ class YoutubeEvent {
 	 * @returns イベントハンドラ
 	 */
 	static addEventListener(types,callback,options){
-		let res = [];
+		let res = {};
 		if(!callback){
-			return null;
+			return;
 		}
 		for(let type of types.split(" ")){
 			if(Object.keys(this.events.once).indexOf(type) >= 0){
 				const detail = this.events.once[type];
 				if(detail.called instanceof Event){
 					callback(detail.called);
-					res.push(true);
+					res[type] = true;
 				}else{
-					res.push(this.#addEventListener(detail,callback,options));
+					res[type] = this.#addEventListener(detail,callback,options);
 				}
 			}else if(Object.keys(this.events.youtube).indexOf(type) >= 0){
 				const detail = this.events.youtube[type];
-				res.push(this.#addEventListener(detail,callback,options));
+				res[type] = this.#addEventListener(detail,callback,options);
 			}else if(type == "dispatch"){
 				const detail = this.events.signal.dispatch;
-				res.push(this.#addEventListener(detail,callback,options));
+				res[type] = this.#addEventListener(detail,callback,options);
 			}
 		}
-		if(res.length == 0){
-			return null
-		}else if(res.length == 1){
-			return res[0];
+		if(Object.keys(res).length == 1){
+			return Object.values(res)[0];
 		}else{
 			return res;
 		}
@@ -344,30 +401,28 @@ class YoutubeEvent {
 	 * @returns 削除できたかどうか
 	 */
 	static removeEventListener(types,callback,options){
-		let res = [];
+		let res = {};
 		if(!callback){
-			return null;
+			return;
 		}
 		for(let type of types.split(" ")){
 			if(Object.keys(this.events.once).indexOf(type) >= 0){
 				const detail = this.events.once[type];
 				if(detail.called instanceof Event){
-					res.push(false);
+					res[type] = true;
 				}else{
-					res.push(this.#removeEventListener(detail,callback,options));
+					res[type] = this.#removeEventListener(detail,callback,options);
 				}
 			}else if(Object.keys(this.events.youtube).indexOf(type) >= 0){
 				const detail = this.events.youtube[type];
-				res.push(this.#removeEventListener(detail,callback,options));
+				res[type] = this.#removeEventListener(detail,callback,options);
 			}else if(type == "dispatch"){
 				const detail = this.events.signal.dispatch;
-				res.push(this.#removeEventListener(detail,callback,options));
+				res[type] = this.#removeEventListener(detail,callback,options);
 			}
 		}
-		if(res.length == 0){
-			return null
-		}else if(res.length == 1){
-			return res[0];
+		if(Object.keys(res).length == 1){
+			return Object.values(res)[0];
 		}else{
 			return res;
 		}
@@ -380,27 +435,25 @@ class YoutubeEvent {
 	 * @returns dispatchしたかどうか(onceは実行済みの場合dispatchされない)
 	 */
 	static dispatchEvent(types,data,options){
-		let res = [];
+		let res = {};
 		for(let type of types.split(" ")){
 			if(Object.keys(this.events.once).indexOf(type) >= 0){
 				const detail = this.events.once[type];
 				if(detail.called instanceof Event){
-					res.push(false);
+					res[type] = true;
 				}else{
-					res.push(this.#dispatchEvent(detail,data,options));
+					res[type] = this.#dispatchEvent(detail,data,options);
 				}
 			}else if(Object.keys(this.events.youtube).indexOf(type) >= 0){
 				const detail = this.events.youtube[type];
-				res.push(this.#dispatchEvent(detail,data,options));
+				res[type] = this.#dispatchEvent(detail,data,options);
 			}else if(type == "dispatch"){
 				const detail = this.events.signal.dispatch;
-				res.push(this.#dispatchEvent(detail,data,options));
+				res[type] = this.#dispatchEvent(detail,data,options);
 			}
 		}
-		if(res.length == 0){
-			return null
-		}else if(res.length == 1){
-			return res[0];
+		if(Object.keys(res).length == 1){
+			return Object.values(res)[0];
 		}else{
 			return res;
 		}
@@ -526,9 +579,7 @@ class Storage {
 		this.setOptions(data);
 	}
 	static setOptions(data){
-		YoutubeEvent.dispatchEvent("dispatch",{type:"Storage-sync",data:data,key:"options"},{frame:"main"});
-		YoutubeEvent.dispatchEvent("dispatch",{type:"Storage-sync",data:data,key:"options"},{frame:"iframe-chat"});
-		YoutubeEvent.dispatchEvent("dispatch",{type:"Storage-sync",data:data,key:"options"},{frame:"popup-chat"});
+		YoutubeEvent.dispatchEvent("dispatch",{type:"Storage-sync",data:data,key:"options"},{frames:["main","iframe-chat","popup-chat"]});
 	}
 	static saveOption(name,val){
 		let data = {};
@@ -554,9 +605,7 @@ class Storage {
 	static setStage(name,val){
 		let data = {};
 		data[name] = val;
-		YoutubeEvent.dispatchEvent("dispatch",{type:"Storage-sync",data:data,key:"stage"},{frame:"main"});
-		YoutubeEvent.dispatchEvent("dispatch",{type:"Storage-sync",data:data,key:"stage"},{frame:"iframe-chat"});
-		YoutubeEvent.dispatchEvent("dispatch",{type:"Storage-sync",data:data,key:"stage"},{frame:"popup-chat"});
+		YoutubeEvent.dispatchEvent("dispatch",{type:"Storage-sync",data:data,key:"stage"},{frames:["main","iframe-chat","popup-chat"]});
 	}
 	static #reflectStage(){
 		for(let k in this.stage){
@@ -566,9 +615,7 @@ class Storage {
 		this.stage = {};
 	}
 	static reflectStage(){
-		YoutubeEvent.dispatchEvent("dispatch",{type:"Storage-sync",key:"reflect"},{frame:"main"});
-		YoutubeEvent.dispatchEvent("dispatch",{type:"Storage-sync",key:"reflect"},{frame:"iframe-chat"});
-		YoutubeEvent.dispatchEvent("dispatch",{type:"Storage-sync",key:"reflect"},{frame:"popup-chat"});
+		YoutubeEvent.dispatchEvent("dispatch",{type:"Storage-sync",key:"reflect"},{frames:["main","iframe-chat","popup-chat"]});
 	}
 	static saveStorage(useLocal){
 		let data = Object.assign(Object.assign({},this.options),this.stage);
