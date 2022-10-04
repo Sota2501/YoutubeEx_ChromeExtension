@@ -134,7 +134,13 @@ class YoutubeEvent {
 				type: "ext-yc-sig-regist",
 				window: true,
 				func: (e,c)=>{
-					this.frames[e.detail.name] = e.detail.window;
+					if(this.frames[e.detail.name]){
+						if(this.frames[e.detail.name].indexOf(e.detail.window) == -1){
+							this.frames[e.detail.name].push(e.detail.window);							
+						}
+					}else{
+						this.frames[e.detail.name] = [e.detail.window];
+					}
 					this.#dispatchEvent(this.events.signal.registRes,undefined,undefined,e.detail.window);
 					c(e);
 					this.events.once.connected.called = false;
@@ -154,8 +160,15 @@ class YoutubeEvent {
 				type: "ext-yc-sig-request-window",
 				window: true,
 				func: (e,c)=>{
+					let res = [];
+					for(let win of this.frames[e.detail.name]){
+						if(!win.closed){
+							res.push(win);
+						}
+					}
+					this.frames[e.detail.name] = res;
 					this.#dispatchEvent(this.events.signal.responseWindow,{
-						window: this.frames[e.detail.name]
+						windows: res
 					},{window: e.detail.window});
 					c(e);
 				}
@@ -177,7 +190,7 @@ class YoutubeEvent {
 			this.addEventListener(type, e=>{this.events.once[type].called = e});
 		}
 		if(YoutubeState.isMainFrame()){
-			this.frames.main = window;
+			this.frames.main = [window];
 			this.#addEventListener(this.events.signal.requestWindow,()=>{});
 			this.#addEventListener(this.events.signal.regist,()=>{});
 			this.addEventListener("ytUnload",()=>{this.events.once.connected.called = false});
@@ -209,10 +222,10 @@ class YoutubeEvent {
 			})
 		}
 	}
-	static #getWindow(name){
+	static #getWindows(name){
 		let res;
 		this.#addEventListener(this.events.signal.responseWindow,e=>{
-			res = e.detail.window;
+			res = e.detail.windows;
 		},{once:true});
 		this.#dispatchEvent(this.events.signal.requestWindow,{
 			name: name,
@@ -249,18 +262,19 @@ class YoutubeEvent {
 			}
 			for(let frm of options.frames){
 				if(detail.window){
-					res.push(this.#getWindow(frm));
+					res.push(...this.#getWindows(frm));
 				}else{
-					let win = this.#getWindow(frm);
-					if(detail.query instanceof Array){
-						let i = 0;
-						let d;
-						do{
-							d = win.document.querySelector(detail.query[i]);
-						}while(!d && ++i < detail.query.length);
-						res.push(d);
-					}else{
-						res.push(win.document.querySelector(detail.query));
+					for(let win of this.#getWindows(frm)){
+						if(detail.query instanceof Array){
+							let i = 0;
+							let d;
+							do{
+								d = win.document.querySelector(detail.query[i]);
+							}while(!d && ++i < detail.query.length);
+							res.push(d);
+						}else{
+							res.push(win.document.querySelector(detail.query));
+						}
 					}
 				}
 			}
