@@ -223,7 +223,7 @@ class YoutubeEvent {
 		}
 	}
 	static #getWindows(name){
-		let res;
+		let res = [null];
 		this.#addEventListener(this.events.signal.responseWindow,e=>{
 			res = e.detail.windows;
 		},{once:true});
