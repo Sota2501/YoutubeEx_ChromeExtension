@@ -165,7 +165,7 @@ class FullscreenChat extends Ext {
 		}
 
 		html.fullscreen :is(
-			yt-live-chat-renderer,
+			yt-live-chat-renderer > iron-pages > *:not(yt-live-chat-ninja-message-renderer),
 			yt-live-chat-header-renderer,
 			yt-live-chat-message-input-renderer,
 			yt-live-chat-text-message-renderer[author-is-owner],
@@ -205,7 +205,7 @@ class FullscreenChat extends Ext {
 		}
 		html.fullscreen:hover yt-live-chat-banner-renderer > yt-live-interactivity-component-background,
 		html.fullscreen:hover :is(
-			yt-live-chat-renderer,
+			yt-live-chat-renderer > iron-pages > *:not(yt-live-chat-ninja-message-renderer),
 			yt-live-chat-header-renderer,
 			yt-live-chat-message-input-renderer,
 			yt-live-chat-text-message-renderer[author-is-owner],
@@ -226,7 +226,7 @@ class FullscreenChat extends Ext {
 			transition: opacity .2s;
 		}
 
-		html.fullscreen yt-live-chat-renderer:before {
+		html.fullscreen yt-live-chat-renderer > iron-pages > *:not(yt-live-chat-ninja-message-renderer):before {
 			background-color: var(--yt-live-chat-background-color);
 		}
 		html.fullscreen yt-live-chat-header-renderer:before {
@@ -397,15 +397,10 @@ class FullscreenChat extends Ext {
 				this.setStyle(this.styles.child);
 
 				// 移動アイコン追加
-				this.grabBtnOut = document.createElement("yt-icon-button");
-				this.tagAddedDOM(this.grabBtnOut);
-				this.grabBtnOut.id = "overflow";
-				this.grabBtnOut.classList.add("style-scope","yt-live-chat-header-renderer");
-				document.querySelector("#chat-messages > yt-live-chat-header-renderer > yt-icon-button#overflow:last-child").before(this.grabBtnOut);
-				const grabBtnIn = document.createElement("yt-icon");
-				grabBtnIn.classList.add("style-scope","yt-live-chat-header-renderer");
-				this.grabBtnOut.querySelector("#button").appendChild(grabBtnIn);
-				grabBtnIn.insertAdjacentHTML("afterbegin",this.grabIcon);
+				this.moveBtn = (new DOMTemplate("#chat-messages > yt-live-chat-header-renderer > yt-icon-button#overflow:last-child"))
+					.ins("bef","ytIconButton",{svg:this.grabIcon})
+					.q("#chat-messages > yt-live-chat-header-renderer > yt-icon-button#overflow:nth-last-child(2)",null).tag(this.name)
+					.on({t:"mousedown",f:this.iframeDownEvent});
 
 				this.fullscreenHandler = YoutubeEvent.addEventListener("ytFullscreen",e=>{
 					if(e.detail.args[0]){
@@ -419,7 +414,6 @@ class FullscreenChat extends Ext {
 				}else{
 					document.documentElement.classList.remove("fullscreen");
 				}
-				this.grabBtnOut.addEventListener("mousedown",this.iframeDownEvent);
 			});
 		}
 	}

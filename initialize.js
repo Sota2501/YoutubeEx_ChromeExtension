@@ -161,7 +161,7 @@ class YoutubeEvent {
 				window: true,
 				func: (e,c)=>{
 					let res = [];
-					for(let win of this.frames[e.detail.name]){
+					for(let win of this.frames[e.detail.name]??[]){
 						if(!win.closed){
 							res.push(win);
 						}
@@ -262,9 +262,9 @@ class YoutubeEvent {
 			}
 			for(let frm of options.frames){
 				if(detail.window){
-					res.push(...this.#getWindows(frm));
+					res.push(...this.#getWindows(frm)??[]);
 				}else{
-					for(let win of this.#getWindows(frm)){
+					for(let win of this.#getWindows(frm)??[]){
 						if(detail.query instanceof Array){
 							let i = 0;
 							let d;
@@ -638,81 +638,9 @@ class Storage {
 }
 Storage.init();
 
-class Options extends Ext {
-	static name = "Options";
+class DOMTemplate {
 	static styles = {
-		toggleButton: `
-			#toggle {
-				touch-action: pan-y;
-				margin: 0 8px;
-			}
-			#toggle-container {
-				display: inline-block;
-				position: relative;
-				width: 36px;
-				height: 14px;
-				margin: 4px 1px;
-			}
-			#toggle-bar {
-				position: absolute;
-				height: 100%;
-				width: 100%;
-				border-radius: 8px;
-				pointer-events: none;
-				transition: background-color linear 0.08s;
-				background-color: #717171;
-				opacity: 0.4;
-			}
-			#toggle[disabled] #toggle-bar {
-				background-color: #000;
-				opacity: 0.12;
-			}
-			#toggle-button {
-				position: absolute;
-				top: -3px;
-				left: 0;
-				right: auto;
-				height: 20px;
-				width: 20px;
-				border-radius: 50%;
-				transition: transform linear 0.08s, background-color linear 0.08s;
-				will-change: transform;
-				background-color: #fff;
-			}
-			@keyframes toggle-button-shadow-on {
-				from {
-					box-shadow: 0 0 0 0 rgba(0 0 0 / 10%);
-				}
-				to {
-					box-shadow: 0 0 0 13.5px rgba(0 0 0 / 10%);
-				}
-			}
-			@keyframes toggle-button-shadow-off {
-				from {
-					box-shadow: 0 0 0 13.5px rgba(0 0 0 / 10%);
-				}
-				to {
-					box-shadow: 0 0 0 13.5px rgba(0 0 0 / 0%);
-				}
-			}
-			#toggle:not(:focus) #toggle-button {
-				animation: toggle-button-shadow-off 0.08s linear both;
-			}
-			#toggle:focus #toggle-button {
-				animation: toggle-button-shadow-on 0.08s linear both;
-			}
-			#toggle[checked] #toggle-button {
-				transform: translate(16px, 0);
-			}
-			#toggle[checked]:not([disabled]) #toggle-button {
-				background-color: #3ea6ff;
-			}
-			#toggle[disabled] #toggle-button {
-				background: #bdbdbd;
-				opacity: 1;
-			}
-		`,
-		child: `
+		menuItem: `
 			#ext-yc-menu-item {
 				cursor: pointer;
 				display: flex;
@@ -721,6 +649,8 @@ class Options extends Ext {
 			#ext-yc-menu-item[use-icons] {
 				--yt-menu-item-icon-display: inline-block;
 			}
+		`,
+		optionsPage: `
 			#ext-yc-options-wrapper {
 				color: var(--yt-live-chat-primary-text-color,var(--yt-spec-text-primary));
 				z-index: 0;
@@ -757,7 +687,14 @@ class Options extends Ext {
 			#ext-yc-options-wrapper #back-button > * {
 				--yt-button-color: var( --yt-live-chat-primary-text-color, var(--yt-deprecated-luna-black-opacity-lighten-3) );
 			}
-			#description {
+		`,
+		card: `
+			#ext-yc-card {
+				background-color: var(--yt-live-chat-vem-background-color);
+				border-radius: 4px;
+				padding: 12px 16px;
+
+				// TODO
 				color: var(--yt-spec-text-primary);
 				margin: 8px 0 16px;
 				font-family: "Roboto","Arial",sans-serif;
@@ -765,14 +702,16 @@ class Options extends Ext {
 				line-height: 2rem;
 				font-weight: 400;
 			}
-			#caption-container {
+		`,
+		caption: `
+			#ext-yc-caption-container {
 				display: flex;
 				flex-direction: row;
 				flex-wrap: wrap;
 				align-items: center;
 				margin: 8px 0;
 			}
-			#caption {
+			#ext-yc-caption-container #caption {
 				color: var(--yt-spec-text-secondary);
 				font-size: var(--ytd-tab-system-font-size);
 				font-weight: var(--ytd-tab-system-font-weight);
@@ -781,72 +720,293 @@ class Options extends Ext {
 				flex: 1;
 				flex-basis: 1e-9px;
 			}
-			#toggle + #sub-menu {
+		`,
+		toggle: `
+			#ext-yc-toggle {
+				touch-action: pan-y;
+				margin: 0 8px;
+			}
+			#ext-yc-toggle-container {
+				display: inline-block;
+				position: relative;
+				width: 36px;
+				height: 14px;
+				margin: 4px 1px;
+			}
+			#ext-yc-toggle-bar {
+				position: absolute;
+				height: 100%;
+				width: 100%;
+				border-radius: 8px;
+				pointer-events: none;
+				transition: background-color linear 0.08s;
+				background-color: #717171;
+				opacity: 0.4;
+			}
+			#ext-yc-toggle[disabled] #ext-yc-toggle-bar {
+				background-color: #000;
+				opacity: 0.12;
+			}
+			#ext-yc-toggle-button {
+				position: absolute;
+				top: -3px;
+				left: 0;
+				right: auto;
+				height: 20px;
+				width: 20px;
+				border-radius: 50%;
+				transition: transform linear 0.08s, background-color linear 0.08s;
+				will-change: transform;
+				background-color: #fff;
+			}
+			@keyframes toggle-button-shadow-on {
+				from {
+					box-shadow: 0 0 0 0 rgba(0 0 0 / 10%);
+				}
+				to {
+					box-shadow: 0 0 0 13.5px rgba(0 0 0 / 10%);
+				}
+			}
+			@keyframes toggle-button-shadow-off {
+				from {
+					box-shadow: 0 0 0 13.5px rgba(0 0 0 / 10%);
+				}
+				to {
+					box-shadow: 0 0 0 13.5px rgba(0 0 0 / 0%);
+				}
+			}
+			#ext-yc-toggle:not(:focus) #ext-yc-toggle-button {
+				animation: toggle-button-shadow-off 0.08s linear both;
+			}
+			#ext-yc-toggle:focus #ext-yc-toggle-button {
+				animation: toggle-button-shadow-on 0.08s linear both;
+			}
+			#ext-yc-toggle[checked] #ext-yc-toggle-button {
+				transform: translate(16px, 0);
+			}
+			#ext-yc-toggle[checked]:not([disabled]) #ext-yc-toggle-button {
+				background-color: #3ea6ff;
+			}
+			#ext-yc-toggle[disabled] #ext-yc-toggle-button {
+				background: #bdbdbd;
+				opacity: 1;
+			}
+			#ext-yc-toggle + #ext-yc-toggle-collapse {
 				display: none;
 				width: 100%;
 				padding: 0 10px;
 			}
-			#toggle[checked] + #sub-menu {
+			#ext-yc-toggle[checked] + #ext-yc-toggle-collapse {
 				display: block;
 			}
 		`
-	};
-	static extIcon = `
-		<svg viewBox="0 0 24 24" focusable="false" class="style-scope yt-icon" style="pointer-events: none; display: block; width: 100%; height: 100%;">
-			<style>
-				div.ytd-menu-popup-renderer yt-icon.ytd-menu-service-item-renderer {
-					fill: var(--yt-spec-text-primary)
-				}
-			</style>
-			<g class="style-scope yt-icon">
-				<path d="M7,21l4-4h8c1.1,0,2-.9,2-2v-10c0-1.1-0.9-2-2-2h-14c-1.1,0-2,.9-2,2v10c0,1.1,.9,2,2,2h2v4ZM6,6h12v2h-12v-2ZM6,9h12v2h-12v-2ZM6,12h12v2h-12v-2Z"></path>
-			</g>
-		</svg>
-	`;
-	static backIcon = `
-		<svg viewBox="0 0 24 24" preserveAspectRatio="xMidYMid meet" focusable="false" class="style-scope yt-icon" style="pointer-events: none; display: block; width: 100%; height: 100%;">
-			<g mirror-in-rtl="" class="style-scope yt-icon">
-				<path d="M21,11v1H5.64l6.72,6.72l-0.71,0.71L3.72,11.5l7.92-7.92l0.71,0.71L5.64,11H21z" class="style-scope yt-icon"></path>
-			</g>
-		</svg>
-	`;
-	static menuItem = `
-		<div id="ext-yc-menu-item" class="style-scope ytd-menu-popup-renderer" use-icons="" system-icons="" role="menuitem">
-			<tp-yt-paper-item class="style-scope ytd-menu-service-item-renderer" style-target="host" role="option" tabindex="0" aria-disabled="false">
-				<yt-icon class="style-scope ytd-menu-service-item-renderer"></yt-icon>
-				<yt-formatted-string class="style-scope ytd-menu-service-item-renderer"></yt-formatted-string>
-			</tp-yt-paper-item>
-		</div>
-	`;
-	static optionsPage = `
-		<div id="ext-yc-options-wrapper" class="style-scope yt-live-chat-renderer">
-			<div id="header" role="heading" class="style-scope yt-live-chat-renderer" aria-label="${chrome.i18n.getMessage("optionsTitle")}">
-				<div id="back-button" class="style-scope yt-live-chat-renderer">
-					<yt-button-renderer class="style-scope yt-live-chat-renderer" is-icon-button="" has-no-text=""></yt-button-renderer>
+	}
+	static html = {
+		// SVG
+		extIcon: `
+			<svg viewBox="0 0 24 24" focusable="false" class="style-scope yt-icon" style="pointer-events: none; display: block; width: 100%; height: 100%;">
+				<style>
+					div.ytd-menu-popup-renderer yt-icon.ytd-menu-service-item-renderer {
+						fill: var(--yt-spec-text-primary)
+					}
+				</style>
+				<g class="style-scope yt-icon">
+					<path d="M7,21l4-4h8c1.1,0,2-.9,2-2v-10c0-1.1-0.9-2-2-2h-14c-1.1,0-2,.9-2,2v10c0,1.1,.9,2,2,2h2v4ZM6,6h12v2h-12v-2ZM6,9h12v2h-12v-2ZM6,12h12v2h-12v-2Z"></path>
+				</g>
+			</svg>
+		`,
+		backIcon: `
+			<svg viewBox="0 0 24 24" preserveAspectRatio="xMidYMid meet" focusable="false" class="style-scope yt-icon" style="pointer-events: none; display: block; width: 100%; height: 100%;">
+				<g mirror-in-rtl="" class="style-scope yt-icon">
+					<path d="M21,11v1H5.64l6.72,6.72l-0.71,0.71L3.72,11.5l7.92-7.92l0.71,0.71L5.64,11H21z" class="style-scope yt-icon"></path>
+				</g>
+			</svg>
+		`,
+
+		// DOM
+		menuItem:`
+			<div id="ext-yc-menu-item" class="style-scope ytd-menu-popup-renderer" use-icons="" system-icons="" role="menuitem">
+				<tp-yt-paper-item class="style-scope ytd-menu-service-item-renderer" style-target="host" role="option" tabindex="0" aria-disabled="false">
+					<yt-icon class="style-scope ytd-menu-service-item-renderer"></yt-icon>
+					<yt-formatted-string class="style-scope ytd-menu-service-item-renderer"></yt-formatted-string>
+				</tp-yt-paper-item>
+			</div>
+		`,
+		optionsPage: `
+			<div id="ext-yc-options-wrapper" class="style-scope yt-live-chat-renderer">
+				<div id="header" role="heading" class="style-scope yt-live-chat-renderer" aria-label="${chrome.i18n.getMessage("optionsTitle")}">
+					<div id="back-button" class="style-scope yt-live-chat-renderer">
+						<yt-button-renderer class="style-scope yt-live-chat-renderer" is-icon-button="" has-no-text=""></yt-button-renderer>
+					</div>
+					${chrome.i18n.getMessage("optionsTitle")}
 				</div>
-				${chrome.i18n.getMessage("optionsTitle")}
-			</div>
-			<div id="ext-yc-options" class="style-scope yt-live-chat-renderer">
-				<div id="items" class="style-scope yt-live-chat-renderer"></div>
-			</div>
-		</div>
-	`;
-	static backButton = `
-		<a class="yt-simple-endpoint style-scope yt-button-renderer">
-			<yt-icon-button id="button" class="style-scope yt-button-renderer" aria-label="${chrome.i18n.getMessage("optionsBack")}"></yt-icon-button>
-		</a>
-	`;
-	static toggleButton = `
-		<div id="caption-container" class="style-scope">
-			<div id="caption" class="style-scope">[[description]]</div>
-			<div id="toggle" class="style-scope" role="button" tabindex="0" data-option="[[option-name]]"[[checked]]>
-				<div id="toggle-container" class="style-scope">
-					<div id="toggle-bar" class="style-scope"></div>
-					<div id="toggle-button" class="style-scope"></div>
+				<div id="ext-yc-options" class="style-scope yt-live-chat-renderer">
+					<div id="items" class="style-scope yt-live-chat-renderer"></div>
 				</div>
 			</div>
-		</div>
-	`;
+		`,
+		backButton: `
+			<a class="yt-simple-endpoint style-scope yt-button-renderer">
+				<yt-icon-button id="button" class="style-scope yt-button-renderer" aria-label="${chrome.i18n.getMessage("optionsBack")}"></yt-icon-button>
+			</a>
+		`,
+		card: `
+			<div id="ext-yc-card" class="style-scope">[[cardDescription]]</div>
+		`,
+		caption: `
+			<div id="ext-yc-caption-container" class="style-scope">
+				<div id="caption" class="style-scope">[[captionDescription]]</div>
+				[[[captionInput]]]
+			</div>
+		`,
+		toggle: `
+			<div id="ext-yc-toggle" class="style-scope" role="button" tabindex="0" data-option="[[toggleOptionName]]"[[toggleChecked]]>
+				<div id="ext-yc-toggle-container" class="style-scope">
+					<div id="ext-yc-toggle-bar" class="style-scope"></div>
+					<div id="ext-yc-toggle-button" class="style-scope"></div>
+				</div>
+			</div>
+			<div id="ext-yc-toggle-collapse" class="style-scope"></div>
+		`,
+
+		// DOM
+		ytIconButton: (pos,dom,templates)=>{
+			const ytIconButton = document.createElement("yt-icon-button");
+			ytIconButton.id = "overflow";
+			ytIconButton.classList.add("style-scope","yt-live-chat-header-renderer");
+			dom[this.#getPos(pos,false)](ytIconButton);
+			this.html.ytIcon("pre",dom.previousElementSibling.querySelector("#button"),templates);
+		},
+		ytIcon: (pos,dom,templates)=>{
+			const ytIcon = document.createElement("yt-icon");
+			ytIcon.classList.add("style-scope","yt-button-renderer");
+			dom[this.#getPos(pos,false)](ytIcon);
+			ytIcon.insertAdjacentHTML("afterbegin",this.html[templates.svg]??templates.svg);
+		},
+		popupMenuItem: (pos,dom,templates)=>{
+			dom.insertAdjacentHTML([this.#getPos(pos,true)],this.html.menuItem);
+			dom = dom.querySelector("#ext-yc-menu-item");
+			dom.querySelector("yt-icon").insertAdjacentHTML("afterbegin",this.html[templates.svg]??templates.svg);
+			dom.querySelector("yt-formatted-string").innerHTML = chrome.i18n.getMessage("optionsTitle");
+			dom.querySelector("yt-formatted-string").removeAttribute("is-empty");
+		}
+	}
+	static init(){
+		let style = "";
+		for(let sty in this.styles){
+			style += this.styles[sty] + "\n";
+		}
+		const styleDOM = document.createElement("style")
+		styleDOM.innerHTML = style;
+		document.head.appendChild(styleDOM);
+	}
+	static #getPos(pos,ins){
+		switch(pos){
+			case "bef":
+				return ins ? "beforebegin" : "before";
+			case "pre":
+				return ins ? "afterbegin" : "prepend";
+			case "app":
+				return ins ? "beforeend": "prepend";
+			case "aft":
+				return ins ? "afterend" : "after";
+		}
+	}
+	static #getPlaceholdersA(html){
+		return html.match(/(?<=\[\[\[).+?(?=\]\]\])/g) ?? [];
+	}
+	static #getPlaceholdersB(html){
+		return html.match(/(?<=\[\[).+?(?=\]\])/g) ?? [];
+	}
+	static #replace(html,replacers){
+		for(let placeholder of this.#getPlaceholdersA(html)){
+			if(replacers[placeholder]){
+				html = html.replaceAll("[[["+placeholder+"]]]",this.#replace(this.html[replacers[placeholder]],replacers));
+			}else{
+				html = html.replaceAll("[[["+placeholder+"]]]","");
+			}
+		}
+		for(let placeholder of this.#getPlaceholdersB(html)){
+			if(replacers[placeholder]){	
+				html = html.replaceAll("[["+placeholder+"]]",replacers[placeholder]);
+			}else{
+				html = html.replaceAll("[["+placeholder+"]]","");
+			}
+		}
+		return html;
+	}
+	#root = document;
+	#dom = this.#root;
+	constructor(dom=null){
+		if(dom){
+			this.#root = document.querySelector(dom);
+			this.#dom = this.#root;
+		}
+	}
+	r(dom,reset=false){
+		if(dom === undefined){
+			return this.#root;
+		}else if(typeof(dom) == "string"){
+			if(reset){
+				this.#root = document.querySelector(dom);
+			}else{
+				this.#root = this.#root.querySelector(dom);
+			}
+		}else{
+			this.#root = dom;
+		}
+		return this;
+	}
+	q(dom,root=false){
+		if(dom === undefined){
+			return this.#dom;
+		}else if(dom === null){
+			this.#dom = this.#root;
+		}else if(typeof(dom) == "string"){
+			if(root === null){
+				this.#dom = document.querySelector(dom);
+			}else{
+				this.#dom = this.#root.querySelector(dom);
+			}
+		}else{
+			this.#dom = dom;
+		}
+		if(root){
+			this.#root = this.#dom;
+		}
+		return this;
+	}
+	tag(name){
+		this.#dom.setAttribute("data-ext-yc",name);
+		return this;
+	}
+	ins(pos,name,replacers={}){
+		if(typeof(this.constructor.html[name]) == "string"){
+			this.#dom.insertAdjacentHTML(this.constructor.#getPos(pos,true),this.constructor.#replace(this.constructor.html[name],replacers));
+		}else if(this.constructor.html[name] instanceof Function){
+			this.constructor.html[name](pos,this.#dom,replacers);
+		}
+		return this;
+	}
+	on(...listeners){
+		for(let listener of listeners){
+			let target;
+			if(listener.q){
+				target = this.#dom.querySelector(listener.q);
+			}else{
+				target = this.#dom;
+			}
+			if(target){
+				target.addEventListener(listener.t,listener.f,listener.o);
+			}
+		}
+		return this;
+	}
+}
+DOMTemplate.init();
+
+class Options extends Ext {
+	static name = "Options";
 	static init(){
 		if(YoutubeState.isMainFrame()){
 			YoutubeEvent.addEventListener("exLoad",()=>{
@@ -858,53 +1018,40 @@ class Options extends Ext {
 				YoutubeEvent.addEventListener("storageChanged",this.optionsUpdated);
 			});
 		}else if(YoutubeState.isChatFrame()){
-			this.setStyle(this.styles.toggleButton);
-			this.setStyle(this.styles.child);
 			// 設定画面作成
-			document.querySelector("yt-live-chat-ninja-message-renderer").insertAdjacentHTML("beforebegin",this.optionsPage);
-			document.querySelector("#ext-yc-options-wrapper yt-button-renderer").insertAdjacentHTML("afterbegin",this.backButton);
-			document.querySelector("#ext-yc-options-wrapper yt-icon-button").addEventListener("click",this.backToChat);
-			const ytIcon = document.createElement("yt-icon");
-			ytIcon.classList.add("style-scope","yt-button-renderer");
-			document.querySelector("#ext-yc-options-wrapper button").appendChild(ytIcon);
-			ytIcon.insertAdjacentHTML("afterbegin",this.backIcon);
-			
-			const options = document.querySelector("#ext-yc-options #items");
-			options.innerHTML = "";
-			const description = document.createElement("div");
-			description.id = "description";
-			description.classList.add("style-scope");
-			description.innerText = chrome.i18n.getMessage("optionsDescription");
-			options.appendChild(description);
+			const options = (new DOMTemplate())
+				.q("yt-live-chat-ninja-message-renderer").ins("bef","optionsPage")
+				.r("#ext-yc-options-wrapper").q("yt-button-renderer").ins("pre","backButton")
+				.on({q:"yt-icon-button",t:"click",f:this.backToChat})
+				.q("#header button").ins("app","ytIcon",{svg:"backIcon"})
+				.q("#items",true).ins("app","card",{cardDescription:chrome.i18n.getMessage("optionsDescription")});
 			
 			// 拡張機能設定初期化処理
 			YoutubeEvent.addEventListener("exLoad",()=>{
 				for(let ex in extensions){
 					// 設定内容追加
-					options.insertAdjacentHTML("beforeend",this.replace(this.toggleButton,{"option-name":ex,description:extensions[ex].description,checked:(Storage.getOption(ex)?" checked":"")}));
-					const subMenu = document.createElement("div");
-					subMenu.id = "sub-menu";
-					subMenu.classList.add("style-scope");
-					options.querySelector(`[data-option="${ex}"]`).after(subMenu);
-					extensions[ex].registOptions(subMenu);
+					options
+						.q(null).ins("app","caption",{
+							captionInput: "toggle",
+							captionDescription: extensions[ex].description,
+							toggleOptionName: ex,
+							toggleChecked: (Storage.getOption(ex)?" checked":"")
+						})
+						.on({q:`#ext-yc-toggle[data-option="${ex}"]`,t:"click",f:this.toggle});
+					extensions[ex].registOptions(options.q("#ext-yc-toggle-collapse").q());
 					// 初期化処理
 					if(Storage.getOption(ex)){
 						extensions[ex].init();
 					}
 				}
 				YoutubeEvent.addEventListener("storageChanged",this.optionsUpdated);
-				document.querySelectorAll("#toggle").forEach(e=>e.addEventListener("click",this.toggle));
 			});
 
 			// ポップアップのメニューアイテム作成
 			document.querySelector("#chat-messages > yt-live-chat-header-renderer > yt-icon-button#overflow:last-child").addEventListener("click",()=>{
-				const wrapper = document.querySelector("yt-live-chat-app > tp-yt-iron-dropdown tp-yt-paper-listbox");
-				wrapper.insertAdjacentHTML("beforeend",this.menuItem);
-				const menuItem = wrapper.querySelector("#ext-yc-menu-item");
-				menuItem.querySelector("yt-icon").insertAdjacentHTML("afterbegin",this.extIcon);
-				menuItem.querySelector("yt-formatted-string").innerHTML = chrome.i18n.getMessage("optionsTitle");
-				menuItem.querySelector("yt-formatted-string").removeAttribute("is-empty");
-				menuItem.addEventListener("click",this.openOptions);
+				(new DOMTemplate())
+					.q("yt-live-chat-app > tp-yt-iron-dropdown tp-yt-paper-listbox",true).ins("app","popupMenuItem",{svg:"extIcon"})
+					.on({q:"#ext-yc-menu-item",t:"click",f:this.openOptions});
 			});
 		}
 	}
