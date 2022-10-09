@@ -1,11 +1,11 @@
 /**
- * frameはmain,iframeChat,popupChatのみを想定する
+ * frameはroot,app,mainChat,iframeChat,popupChatのみを想定する
  */
 class YoutubeState {
-	static isTopWindow(){
+	static isMainWindow(){
 		return window.opener == null;
 	}
-	static isChildWindow(){
+	static isSubWindow(){
 		return window.opener != null;
 	}
 	static isTopFrame(){
@@ -14,26 +14,36 @@ class YoutubeState {
 	static isChildFrame(){
 		return top != window;
 	}
-	static isMainFrame(){
+	static isAppFrame(){
 		return window.document.querySelector("ytd-app") != null;
 	}
 	static isChatFrame(){
 		return window.document.querySelector("yt-live-chat-app") != null;
 	}
 
+	static isRootFrame(){
+		return this.isMainWindow() && this.isTopFrame();
+	}
+	static isMainChatFrame(){
+		return this.isMainWindow() && this.isChatFrame();
+	}
 	static isIframeChatFrame(){
 		return this.isChildFrame() && this.isChatFrame();
 	}
 	static isPopupChatFrame(){
-		return this.isChildWindow() && this.isChatFrame();
+		return this.isSubWindow() && this.isChatFrame();
 	}
 
 	static isFullscreen(){
-		if(this.isChildWindow()){
+		if(this.isSubWindow()){
 			return window.opener.top.document.body.classList.contains("no-scroll");
 		}else{
 			return top.document.body.classList.contains("no-scroll");
 		}
+	}
+
+	static getFrame(){
+		return this.isAppFrame() ? "app" : this.isMainChatFrame() ? "main-chat" : this.isIframeChatFrame() ? "iframe-chat" : this.isPopupChatFrame() ? "popup-chat" : "others";
 	}
 }
 
@@ -161,12 +171,20 @@ class YoutubeEvent {
 				window: true,
 				func: (e,c)=>{
 					let res = [];
-					for(let win of this.frames[e.detail.name]??[]){
-						if(!win.closed){
-							res.push(win);
-						}
+					let names;
+					if(e.detail.name == "all"){
+						names = Object.keys(this.frames);
+					}else{
+						names = [e.detail.name];
 					}
-					this.frames[e.detail.name] = res;
+					for(let name of names){
+						for(let win of this.frames[name]??[]){
+							if(!win.closed){
+								res.push(win);
+							}
+						}
+						this.frames[name] = res;
+					}
 					this.#dispatchEvent(this.events.signal.responseWindow,{
 						windows: res
 					},{window: e.detail.window});
@@ -189,38 +207,25 @@ class YoutubeEvent {
 		for(const type in this.events.once){
 			this.addEventListener(type, e=>{this.events.once[type].called = e});
 		}
-		if(YoutubeState.isMainFrame()){
-			this.frames.main = [window];
+		if(YoutubeState.isRootFrame()){
+			this.frames.root = [window];
 			this.#addEventListener(this.events.signal.requestWindow,()=>{});
 			this.#addEventListener(this.events.signal.regist,()=>{});
 			this.addEventListener("ytUnload",()=>{this.events.once.connected.called = false});
-		}else if(YoutubeState.isIframeChatFrame()){
-			this.addEventListener("exLoad",()=>{
-				let id;
-				this.#addEventListener(this.events.signal.registRes,()=>{
-					clearInterval(id);
-				},{once:true});
-				id = setInterval(()=>{
-					this.#dispatchEvent(this.events.signal.regist,{
-						name: "iframe-chat",
-						window: window
-					},undefined,top);
-				},500);
-			});
-		}else if(YoutubeState.isPopupChatFrame()){
-			this.addEventListener("exLoad",()=>{
-				let id;
-				this.#addEventListener(this.events.signal.registRes,()=>{
-					clearInterval(id);
-				},{once:true});
-				id = setInterval(()=>{
-					this.#dispatchEvent(this.events.signal.regist,{
-						name: "popup-chat",
-						window: window
-					},undefined,window.opener.top);
-				});
-			})
 		}
+		
+		this.addEventListener("exLoad",()=>{
+			let id;
+			this.#addEventListener(this.events.signal.registRes,()=>{
+				clearInterval(id);
+			},{once:true});
+			id = setInterval(()=>{
+				this.#dispatchEvent(this.events.signal.regist,{
+					name: YoutubeState.getFrame(),
+					window: window
+				},{frame:"root"});
+			},500);
+		});
 	}
 	static #getWindows(name){
 		let res = [null];
@@ -230,7 +235,7 @@ class YoutubeEvent {
 		this.#dispatchEvent(this.events.signal.requestWindow,{
 			name: name,
 			window: window
-		},{window:(YoutubeState.isTopWindow()?top:YoutubeState.isPopupChatFrame()?window.opener.top:null)});
+		},{window:(YoutubeState.isMainWindow()?top:YoutubeState.isSubWindow()?window.opener.top:null)});
 		return res;
 	}
 	static #query(detail,options){
@@ -375,7 +380,7 @@ class YoutubeEvent {
 	 * 設定済みイベントを登録する
 	 * @param {string} type イベントタイプ(複数イベントはスペース区切り)
 	 * @param {function|null} callback コールバック関数
-	 * @param {object} options イベントオプション {window:window,frame:"main"/"iframe-chat"/"popup-chat",overlapDeny:string}
+	 * @param {object} options イベントオプション {window(s):window,frame(s):"all"/"app"/"main-chat"/"iframe-chat"/"popup-chat",overlapDeny:string}
 	 * @returns イベントハンドラ
 	 */
 	static addEventListener(types,callback,options){
@@ -411,7 +416,7 @@ class YoutubeEvent {
 	 * イベントリスナーでは関数を書き換えているので返された関数を使用する必要がある
 	 * @param {string} type イベントタイプ(複数イベントはスペース区切り)
 	 * @param {function} callback イベントリスナーから返された関数
-	 * @param {object} options イベントオプション {window:window,frame:"main"/"iframe-chat"/"popup-chat",overlapDeny:string}
+	 * @param {object} options イベントオプション {window:window(s),frame(s):"all"/"app"/"main-chat"/"iframe-chat"/"popup-chat",overlapDeny:string}
 	 * @returns 削除できたかどうか
 	 */
 	static removeEventListener(types,callback,options){
@@ -445,7 +450,7 @@ class YoutubeEvent {
 	 * 設定済みイベントをdispatchする
 	 * @param {string} type イベントタイプ(複数イベントはスペース区切り)
 	 * @param {object} data カスタムイベント送信用
-	 * @param {object} options イベントオプション {window:window,frame:"main"/"iframe-chat"/"popup-chat"}
+	 * @param {object} options イベントオプション {window(s):window,frame(s):"all"/"app"/"main-chat"/"iframe-chat"/"popup-chat"}
 	 * @returns dispatchしたかどうか(onceは実行済みの場合dispatchされない)
 	 */
 	static dispatchEvent(types,data,options){
@@ -536,7 +541,7 @@ class Storage {
 				YoutubeEvent.dispatchEvent("dispatch",{type:"Storage-sync",data:Object.assign({},this.options),is:"first",key:"options"},{window:e.detail.target});
 			}
 		});
-		if(YoutubeState.isMainFrame()){
+		if(YoutubeState.isRootFrame()){
 			let sync, local;
 			let initOptions = (sync,local)=>{
 				if(local["v"] == undefined){
@@ -583,7 +588,7 @@ class Storage {
 				}
 			});
 		}else{
-			YoutubeEvent.dispatchEvent("dispatch",{type:"Storage-request",target:window},{frame:"main"});
+			YoutubeEvent.dispatchEvent("dispatch",{type:"Storage-request",target:window},{frame:"root"});
 		}
 	}
 	static getFlag(name,def){
@@ -600,7 +605,7 @@ class Storage {
 		this.setFlags(data);
 	}
 	static setFlags(data){
-		YoutubeEvent.dispatchEvent("dispatch",{type:"Storage-sync",data:data,key:"flags"},{frames:["main","iframe-chat","popup-chat"]});
+		YoutubeEvent.dispatchEvent("dispatch",{type:"Storage-sync",data:data,key:"flags"},{frame:"all"});
 		chrome.storage.sync.set(data);
 	}
 	static getOption(name,def){
@@ -617,7 +622,7 @@ class Storage {
 		this.setOptions(data);
 	}
 	static setOptions(data){
-		YoutubeEvent.dispatchEvent("dispatch",{type:"Storage-sync",data:data,key:"options"},{frames:["main","iframe-chat","popup-chat"]});
+		YoutubeEvent.dispatchEvent("dispatch",{type:"Storage-sync",data:data,key:"options"},{frame:"all"});
 	}
 	static saveOption(name,val){
 		let data = {};
@@ -643,7 +648,7 @@ class Storage {
 	static setStage(name,val){
 		let data = {};
 		data[name] = val;
-		YoutubeEvent.dispatchEvent("dispatch",{type:"Storage-sync",data:data,key:"stage"},{frames:["main","iframe-chat","popup-chat"]});
+		YoutubeEvent.dispatchEvent("dispatch",{type:"Storage-sync",data:data,key:"stage"},{frame:"all"});
 	}
 	static #reflectStage(){
 		for(let k in this.stage){
@@ -653,7 +658,7 @@ class Storage {
 		this.stage = {};
 	}
 	static reflectStage(){
-		YoutubeEvent.dispatchEvent("dispatch",{type:"Storage-sync",key:"reflect"},{frames:["main","iframe-chat","popup-chat"]});
+		YoutubeEvent.dispatchEvent("dispatch",{type:"Storage-sync",key:"reflect"},{frame:"all"});
 	}
 	static saveStorage(useLocal){
 		let data = Object.assign(Object.assign({},this.options),this.stage);
@@ -1051,7 +1056,7 @@ DOMTemplate.init();
 class Options extends Ext {
 	static name = "Options";
 	static init(){
-		if(YoutubeState.isMainFrame()){
+		if(YoutubeState.isAppFrame()){
 			YoutubeEvent.addEventListener("exLoad",()=>{
 				for(let ex in extensions){
 					try{
@@ -1059,25 +1064,26 @@ class Options extends Ext {
 							extensions[ex].init();
 						}
 					}catch(e){
-						console.error(`main-${ex}-init`,e);
+						console.error(`app-${ex}-init`,e);
 					}
 				}
 				YoutubeEvent.addEventListener("storageChanged",this.optionsUpdated);
 			});
 		}else if(YoutubeState.isChatFrame()){
-			// 設定画面作成
-			const options = (new DOMTemplate())
-				.q("yt-live-chat-ninja-message-renderer").ins("bef","optionsPage")
-				.r("#ext-yc-options-wrapper").q("yt-button-renderer").ins("pre","backButton")
-				.on({q:"yt-icon-button",t:"click",f:this.backToChat})
-				.q("#header button").ins("app","ytIcon",{svg:"backIcon"})
-				.q("#items",true);
-			if(Storage.getFlag("flag-options-description",0) < 1){
-				options.ins("app","card",{cardDescription:chrome.i18n.getMessage("optionsDescription")})
-				.on({q:"#ext-yc-card-close-button",t:"click",f:e=>{e.currentTarget.closest("#ext-yc-card").remove();Storage.setFlag("flag-options-description",1)}});
-			}
-			// 拡張機能設定初期化処理
 			YoutubeEvent.addEventListener("exLoad",()=>{
+				// 設定画面作成
+				const options = (new DOMTemplate())
+					.q("yt-live-chat-ninja-message-renderer").ins("bef","optionsPage")
+					.r("#ext-yc-options-wrapper").q("yt-button-renderer").ins("app","backButton")
+					.on({q:"yt-icon-button",t:"click",f:this.backToChat})
+					.q("#header button").ins("app","ytIcon",{svg:"backIcon"})
+					.q("#items",true);
+				if(Storage.getFlag("flag-options-description",0) < 1){
+					options.ins("app","card",{cardDescription:chrome.i18n.getMessage("optionsDescription")})
+					.on({q:"#ext-yc-card-close-button",t:"click",f:e=>{e.currentTarget.closest("#ext-yc-card").remove();Storage.setFlag("flag-options-description",1)}});
+				}
+
+				// 拡張機能設定初期化処理
 				for(let ex in extensions){
 					try{
 						// 設定内容追加
@@ -1099,7 +1105,7 @@ class Options extends Ext {
 							extensions[ex].init();
 						}
 					}catch(e){
-						console.log(`chat-${ex}-init`,e);
+						console.error(`chat-${ex}-init`,e);
 					}
 				}
 				YoutubeEvent.addEventListener("storageChanged",this.optionsUpdated);

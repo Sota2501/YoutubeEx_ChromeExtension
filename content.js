@@ -33,7 +33,7 @@ class SpannerPick extends Ext {
 	`;
 	static init(){
 		if(YoutubeState.isChatFrame()){
-			YoutubeEvent.addEventListener("connected",()=>{
+			YoutubeEvent.addEventListener("load",()=>{
 				this.setStyle(this.style);
 				const items = document.querySelector("#items.yt-live-chat-item-list-renderer");
 				const fixedCommentList = document.createElement("div");
@@ -43,7 +43,7 @@ class SpannerPick extends Ext {
 				fixedCommentList.id = "fixedCommentList";
 				this.fullscreenHandler = YoutubeEvent.addEventListener("ytFullscreen",()=>{
 					items.style.marginBottom = fixedCommentList.clientHeight + "px";
-				},{frame:"main"});
+				},{frame:"app"});
 				this.observerCallback([{addedNodes:Array(...items.children),removedNodes:[]}]);
 				if(!this.observer){
 					this.observer = new MutationObserver(this.observerCallback);
@@ -58,7 +58,7 @@ class SpannerPick extends Ext {
 			const fixedCommentList = document.querySelector("div#fixedCommentList");
 			items.style.marginBottom = "";
 			this.observer.disconnect();
-			YoutubeEvent.removeEventListener("ytFullscreen", this.fullscreenHandler,{frame:"main"});
+			YoutubeEvent.removeEventListener("ytFullscreen", this.fullscreenHandler,{frame:"app"});
 			this.fullscreenHandler = null;
 			Array.from(fixedCommentList.childNodes).forEach(node=>{
 				const replacement = items.querySelector(`*[data-comment-id="${node.id}"]`);
@@ -386,7 +386,7 @@ class FullscreenChat extends Ext {
 	`;
 	static basePos = {};
 	static init(){
-		if(YoutubeState.isMainFrame()){
+		if(YoutubeState.isAppFrame()){
 			this.setStyle(this.styles.top);
 			
 			YoutubeEvent.addEventListener("connected",()=>{
@@ -414,7 +414,7 @@ class FullscreenChat extends Ext {
 					}else{
 						document.documentElement.classList.remove("fullscreen");
 					}
-				},{frame:"main"});
+				},{frame:"app"});
 				if(YoutubeState.isFullscreen()){
 					document.documentElement.classList.add("fullscreen");
 				}else{
@@ -424,7 +424,7 @@ class FullscreenChat extends Ext {
 		}
 	}
 	static deinit(){
-		if(YoutubeState.isMainFrame()){
+		if(YoutubeState.isAppFrame()){
 			document.removeEventListener("ext-yc-iframe-grab",this.iframeGrabed);
 			document.removeEventListener("ext-yc-iframe-ungrab",this.iframeUngrabed);
 			document.removeEventListener("ext-yc-iframe-move",this.moveIframe);
@@ -434,7 +434,7 @@ class FullscreenChat extends Ext {
 			chatFrame.style.width = "";
 			document.documentElement.classList.remove("fullscreen");
 		}else if(YoutubeState.isIframeChatFrame()){
-			YoutubeEvent.removeEventListener("ytFullscreen",this.fullscreenHandler,{frame:"main"});
+			YoutubeEvent.removeEventListener("ytFullscreen",this.fullscreenHandler,{frame:"app"});
 			this.fullscreenHandler = null;
 			this.grabBtnOut.removeEventListener("mousedown",this.iframeDownEvent);
 			document.removeEventListener("mousemove",this.iframeMoveEvent);
@@ -519,7 +519,7 @@ class ChatTickerScroll extends Ext {
 	};
 	static init(){
 		if(YoutubeState.isChatFrame()){
-			YoutubeEvent.addEventListener("connected",()=>{
+			YoutubeEvent.addEventListener("load",()=>{
 				this.ticker.addEventListener("wheel",this.scrollTicker);
 			});
 		}
