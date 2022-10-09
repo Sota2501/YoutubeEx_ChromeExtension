@@ -512,7 +512,7 @@ class Ext {
 
 class Storage {
 	static v = 1;
-	static useLocal;
+	static flags = {};
 	static stage = {};
 	static options = {};
 	static init(){
@@ -520,10 +520,10 @@ class Storage {
 			if(e.detail?.type == "Storage-sync"){
 				if(e.detail.key == "options"){
 					this.#setOptions(e.detail.data);
+				}else if(e.detail.key == "flags"){
+					this.#setFlags(e.detail.data);
 				}else if(e.detail.key == "stage"){
 					this.#setStage(e.detail.data);
-				}else if(e.detail.key == "useLocal"){
-					this.useLocal = e.detail.data;
 				}else if(e.detail.key == "reflect"){
 					this.#reflectStage();
 				}
@@ -531,7 +531,7 @@ class Storage {
 					YoutubeEvent.dispatchEvent("storageLoad");
 				}
 			}else if(e.detail?.type == "Storage-request"){
-				YoutubeEvent.dispatchEvent("dispatch",{type:"Storage-sync",data:this.useLocal,key:"useLocal"},{window:e.detail.target});
+				YoutubeEvent.dispatchEvent("dispatch",{type:"Storage-sync",data:Object.assign({},this.flags),key:"flags"},{window:e.detail.target});
 				YoutubeEvent.dispatchEvent("dispatch",{type:"Storage-sync",data:Object.assign({},this.stage),key:"stage"},{window:e.detail.target});
 				YoutubeEvent.dispatchEvent("dispatch",{type:"Storage-sync",data:Object.assign({},this.options),is:"first",key:"options"},{window:e.detail.target});
 			}
@@ -551,16 +551,23 @@ class Storage {
 					}else{
 						this.options = sync;
 					}
-					this.useLocal = false;
-				}else if(local["flag-use-local"]){
-					this.useLocal = true;
-					this.options = local;
+					this.flags["flag-use-local"] = false;
 				}else{
-					this.useLocal = false;
-					this.options = sync;
+					for(let name in sync){
+						if(name.match(/^flag-/g)){
+							this.flags[name] = sync[name];
+							delete sync[name];
+						}
+					}
+					this.flags["flag-use-local"] = local["flag-use-local"];
+					delete local["flag-use-local"];
+					if(local["flag-use-local"]){
+						this.options = local;
+					}else{
+						this.options = sync;
+					}
 				}
 				delete this.options["v"];
-				delete this.options["flag-use-local"];
 				YoutubeEvent.dispatchEvent("storageLoad");
 			}
 			chrome.storage.local.get(null,items=>{
@@ -578,6 +585,23 @@ class Storage {
 		}else{
 			YoutubeEvent.dispatchEvent("dispatch",{type:"Storage-request",target:window},{frame:"main"});
 		}
+	}
+	static getFlag(name,def){
+		return this.flags[name] || def;
+	}
+	static #setFlags(data){
+		for(let k in data){
+			this.flags[k] = data[k];
+		}
+	}
+	static setFlag(name,val){
+		let data = {};
+		data[name] = val;
+		this.setFlags(data);
+	}
+	static setFlags(data){
+		YoutubeEvent.dispatchEvent("dispatch",{type:"Storage-sync",data:data,key:"flags"},{frames:["main","iframe-chat","popup-chat"]});
+		chrome.storage.sync.set(data);
 	}
 	static getOption(name,def){
 		return this.options[name] || def;
@@ -602,7 +626,7 @@ class Storage {
 	}
 	static saveOptions(data){
 		this.setOptions(data);
-		chrome.storage[this.useLocal?"local":"sync"].set(data);
+		chrome.storage[this.flags["flag-use-local"]?"local":"sync"].set(data);
 	}
 
 	// オプション画面時に使用
@@ -1047,9 +1071,11 @@ class Options extends Ext {
 				.r("#ext-yc-options-wrapper").q("yt-button-renderer").ins("pre","backButton")
 				.on({q:"yt-icon-button",t:"click",f:this.backToChat})
 				.q("#header button").ins("app","ytIcon",{svg:"backIcon"})
-				.q("#items",true).ins("app","card",{cardDescription:chrome.i18n.getMessage("optionsDescription")})
-				.on({q:"#ext-yc-card-close-button",t:"click",f:e=>{e.currentTarget.closest("#ext-yc-card").remove();}});
-			
+				.q("#items",true);
+			if(Storage.getFlag("flag-options-description",0) < 1){
+				options.ins("app","card",{cardDescription:chrome.i18n.getMessage("optionsDescription")})
+				.on({q:"#ext-yc-card-close-button",t:"click",f:e=>{e.currentTarget.closest("#ext-yc-card").remove();Storage.setFlag("flag-options-description",1)}});
+			}
 			// 拡張機能設定初期化処理
 			YoutubeEvent.addEventListener("exLoad",()=>{
 				for(let ex in extensions){
