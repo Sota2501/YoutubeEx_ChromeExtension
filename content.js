@@ -157,7 +157,8 @@ class FullscreenChat extends Ext {
 			yt-live-chat-membership-item-renderer > #card > #content,
 			ytd-sponsorships-live-chat-gift-purchase-announcement-renderer > #header > #header,
 			yt-live-chat-participant-list-renderer > #header,
-			#ext-yc-options-wrapper > #header
+			#ext-yc-options-wrapper > #header,
+			#ext-yc-card
 		):not(.yt-live-chat-banner-renderer) {
 			position: relative;
 			background: none;
@@ -180,7 +181,8 @@ class FullscreenChat extends Ext {
 			yt-live-chat-membership-item-renderer > #card > #content,
 			ytd-sponsorships-live-chat-gift-purchase-announcement-renderer > #header > #header,
 			yt-live-chat-participant-list-renderer > #header,
-			#ext-yc-options-wrapper > #header
+			#ext-yc-options-wrapper > #header,
+			#ext-yc-card
 		):not(.yt-live-chat-banner-renderer):before {
 			content: "";
 			position: absolute;
@@ -220,7 +222,8 @@ class FullscreenChat extends Ext {
 			yt-live-chat-membership-item-renderer > #card > #content,
 			ytd-sponsorships-live-chat-gift-purchase-announcement-renderer > #header > #header,
 			yt-live-chat-participant-list-renderer > #header,
-			#ext-yc-options-wrapper > #header
+			#ext-yc-options-wrapper > #header,
+			#ext-yc-card
 		):before {
 			opacity: 0.9;
 			transition: opacity .2s;
@@ -276,6 +279,9 @@ class FullscreenChat extends Ext {
 		}
 		html.fullscreen #ext-yc-options-wrapper > #header:before {
 			background-color: var(--yt-live-chat-action-panel-background-color,var(--yt-deprecated-opalescence-soft-grey-opacity-lighten-3));
+		}
+		html.fullscreen #ext-yc-card:before {
+			background-color: var(--yt-live-chat-vem-background-color);
 		}
 		
 

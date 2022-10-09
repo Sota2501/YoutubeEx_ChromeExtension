@@ -692,11 +692,26 @@ class DOMTemplate {
 			#ext-yc-card {
 				background-color: var(--yt-live-chat-vem-background-color);
 				border-radius: 4px;
-				padding: 12px 16px;
-
-				// TODO
-				color: var(--yt-spec-text-primary);
 				margin: 8px 0 16px;
+				padding: 12px 16px;
+			}
+			#ext-yc-card-close-button {
+				float: right;
+				display: flex;
+				justify-content: center;
+				align-items: center;
+				visibility: hidden;
+				margin: -8px -12px auto auto;
+				width: 25px;
+				height: 25px;
+				font-size: 3rem;
+				cursor: pointer;
+			}
+			#ext-yc-card:hover #ext-yc-card-close-button {
+				visibility: visible;
+			}
+			#ext-yc-card-description {
+				color: var(--yt-spec-text-primary);
 				font-family: "Roboto","Arial",sans-serif;
 				font-size: 1.4rem;
 				line-height: 2rem;
@@ -740,11 +755,11 @@ class DOMTemplate {
 				border-radius: 8px;
 				pointer-events: none;
 				transition: background-color linear 0.08s;
-				background-color: #717171;
+				background-color: var(--paper-toggle-button-unchecked-bar-color, #000);
 				opacity: 0.4;
 			}
 			#ext-yc-toggle[disabled] #ext-yc-toggle-bar {
-				background-color: #000;
+				background-color: var(--paper-toggle-button-disabled-bar-color, #000);
 				opacity: 0.12;
 			}
 			#ext-yc-toggle-button {
@@ -757,7 +772,7 @@ class DOMTemplate {
 				border-radius: 50%;
 				transition: transform linear 0.08s, background-color linear 0.08s;
 				will-change: transform;
-				background-color: #fff;
+				background-color: var(--paper-toggle-button-unchecked-button-color, #fafafa);
 			}
 			@keyframes toggle-button-shadow-on {
 				from {
@@ -785,10 +800,10 @@ class DOMTemplate {
 				transform: translate(16px, 0);
 			}
 			#ext-yc-toggle[checked]:not([disabled]) #ext-yc-toggle-button {
-				background-color: #3ea6ff;
+				background-color: var(--paper-toggle-button-checked-button-color, var(--primary-color));
 			}
 			#ext-yc-toggle[disabled] #ext-yc-toggle-button {
-				background: #bdbdbd;
+				background: var(--paper-toggle-button-disabled-button-color, #bdbdbd);
 				opacity: 1;
 			}
 			#ext-yc-toggle + #ext-yc-toggle-collapse {
@@ -851,7 +866,10 @@ class DOMTemplate {
 			</a>
 		`,
 		card: `
-			<div id="ext-yc-card" class="style-scope">[[cardDescription]]</div>
+			<div id="ext-yc-card" class="style-scope">
+				<div id="ext-yc-card-close-button" class="style-scope">&times;</div>
+				<div id="ext-yc-card-description" class="style-scope">[[cardDescription]]</div>
+			</div>
 		`,
 		caption: `
 			<div id="ext-yc-caption-container" class="style-scope">
@@ -892,6 +910,7 @@ class DOMTemplate {
 		}
 	}
 	static init(){
+		document.documentElement.setAttribute("system-icons","");
 		let style = "";
 		for(let sty in this.styles){
 			style += this.styles[sty] + "\n";
@@ -1011,8 +1030,12 @@ class Options extends Ext {
 		if(YoutubeState.isMainFrame()){
 			YoutubeEvent.addEventListener("exLoad",()=>{
 				for(let ex in extensions){
-					if(Storage.getOption(ex)){
-						extensions[ex].init();
+					try{
+						if(Storage.getOption(ex)){
+							extensions[ex].init();
+						}
+					}catch(e){
+						console.error(`main-${ex}-init`,e);
 					}
 				}
 				YoutubeEvent.addEventListener("storageChanged",this.optionsUpdated);
@@ -1024,24 +1047,33 @@ class Options extends Ext {
 				.r("#ext-yc-options-wrapper").q("yt-button-renderer").ins("pre","backButton")
 				.on({q:"yt-icon-button",t:"click",f:this.backToChat})
 				.q("#header button").ins("app","ytIcon",{svg:"backIcon"})
-				.q("#items",true).ins("app","card",{cardDescription:chrome.i18n.getMessage("optionsDescription")});
+				.q("#items",true).ins("app","card",{cardDescription:chrome.i18n.getMessage("optionsDescription")})
+				.on({q:"#ext-yc-card-close-button",t:"click",f:e=>{e.currentTarget.closest("#ext-yc-card").remove();}});
 			
 			// 拡張機能設定初期化処理
 			YoutubeEvent.addEventListener("exLoad",()=>{
 				for(let ex in extensions){
-					// 設定内容追加
-					options
-						.q(null).ins("app","caption",{
-							captionInput: "toggle",
-							captionDescription: extensions[ex].description,
-							toggleOptionName: ex,
-							toggleChecked: (Storage.getOption(ex)?" checked":"")
-						})
-						.on({q:`#ext-yc-toggle[data-option="${ex}"]`,t:"click",f:this.toggle});
-					extensions[ex].registOptions(options.q("#ext-yc-toggle-collapse").q());
-					// 初期化処理
-					if(Storage.getOption(ex)){
-						extensions[ex].init();
+					try{
+						// 設定内容追加
+						options
+							.q(null).ins("app","caption",{
+								captionInput: "toggle",
+								captionDescription: extensions[ex].description,
+								toggleOptionName: ex,
+								toggleChecked: (Storage.getOption(ex)?" checked":"")
+							})
+							.on({q:`#ext-yc-toggle[data-option="${ex}"]`,t:"click",f:this.toggle});
+						extensions[ex].registOptions(options.q("#ext-yc-toggle-collapse").q());
+					}catch(e){
+						console.error(`chat-${ex}-regist-options`, e);
+					}
+					try{
+						// 初期化処理
+						if(Storage.getOption(ex)){
+							extensions[ex].init();
+						}
+					}catch(e){
+						console.log(`chat-${ex}-init`,e);
 					}
 				}
 				YoutubeEvent.addEventListener("storageChanged",this.optionsUpdated);
