@@ -16,10 +16,10 @@
 		"message": "この設定画面では設定項目はすぐに反映されます。ただし、設定項目は現在のページのみに適用されるため、設定を永続的に反映させたい場合は保存する必要があります。また、保存した内容を他のページで利用する場合は再読み込みをする必要があります。"
 	},
 
-	"SpannerPickDescription": {
-		"message": "モデレーターなどからのコメントの下部固定化"
+	"CommentFixerDescription": {
+		"message": "特定のコメントの下部固定化"
 	},
-	"SpannerPickReplaceText": {
+	"CommentFixerReplaceText": {
 		"message": "Pinned comment"
 	},
 

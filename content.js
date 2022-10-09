@@ -1,7 +1,7 @@
 const extensions = {};
 function init(){
 	const exts = [
-		SpannerPick,
+		CommentFixer,
 		FullscreenChat,
 		ChatTickerScroll
 	];
@@ -13,10 +13,10 @@ function init(){
 	});
 }
 
-// Youtube spanner pick
-class SpannerPick extends Ext {
-	static name = "SpannerPick";
-	static description = chrome.i18n.getMessage("SpannerPickDescription");
+// Youtube CommentFixer
+class CommentFixer extends Ext {
+	static name = "CommentFixer";
+	static description = chrome.i18n.getMessage("CommentFixerDescription");
 	static style = `
 		#fixedCommentList {
 			left: 0;
@@ -85,7 +85,7 @@ class SpannerPick extends Ext {
 						replacement.dataset.commentId = node.id;
 						node.after(replacement);
 						fixedCommentList.appendChild(node);
-						replacement.querySelector("#content > #message").innerText = chrome.i18n.getMessage("SpannerPickReplaceText");
+						replacement.querySelector("#content > #message").innerText = chrome.i18n.getMessage("CommentFixerReplaceText");
 						replacement.querySelector("#menu").setAttribute("hidden","");
 						items.style.marginBottom = fixedCommentList.clientHeight + "px";
 						fixedCommentList.scrollTo({"top":fixedCommentList.scrollHeight, "behavior":"smooth"});
@@ -103,7 +103,7 @@ class SpannerPick extends Ext {
 	}
 
 }
-// Youtube fullscreenChat
+// Youtube FullscreenChat
 class FullscreenChat extends Ext {
 	static name = "FullscreenChat";
 	static description = chrome.i18n.getMessage("FullscreenChatDescription");
@@ -504,7 +504,7 @@ class FullscreenChat extends Ext {
 		return calced;
 	}
 }
-// Youtube chatTickerScroll
+// Youtube ChatTickerScroll
 class ChatTickerScroll extends Ext {
 	static name = "ChatTickerScroll";
 	static description = chrome.i18n.getMessage("ChatTickerScrollDescription");
