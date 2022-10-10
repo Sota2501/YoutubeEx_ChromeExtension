@@ -25,7 +25,7 @@ class YoutubeState {
 		return this.isMainWindow() && this.isTopFrame();
 	}
 	static isMainChatFrame(){
-		return this.isMainWindow() && this.isChatFrame();
+		return this.isRootFrame() && this.isChatFrame();
 	}
 	static isIframeChatFrame(){
 		return this.isChildFrame() && this.isChatFrame();
@@ -90,29 +90,30 @@ class YoutubeEvent {
 			// Youtubeでページ遷移するとリセットされる
 			// 呼び出しされたあとでもdispatch可能
 			connected: {
+				// all
 				type: "ext-yc-connected",
 				window: true,
-				options: {
-					once: true
-				},
 				called: false
 			}
 		},
 		youtube: {
 			// ページ遷移が終わったとき
 			ytLoad: {
+				// appで発火
 				type: "yt-navigate-finish",
 				window: false,
 				query: "ytd-app"
 			},
 			// ページ遷移が始まったとき
 			ytUnload: {
+				// app
 				type: "yt-navigate-start",
 				window: false,
 				query: "ytd-app"
 			},
 			// フルスクリーンに切り替わったら
 			ytFullscreen: {
+				// app
 				type: "yt-action",
 				window: false,
 				query: "ytd-app",
@@ -124,6 +125,7 @@ class YoutubeEvent {
 			},
 			// オプションが変更されたら
 			storageChanged: {
+				// all
 				type: "ext-yc-storage-changed",
 				window: true
 			},
@@ -142,54 +144,16 @@ class YoutubeEvent {
 			// 親フレームに子フレームのWindowを登録するためのもの
 			regist: {
 				type: "ext-yc-sig-regist",
-				window: true,
-				func: (e,c)=>{
-					if(this.frames[e.detail.name]){
-						if(this.frames[e.detail.name].indexOf(e.detail.window) == -1){
-							this.frames[e.detail.name].push(e.detail.window);							
-						}
-					}else{
-						this.frames[e.detail.name] = [e.detail.window];
-					}
-					this.#dispatchEvent(this.events.signal.registRes,undefined,undefined,e.detail.window);
-					c(e);
-					this.events.once.connected.called = false;
-					this.dispatchEvent("connected");
-				}
+				window: true
 			},
 			// 登録したことを返答
 			registRes: {
 				type: "ext-yc-sig-regist-res",
-				window: true,
-				func: (e,c)=>{
-					c(e);
-					this.dispatchEvent("connected");
-				}
+				window: true
 			},
 			requestWindow: {
 				type: "ext-yc-sig-request-window",
-				window: true,
-				func: (e,c)=>{
-					let res = [];
-					let names;
-					if(e.detail.name == "all"){
-						names = Object.keys(this.frames);
-					}else{
-						names = [e.detail.name];
-					}
-					for(let name of names){
-						for(let win of this.frames[name]??[]){
-							if(!win.closed){
-								res.push(win);
-							}
-						}
-						this.frames[name] = res;
-					}
-					this.#dispatchEvent(this.events.signal.responseWindow,{
-						windows: res
-					},{window: e.detail.window});
-					c(e);
-				}
+				window: true
 			},
 			responseWindow: {
 				type: "ext-yc-sig-response-window",
@@ -209,19 +173,66 @@ class YoutubeEvent {
 		}
 		if(YoutubeState.isRootFrame()){
 			this.frames.root = [window];
-			this.#addEventListener(this.events.signal.requestWindow,()=>{});
-			this.#addEventListener(this.events.signal.regist,()=>{});
+			this.#addEventListener(this.events.signal.regist,(e)=>{
+				if(this.frames[e.detail.name]){
+					if(this.frames[e.detail.name].indexOf(e.detail.window) == -1){
+						this.frames[e.detail.name].push(e.detail.window);
+					}
+				}else{
+					this.frames[e.detail.name] = [e.detail.window];
+				}
+				this.#dispatchEvent(this.events.signal.registRes,undefined,undefined,e.detail.window);
+				let d = this.events.once.connected.called?.detail??{frames:[],new:false};
+				if(d.frames.indexOf(e.detail.name) == -1){
+					d.frames.push(e.detail.name);
+					d.new = e.detail.name;
+				}
+				this.events.once.connected.called = false;
+				this.dispatchEvent("connected",d);
+				this.events.once.connected.called.detail.new = false;
+			});
+			this.#addEventListener(this.events.signal.requestWindow,(e)=>{
+				let res = [];
+				let names;
+				if(e.detail.name == "all"){
+					names = Object.keys(this.frames);
+				}else{
+					names = [e.detail.name];
+				}
+				for(let name of names){
+					for(let win of this.frames[name]??[]){
+						if(!win.closed){
+							res.push(win);
+						}
+					}
+					this.frames[name] = res;
+				}
+				this.#dispatchEvent(this.events.signal.responseWindow,{
+					windows: res
+				},{window: e.detail.window});
+			});
 			this.addEventListener("ytUnload",()=>{this.events.once.connected.called = false});
 		}
 		
 		this.addEventListener("exLoad",()=>{
+			const name = YoutubeState.getFrame();
 			let id;
 			this.#addEventListener(this.events.signal.registRes,()=>{
+				if(!YoutubeState.isRootFrame()){
+					let d = this.events.once.connected.called?.detail??{frames:[],new:false};
+					if(d.frames.indexOf(name) == -1){
+						d.frames.push(name);
+						d.new = name;
+					}
+					this.events.once.connected.called = false;
+					this.dispatchEvent("connected",d);
+					this.events.once.connected.called.detail.new = false;
+				}
 				clearInterval(id);
 			},{once:true});
 			id = setInterval(()=>{
 				this.#dispatchEvent(this.events.signal.regist,{
-					name: YoutubeState.getFrame(),
+					name: name,
 					window: window
 				},{frame:"root"});
 			},500);

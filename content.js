@@ -389,38 +389,38 @@ class FullscreenChat extends Ext {
 		if(YoutubeState.isAppFrame()){
 			this.setStyle(this.styles.top);
 			
-			YoutubeEvent.addEventListener("connected",()=>{
-				const chatFrame = document.querySelector("ytd-live-chat-frame#chat");
-				chatFrame.style.top = Storage.getOption("FullscreenChat-frame-top","0");
-				chatFrame.style.left = Storage.getOption("FullscreenChat-frame-left","0");
-				chatFrame.style.width = Storage.getOption("FullscreenChat-frame-width","400px");
+			YoutubeEvent.addEventListener("connected",(e)=>{
+				if(!e.detail.new && e.detail.frames.indexOf("iframe-chat") > 0 || e.detail.new == "iframe-chat"){
+					const chatFrame = document.querySelector("ytd-live-chat-frame#chat");
+					chatFrame.style.top = Storage.getOption("FullscreenChat-frame-top","0");
+					chatFrame.style.left = Storage.getOption("FullscreenChat-frame-left","0");
+					chatFrame.style.width = Storage.getOption("FullscreenChat-frame-width","400px");	
+				}
 			},{overlapDeny:"FullscreenChat"});
 
 			document.addEventListener("ext-yc-iframe-grab",this.iframeGrabed);
 			document.addEventListener("ext-yc-iframe-ungrab",this.iframeUngrabed);
 		}else if(YoutubeState.isIframeChatFrame()){
-			YoutubeEvent.addEventListener("connected",()=>{
-				this.setStyle(this.styles.child);
+			this.setStyle(this.styles.child);
+			
+			// 移動アイコン追加
+			this.moveBtn = (new DOMTemplate("#chat-messages > yt-live-chat-header-renderer > yt-icon-button#overflow:last-child"))
+				.ins("bef","ytIconButton",{svg:this.grabIcon})
+				.q("#chat-messages > yt-live-chat-header-renderer > yt-icon-button#overflow:nth-last-child(2)",null).tag(this.name)
+				.on({t:"mousedown",f:this.iframeDownEvent});
 
-				// 移動アイコン追加
-				this.moveBtn = (new DOMTemplate("#chat-messages > yt-live-chat-header-renderer > yt-icon-button#overflow:last-child"))
-					.ins("bef","ytIconButton",{svg:this.grabIcon})
-					.q("#chat-messages > yt-live-chat-header-renderer > yt-icon-button#overflow:nth-last-child(2)",null).tag(this.name)
-					.on({t:"mousedown",f:this.iframeDownEvent});
-
-				this.fullscreenHandler = YoutubeEvent.addEventListener("ytFullscreen",e=>{
-					if(e.detail.args[0]){
-						document.documentElement.classList.add("fullscreen");
-					}else{
-						document.documentElement.classList.remove("fullscreen");
-					}
-				},{frame:"app"});
-				if(YoutubeState.isFullscreen()){
+			this.fullscreenHandler = YoutubeEvent.addEventListener("ytFullscreen",e=>{
+				if(e.detail.args[0]){
 					document.documentElement.classList.add("fullscreen");
 				}else{
 					document.documentElement.classList.remove("fullscreen");
 				}
-			});
+			},{frame:"app"});
+			if(YoutubeState.isFullscreen()){
+				document.documentElement.classList.add("fullscreen");
+			}else{
+				document.documentElement.classList.remove("fullscreen");
+			}
 		}
 	}
 	static deinit(){
