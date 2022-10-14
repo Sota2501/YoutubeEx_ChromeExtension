@@ -537,6 +537,7 @@ class Storage {
 	static init(){
 		YoutubeEvent.addEventListener("storageLoad",()=>{
 			chrome.storage.onChanged.addListener((items,type)=>{
+				items = Object.assign({},items);
 				if(type == "sync"){
 					for(let k in items){
 						if(k.match(/^flag-/)){
@@ -617,17 +618,17 @@ class Storage {
 	static #initOptions(sync,local){
 		let def = {v:this.v};
 		if(local["v"] == undefined || sync["v"] == undefined){
-			for(let ex in extentions){
+			for(let ex in extensions){
 				def[ex] = true;	// TODO
 			}
 		}
 		if(local["v"] == undefined){
 			local = Object.assign({"flag-use-local":false},def);
-			chrome.storage.local.set(Object.assign({},local));
+			chrome.storage.local.set(local);
 		}
 		if(sync["v"] == undefined){
 			sync = Object.assign({},def);
-			chrome.storage.sync.set(Object.assign({},sync));
+			chrome.storage.sync.set(sync);
 		}
 		for(let name in sync){
 			if(name.match(/^flag-/)){
@@ -644,12 +645,14 @@ class Storage {
 		}
 		delete this.options["v"];
 	}
-	static resetOptions(stg){
-		for(let name in stg){
-			if(name.match(/^[A-Z]/)){
-				this.setStage("name",stg[name]);
+	static resetOptions(){
+		chrome.storage[this.getFlag("flag-use-local")?"local":"sync"].get(null,items=>{
+			for(let name in items){
+				if(name.match(/^[A-Z]\w*(-opt-\w*)?$/)){
+					this.setStage(name,items[name]);
+				}
 			}
-		}
+		});
 	}
 	static getFlag(name,def){
 		return this.flags[name]??def;
@@ -1137,19 +1140,7 @@ class Options extends Ext {
 					.on({q:"yt-icon-button",t:"click",f:this.backToChat})
 					.q("#header button").ins("app","ytIcon",{svg:"backIcon"})
 					.q("#footer").ins("app","paperButton",{title:chrome.i18n.getMessage("optionsReload")})
-					.on({q:"tp-yt-paper-button:first-child",t:"click",f:()=>{
-						if(Storage.getFlag("flag-use-local")){
-							chrome.storage.local.get(null,items=>{
-								Storage.resetOptions(items);
-								YoutubeEvent.dispatchEvent("storageChanged",{key:"stage",data:Object.assign({"flag-use-local":flag},Storage.options)})	
-							});
-						}else{
-							chrome.storage.sync.get(null,items=>{
-								Storage.resetOptions(items);
-								YoutubeEvent.dispatchEvent("storageChanged",{key:"stage",data:Object.assign({"flag-use-local":flag},Storage.options)})
-							});
-						}
-					}})
+					.on({q:"tp-yt-paper-button:first-child",t:"click",f:Storage.resetOptions})
 					.ins("app","paperButton",{title:chrome.i18n.getMessage(`optionsSave${Storage.getFlag("flag-use-local",false)?"Local":"Sync"}`)})
 					.on({q:"tp-yt-paper-button:last-child",t:"click",f:()=>Storage.saveOptions(Storage.getFlag("flag-use-local",false))})
 					.q("#items",true);
