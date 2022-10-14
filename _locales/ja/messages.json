@@ -12,34 +12,34 @@
 	"optionsBack": {
 		"message": "戻る"
 	},
-	"optionsDescription": {
+	"Options_Description": {
 		"message": "この設定画面では設定項目はすぐに反映されます。ただし、設定項目は現在のページのみに適用されるため、設定を永続的に反映させたい場合は保存する必要があります。また、保存した内容を他のページで利用する場合は設定を再読み込みをする必要があります。"
 	},
-	"optionsUseLocal": {
+	"Options_UseLocal": {
 		"message": "ローカルストレージを使用"
 	},
-	"optionsReload": {
+	"Options_Reload": {
 		"message": "設定を再読み込みする"
 	},
-	"optionsSaveLocal": {
+	"Options_SaveLocal": {
 		"message": "ローカルに保存"
 	},
-	"optionsSaveSync": {
+	"Options_SaveSync": {
 		"message": "グローバルに保存"
 	},
 
-	"CommentFixerDescription": {
+	"CommentFixer_Description": {
 		"message": "特定のコメントの下部固定化"
 	},
-	"CommentFixerReplaceText": {
+	"CommentFixer_ReplaceText": {
 		"message": "固定化されたコメントです"
 	},
 
-	"FullscreenChatDescription": {
+	"FullscreenChat_Description": {
 		"message": "フルスクリーンでのチャット覧表示"
 	},
 
-	"ChatTickerScrollDescription": {
+	"ChatTickerScroll_Description": {
 		"message": "スーパーチャット一覧の横スクロール"
 	}
 }

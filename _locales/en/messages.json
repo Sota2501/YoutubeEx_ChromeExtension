@@ -12,34 +12,34 @@
 	"optionsBack": {
 		"message": "Back"
 	},
-	"optionsDescription": {
+	"Options_Description": {
 		"message": "On this setting screen, the setting items are reflected immediately. However, the setting items are applied only to the current page, so if you want the settings to be reflected permanently, you need to save them. Also, if you want to use the saved contents on other pages, you need to reload the settings."
 	},
-	"optionsUseLocal": {
+	"Options_UseLocal": {
 		"message": "Use local storage"
 	},
-	"optionsReload": {
+	"Options_Reload": {
 		"message": "Reload the setting"
 	},
-	"optionsSaveLocal": {
+	"Options_SaveLocal": {
 		"message": "Save to local"
 	},
-	"optionsSaveSync": {
+	"Options_SaveSync": {
 		"message": "Save to global"
 	},
 
-	"CommentFixerDescription": {
+	"CommentFixer_Description": {
 		"message": "Bottom pinning of specific comments"
 	},
-	"CommentFixerReplaceText": {
+	"CommentFixer_ReplaceText": {
 		"message": "Pinned comment"
 	},
 
-	"FullscreenChatDescription": {
+	"FullscreenChat_Description": {
 		"message": "View chat list in full screen"
 	},
 
-	"ChatTickerScrollDescription": {
+	"ChatTickerScroll_Description": {
 		"message": "Horizontal scrolling of Super Chat list"
 	}
 }

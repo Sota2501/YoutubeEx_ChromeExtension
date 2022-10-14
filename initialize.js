@@ -527,6 +527,9 @@ class Ext {
 		}
 		return html;
 	}
+	static i18n(key){
+		return chrome.i18n.getMessage(`${this.name}_${key}`);
+	}
 }
 
 class Storage {
@@ -646,7 +649,7 @@ class Storage {
 		delete this.options["v"];
 	}
 	static resetOptions(){
-		chrome.storage[this.getFlag("flag-use-local")?"local":"sync"].get(null,items=>{
+		chrome.storage[this.getFlag("flag-use-local",false)?"local":"sync"].get(null,items=>{
 			for(let name in items){
 				if(name.match(/^[A-Z]\w*(-opt-\w*)?$/)){
 					this.setStage(name,items[name]);
@@ -1139,13 +1142,13 @@ class Options extends Ext {
 					.r("#ext-yc-options-wrapper").q("yt-button-renderer").ins("app","backButton")
 					.on({q:"yt-icon-button",t:"click",f:this.backToChat})
 					.q("#header button").ins("app","ytIcon",{svg:"backIcon"})
-					.q("#footer").ins("app","paperButton",{title:chrome.i18n.getMessage("optionsReload")})
+					.q("#footer").ins("app","paperButton",{title:this.i18n("Reload")})
 					.on({q:"tp-yt-paper-button:first-child",t:"click",f:Storage.resetOptions})
-					.ins("app","paperButton",{title:chrome.i18n.getMessage(`optionsSave${Storage.getFlag("flag-use-local",false)?"Local":"Sync"}`)})
+					.ins("app","paperButton",{title:this.i18n(`Save${Storage.getFlag("flag-use-local",false)?"Local":"Sync"}`)})
 					.on({q:"tp-yt-paper-button:last-child",t:"click",f:()=>Storage.saveOptions(Storage.getFlag("flag-use-local",false))})
 					.q("#items",true);
 				if(Storage.getFlag("flag-options-description",0) < 1){
-					options.ins("app","card",{cardDescription:chrome.i18n.getMessage("optionsDescription")})
+					options.ins("app","card",{cardDescription:this.i18n("Description")})
 					.on({q:"#ext-yc-card-close-button",t:"click",f:e=>{
 						e.currentTarget.closest("#ext-yc-card").remove();
 						Storage.setFlag("flag-options-description",1);
@@ -1153,7 +1156,7 @@ class Options extends Ext {
 				}
 				options.ins("app","caption",{
 					captionInput: "toggle",
-					captionDescription: chrome.i18n.getMessage("optionsUseLocal"),
+					captionDescription: this.i18n("UseLocal"),
 					toggleOptionName: "flag-use-local",
 					toggleChecked: (Storage.getFlag("flag-use-local",false)?" checked":"")
 				})
@@ -1226,7 +1229,7 @@ class Options extends Ext {
 				for(let k in e.detail.data){
 					const elm = document.querySelector(`#ext-yc-options [data-option="${k}"]`);
 					if(k == "flag-use-local"){
-						document.querySelector("#ext-yc-options-wrapper #footer > tp-yt-paper-button:nth-child(2) yt-formatted-string").innerHTML = chrome.i18n.getMessage(`optionsSave${e.detail.data[k]?"Local":"Sync"}`);
+						document.querySelector("#ext-yc-options-wrapper #footer > tp-yt-paper-button:nth-child(2) yt-formatted-string").innerHTML = this.i18n(`Save${e.detail.data[k]?"Local":"Sync"}`);
 					}
 					if(e.detail.data[k]){
 						elm.setAttribute("checked","");

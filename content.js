@@ -16,7 +16,7 @@ function init(){
 // Youtube CommentFixer
 class CommentFixer extends Ext {
 	static name = "CommentFixer";
-	static description = chrome.i18n.getMessage("CommentFixerDescription");
+	static description = this.i18n("Description");
 	static style = `
 		#fixedCommentList {
 			left: 0;
@@ -85,7 +85,7 @@ class CommentFixer extends Ext {
 						replacement.dataset.commentId = node.id;
 						node.after(replacement);
 						fixedCommentList.appendChild(node);
-						replacement.querySelector("#content > #message").innerText = chrome.i18n.getMessage("CommentFixerReplaceText");
+						replacement.querySelector("#content > #message").innerText = this.i18n("ReplaceText");
 						replacement.querySelector("#menu").setAttribute("hidden","");
 						items.style.marginBottom = fixedCommentList.clientHeight + "px";
 						fixedCommentList.scrollTo({"top":fixedCommentList.scrollHeight, "behavior":"smooth"});
@@ -106,7 +106,7 @@ class CommentFixer extends Ext {
 // Youtube FullscreenChat
 class FullscreenChat extends Ext {
 	static name = "FullscreenChat";
-	static description = chrome.i18n.getMessage("FullscreenChatDescription");
+	static description = this.i18n("Description");
 	static styles = {
 		top: `
 			body:not(.no-scroll) ytd-live-chat-frame#chat {
@@ -508,7 +508,7 @@ class FullscreenChat extends Ext {
 // Youtube ChatTickerScroll
 class ChatTickerScroll extends Ext {
 	static name = "ChatTickerScroll";
-	static description = chrome.i18n.getMessage("ChatTickerScrollDescription");
+	static description = this.i18n("Description");
 	static ticker = document.querySelector("#ticker yt-live-chat-ticker-renderer");
 	static buttons = {
 		true: document.querySelector("#ticker #left-arrow-container yt-icon"),
