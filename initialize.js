@@ -498,10 +498,10 @@ class Ext {
 	static name = "";
 	static description = "";
 	static styleNum = 1;
+	static registOptions(){}
 	static init(){}
 	static deinit(){}
 	static optionsUpdated(){}
-	static registOptions(){}
 	static tagAddedDOM(dom){
 		dom.setAttribute("data-ext-yc",this.name);
 	}
@@ -648,7 +648,7 @@ class Storage {
 		}
 		delete this.options["v"];
 	}
-	static resetOptions(){
+	static resetOptions = ()=>{
 		chrome.storage[this.getFlag("flag-use-local",false)?"local":"sync"].get(null,items=>{
 			for(let name in items){
 				if(name.match(/^[A-Z]\w*(-opt-\w*)?$/)){
@@ -708,7 +708,8 @@ class Storage {
 Storage.init();
 
 class DOMTemplate {
-	static styles = {
+	static #tmp = document.createElement("div");
+	static #styles = {
 		menuItem: `
 			#ext-yc-menu-item {
 				cursor: pointer;
@@ -890,15 +891,14 @@ class DOMTemplate {
 			#ext-yc-toggle + #ext-yc-toggle-collapse {
 				display: none;
 				width: 100%;
-				padding: 0 10px;
+				padding-left: 1em;
 			}
 			#ext-yc-toggle[checked] + #ext-yc-toggle-collapse {
 				display: block;
 			}
 		`
 	}
-	static html = {
-		// SVG
+	static #svg = {
 		extIcon: `
 			<svg viewBox="0 0 24 24" focusable="false" class="style-scope yt-icon" style="pointer-events: none; display: block; width: 100%; height: 100%;">
 				<style>
@@ -917,9 +917,17 @@ class DOMTemplate {
 					<path d="M21,11v1H5.64l6.72,6.72l-0.71,0.71L3.72,11.5l7.92-7.92l0.71,0.71L5.64,11H21z" class="style-scope yt-icon"></path>
 				</g>
 			</svg>
-		`,
-
-		// DOM
+		`
+	};
+	static #replacers = {
+		caption: {
+			captionInput: {
+				query: undefined,
+				pos: "append"
+			}
+		}
+	};
+	static #html = {
 		menuItem:`
 			<div id="ext-yc-menu-item" class="style-scope ytd-menu-popup-renderer" use-icons="" system-icons="" role="menuitem">
 				<tp-yt-paper-item class="style-scope ytd-menu-service-item-renderer" style-target="host" role="option" tabindex="0" aria-disabled="false">
@@ -956,7 +964,6 @@ class DOMTemplate {
 		caption: `
 			<div id="ext-yc-caption-container" class="style-scope">
 				<div id="caption" class="style-scope">[[captionDescription]]</div>
-				[[[captionInput]]]
 			</div>
 		`,
 		toggle: `
@@ -966,76 +973,70 @@ class DOMTemplate {
 					<div id="ext-yc-toggle-button" class="style-scope"></div>
 				</div>
 			</div>
-			<div id="ext-yc-toggle-collapse" class="style-scope"></div>
 		`,
-
+		toggleCollapse: `
+			<div id="ext-yc-toggle-collapse" class="style-scope"></div>
+		`
+	};
+	static #func = {
 		// DOM
-		paperButton: (pos,dom,templates)=>{
+		menuItem: (dom,pos,templates)=>{
+			dom = this.#insh(dom,pos,"menuItem",templates);
+			this.#insh(dom.querySelector("yt-icon"),"append",templates.svg);
+			dom.querySelector("yt-formatted-string").innerHTML = chrome.i18n.getMessage("optionsTitle");
+			dom.querySelector("yt-formatted-string").removeAttribute("is-empty");
+			return dom;
+		},
+		paperButton: (dom,pos,templates)=>{
 			const paperButton = document.createElement("tp-yt-paper-button");
-			dom[this.#getPos(pos,false)](paperButton);
+			dom[pos](paperButton);
 			const formattedString = document.createElement("yt-formatted-string");
-			paperButton.appendChild(formattedString);
+			paperButton.append(formattedString);
 			formattedString.removeAttribute("is-empty");
 			formattedString.innerHTML = templates["title"];
+			return paperButton;
 		},
-		ytIconButton: (pos,dom,templates)=>{
+		ytIconButton: (dom,pos,templates)=>{
 			const ytIconButton = document.createElement("yt-icon-button");
 			ytIconButton.id = "overflow";
 			ytIconButton.classList.add("style-scope","yt-live-chat-header-renderer");
-			dom[this.#getPos(pos,false)](ytIconButton);
-			this.html.ytIcon("pre",dom.previousElementSibling.querySelector("#button"),templates);
+			dom[pos](ytIconButton);
+			this.#func.ytIcon(ytIconButton.querySelector("#button"),"prepend",templates);
+			return ytIconButton;
 		},
-		ytIcon: (pos,dom,templates)=>{
+		ytIcon: (dom,pos,templates)=>{
 			const ytIcon = document.createElement("yt-icon");
 			ytIcon.classList.add("style-scope","yt-button-renderer");
-			dom[this.#getPos(pos,false)](ytIcon);
-			ytIcon.insertAdjacentHTML("afterbegin",this.html[templates.svg]??templates.svg);
+			dom[pos](ytIcon);
+			this.#insh(ytIcon,"append",templates.svg);
+			return ytIcon;
 		},
-		popupMenuItem: (pos,dom,templates)=>{
-			dom.insertAdjacentHTML([this.#getPos(pos,true)],this.html.menuItem);
-			dom = dom.querySelector("#ext-yc-menu-item");
-			dom.querySelector("yt-icon").insertAdjacentHTML("afterbegin",this.html[templates.svg]??templates.svg);
-			dom.querySelector("yt-formatted-string").innerHTML = chrome.i18n.getMessage("optionsTitle");
-			dom.querySelector("yt-formatted-string").removeAttribute("is-empty");
+		toggle: (dom,pos,templates)=>{
+			dom = this.#insh(dom,pos,"toggle",templates);
+			dom.addEventListener("click",e=>{
+				if(e.currentTarget.getAttribute("disabled") == null){
+					if(e.currentTarget.getAttribute("checked") == null){
+						e.currentTarget.setAttribute("checked","");
+					}else{
+						e.currentTarget.removeAttribute("checked");
+					}
+				}
+			})
+			return dom;
 		}
 	}
 	static init(){
 		document.documentElement.setAttribute("system-icons","");
 		let style = "";
-		for(let sty in this.styles){
-			style += this.styles[sty] + "\n";
+		for(let sty in this.#styles){
+			style += this.#styles[sty] + "\n";
 		}
 		const styleDOM = document.createElement("style")
 		styleDOM.innerHTML = style;
 		document.head.appendChild(styleDOM);
 	}
-	static #getPos(pos,ins){
-		switch(pos){
-			case "bef":
-				return ins ? "beforebegin" : "before";
-			case "pre":
-				return ins ? "afterbegin" : "prepend";
-			case "app":
-				return ins ? "beforeend": "append";
-			case "aft":
-				return ins ? "afterend" : "after";
-		}
-	}
-	static #getPlaceholdersA(html){
-		return html.match(/(?<=\[\[\[).+?(?=\]\]\])/g) ?? [];
-	}
-	static #getPlaceholdersB(html){
-		return html.match(/(?<=\[\[).+?(?=\]\])/g) ?? [];
-	}
 	static #replace(html,replacers){
-		for(let placeholder of this.#getPlaceholdersA(html)){
-			if(replacers[placeholder]){
-				html = html.replaceAll("[[["+placeholder+"]]]",this.#replace(this.html[replacers[placeholder]],replacers));
-			}else{
-				html = html.replaceAll("[[["+placeholder+"]]]","");
-			}
-		}
-		for(let placeholder of this.#getPlaceholdersB(html)){
+		for(let placeholder of html.match(/(?<=\[\[).+?(?=\]\])/g)??[]){
 			if(replacers[placeholder]){	
 				html = html.replaceAll("[["+placeholder+"]]",replacers[placeholder]);
 			}else{
@@ -1044,15 +1045,50 @@ class DOMTemplate {
 		}
 		return html;
 	}
+	static #insh(dom,pos,name,replacers){
+		let html = this.#html[name];
+		if(!html){
+			html = this.#svg[name];
+		}
+		if(!html){
+			html = name;
+		}
+		this.#tmp.insertAdjacentHTML("beforeend",this.#replace(html,replacers));
+		let res = this.#tmp.children[0];
+		this.#tmp.innerHTML = "";
+		dom[pos](res);
+		if(this.#replacers[name]){
+			for(let k in this.#replacers[name]){
+				if(this.#replacers[name][k].query){
+					dom = res.querySelector(this.#replacers[name][k].query);
+				}else{
+					dom = res;
+				}
+				this.#ins(dom,this.#replacers[name][k].pos,replacers[k],replacers);
+			}
+		}
+		return res;
+	}
+	static #ins(dom,pos,name,replacers){
+		let res;
+		if(this.#func[name] instanceof Function){
+			res = this.#func[name](dom,pos,replacers);
+		}else if(typeof(this.#html[name]) == "string"){
+			res = this.#insh(dom,pos,name,replacers);
+		}
+		return res;
+	}
 	#root = document;
 	#dom = this.#root;
 	constructor(dom=null){
+		if(typeof dom == "string"){
+			dom = document.querySelector(dom);
+		}
 		if(dom){
-			this.#root = document.querySelector(dom);
-			this.#dom = this.#root;
+			this.#dom = this.#root = dom;
 		}
 	}
-	r(dom,reset=false){
+	r(dom,reset=false,sync=false){
 		if(dom === undefined){
 			return this.#root;
 		}else if(typeof(dom) == "string"){
@@ -1064,9 +1100,12 @@ class DOMTemplate {
 		}else{
 			this.#root = dom;
 		}
+		if(sync){
+			this.#dom = this.#root;
+		}
 		return this;
 	}
-	q(dom,root=false){
+	q(dom,root=true,sync=false){
 		if(dom === undefined){
 			return this.#dom;
 		}else if(dom === null){
@@ -1074,13 +1113,15 @@ class DOMTemplate {
 		}else if(typeof(dom) == "string"){
 			if(root === null){
 				this.#dom = document.querySelector(dom);
-			}else{
+			}else if(root === true){
 				this.#dom = this.#root.querySelector(dom);
+			}else{
+				this.#dom = this.#dom.querySelector(dom);
 			}
 		}else{
 			this.#dom = dom;
 		}
-		if(root){
+		if(sync){
 			this.#root = this.#dom;
 		}
 		return this;
@@ -1093,11 +1134,10 @@ class DOMTemplate {
 		this.#dom.setAttribute(name,val);
 		return this;
 	}
-	ins(pos,name,replacers={}){
-		if(typeof(this.constructor.html[name]) == "string"){
-			this.#dom.insertAdjacentHTML(this.constructor.#getPos(pos,true),this.constructor.#replace(this.constructor.html[name],replacers));
-		}else if(this.constructor.html[name] instanceof Function){
-			this.constructor.html[name](pos,this.#dom,replacers);
+	ins(pos,name,replacers={},sync=false){
+		let res = this.constructor.#ins(this.#dom,pos,name,replacers);
+		if(sync){
+			this.#dom = res;
 		}
 		return this;
 	}
@@ -1137,45 +1177,46 @@ class Options extends Ext {
 		}else if(YoutubeState.isChatFrame()){
 			YoutubeEvent.addEventListener("exLoad",()=>{
 				// 設定画面作成
-				const options = (new DOMTemplate())
-					.q("yt-live-chat-ninja-message-renderer").ins("bef","optionsPage")
-					.r("#ext-yc-options-wrapper").q("yt-button-renderer").ins("app","backButton")
+				const options = (new DOMTemplate("yt-live-chat-ninja-message-renderer"))
+					.ins("before","optionsPage")
+					.r("#ext-yc-options-wrapper",true).q("#header yt-button-renderer").ins("append","backButton")
 					.on({q:"yt-icon-button",t:"click",f:this.backToChat})
-					.q("#header button").ins("app","ytIcon",{svg:"backIcon"})
-					.q("#footer").ins("app","paperButton",{title:this.i18n("Reload")})
+					.q("#header button").ins("append","ytIcon",{svg:"backIcon"})
+					.q("#footer").ins("append","paperButton",{title:this.i18n("Reload")})
 					.on({q:"tp-yt-paper-button:first-child",t:"click",f:Storage.resetOptions})
-					.ins("app","paperButton",{title:this.i18n(`Save${Storage.getFlag("flag-use-local",false)?"Local":"Sync"}`)})
+					.ins("append","paperButton",{title:this.i18n(`Save${Storage.getFlag("flag-use-local",false)?"Local":"Sync"}`)})
 					.on({q:"tp-yt-paper-button:last-child",t:"click",f:()=>Storage.saveOptions(Storage.getFlag("flag-use-local",false))})
-					.q("#items",true);
+					.q("#items",true,true);
 				if(Storage.getFlag("flag-options-description",0) < 1){
-					options.ins("app","card",{cardDescription:this.i18n("Description")})
+					options.ins("append","card",{cardDescription:this.i18n("Description")})
 					.on({q:"#ext-yc-card-close-button",t:"click",f:e=>{
 						e.currentTarget.closest("#ext-yc-card").remove();
 						Storage.setFlag("flag-options-description",1);
 					}});
 				}
-				options.ins("app","caption",{
+				options.ins("append","caption",{
 					captionInput: "toggle",
 					captionDescription: this.i18n("UseLocal"),
 					toggleOptionName: "flag-use-local",
 					toggleChecked: (Storage.getFlag("flag-use-local",false)?" checked":"")
-				})
-				.q("#ext-yc-caption-container").a("style","margin-bottom: 24px;")
-				.on({q:`#ext-yc-toggle[data-option="flag-use-local"]`,t:"click",f:(e)=>Storage.setFlag("flag-use-local",e.currentTarget.getAttribute("checked")==null)});
+				},true)
+				.a("style","margin-bottom: 24px;")
+				.on({q:"#ext-yc-toggle",t:"click",f:this.toggle});
 
 				// 拡張機能設定初期化処理
 				for(let ex in extensions){
 					try{
 						// 設定内容追加
 						options
-							.q(null).ins("app","caption",{
+							.q(null).ins("append","caption",{
 								captionInput: "toggle",
 								captionDescription: extensions[ex].description,
 								toggleOptionName: ex,
 								toggleChecked: (Storage.getOption(ex,false)?" checked":"")
-							})
-							.on({q:`#ext-yc-toggle[data-option="${ex}"]`,t:"click",f:this.toggle});
-						extensions[ex].registOptions(options.q("#ext-yc-toggle-collapse").q());
+							},true)
+							.on({q:`#ext-yc-toggle`,t:"click",f:this.toggle})
+							.ins("append","toggleCollapse",{},true);
+						extensions[ex].registOptions(options.q());
 					}catch(e){
 						console.error(`chat-${ex}-regist-options`, e);
 					}
@@ -1193,8 +1234,8 @@ class Options extends Ext {
 
 			// ポップアップのメニューアイテム作成
 			document.querySelector("#chat-messages > yt-live-chat-header-renderer > yt-icon-button#overflow:last-child").addEventListener("click",()=>{
-				(new DOMTemplate())
-					.q("yt-live-chat-app > tp-yt-iron-dropdown tp-yt-paper-listbox",true).ins("app","popupMenuItem",{svg:"extIcon"})
+				(new DOMTemplate("yt-live-chat-app > tp-yt-iron-dropdown tp-yt-paper-listbox"))
+					.ins("append","menuItem",{svg:"extIcon"})
 					.on({q:"#ext-yc-menu-item",t:"click",f:this.openOptions});
 			});
 		}
@@ -1206,11 +1247,6 @@ class Options extends Ext {
 					const elm = document.querySelector(`#ext-yc-options [data-option="${k}"]`);
 					switch(typeof e.detail.data[k]){
 						case "boolean":
-							if(e.detail.data[k]){
-								elm.setAttribute("checked","");
-							}else{
-								elm.removeAttribute("checked");
-							}
 							break;
 						case "number":
 							// TODO
@@ -1230,11 +1266,6 @@ class Options extends Ext {
 					const elm = document.querySelector(`#ext-yc-options [data-option="${k}"]`);
 					if(k == "flag-use-local"){
 						document.querySelector("#ext-yc-options-wrapper #footer > tp-yt-paper-button:nth-child(2) yt-formatted-string").innerHTML = this.i18n(`Save${e.detail.data[k]?"Local":"Sync"}`);
-					}
-					if(e.detail.data[k]){
-						elm.setAttribute("checked","");
-					}else{
-						elm.removeAttribute("checked");
 					}
 				}
 			}
@@ -1291,7 +1322,11 @@ class Options extends Ext {
 	}
 	static toggle = (e)=>{
 		if(e.currentTarget.getAttribute("disabled") == null){
-			Storage.setStage(e.currentTarget.dataset.option,e.currentTarget.getAttribute("checked") == null);
+			if(e.currentTarget.dataset.option == "flag-use-local"){
+				Storage.setFlag(e.currentTarget.dataset.option, e.currentTarget.getAttribute("checked") != null);
+			}else{
+				Storage.setStage(e.currentTarget.dataset.option,e.currentTarget.getAttribute("checked") != null);
+			}
 		}
 	}
 }

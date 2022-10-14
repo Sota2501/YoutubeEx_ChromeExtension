@@ -31,6 +31,32 @@ class CommentFixer extends Ext {
 			display: none;
 		}
 	`;
+	static registOptions(wrapper){
+		(new DOMTemplate(wrapper))
+			.ins("append","caption",{
+				captionInput: "toggle",
+				captionDescription: this.i18n("Owner"),
+				toggleOptionName: `${this.name}-opt-owner`,
+				toggleChecked: (Storage.getFlag(`${this.name}-opt-owner`,false)?" checked":"")
+			},true)
+			.on({q:`#ext-yc-toggle`,t:"click",f:Options.toggle})
+			.q(null)
+			.ins("append","caption",{
+				captionInput: "toggle",
+				captionDescription: this.i18n("Verified"),
+				toggleOptionName: `${this.name}-opt-verified`,
+				toggleChecked: (Storage.getFlag(`${this.name}-opt-verified`,false)?" checked":"")
+			},true)
+			.on({q:`#ext-yc-toggle`,t:"click",f:Options.toggle})
+			.q(null)
+			.ins("append","caption",{
+				captionInput: "toggle",
+				captionDescription: this.i18n("Moderator"),
+				toggleOptionName: `${this.name}-opt-moderator`,
+				toggleChecked: (Storage.getFlag(`${this.name}-opt-moderator`,false)?" checked":"")
+			},true)
+			.on({q:`#ext-yc-toggle`,t:"click",f:Options.toggle});
+	}
 	static init(){
 		if(YoutubeState.isChatFrame()){
 			YoutubeEvent.addEventListener("load",()=>{
@@ -68,7 +94,7 @@ class CommentFixer extends Ext {
 			this.removeAddedDOM();
 		}
 	}
-	static observerCallback(mutationList){
+	static observerCallback = (mutationList)=>{
 		const items = document.querySelector("#items.yt-live-chat-item-list-renderer")
 		const fixedCommentList = document.querySelector("#fixedCommentList");
 		const authorType = ["moderator","owner"];
@@ -405,7 +431,7 @@ class FullscreenChat extends Ext {
 			
 			// 移動アイコン追加
 			this.moveBtn = (new DOMTemplate("#chat-messages > yt-live-chat-header-renderer > yt-icon-button#overflow:last-child"))
-				.ins("bef","ytIconButton",{svg:this.grabIcon})
+				.ins("before","ytIconButton",{svg:this.grabIcon})
 				.q("#chat-messages > yt-live-chat-header-renderer > yt-icon-button#overflow:nth-last-child(2)",null).tag(this.name)
 				.on({t:"mousedown",f:this.iframeDownEvent})
 				.q();

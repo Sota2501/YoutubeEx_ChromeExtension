@@ -34,6 +34,15 @@
 	"CommentFixer_ReplaceText": {
 		"message": "Pinned comment"
 	},
+	"CommentFixer_Owner": {
+		"message": "Owner"
+	},
+	"CommentFixer_Verified": {
+		"message": "Verified ( With certification mark )"
+	},
+	"CommentFixer_Moderator": {
+		"message": "Moderator"
+	},
 
 	"FullscreenChat_Description": {
 		"message": "View chat list in full screen"
