@@ -196,16 +196,19 @@ class YoutubeEvent {
 				let names;
 				if(e.detail.name == "all"){
 					names = Object.keys(this.frames);
+					names.splice(names.indexOf("root"),1);
 				}else{
 					names = [e.detail.name];
 				}
 				for(let name of names){
+					let wins = [];
 					for(let win of this.frames[name]??[]){
 						if(!win.closed){
 							res.push(win);
+							wins.push(win);
 						}
 					}
-					this.frames[name] = res;
+					this.frames[name] = wins;
 				}
 				this.#dispatchEvent(this.events.signal.responseWindow,{
 					windows: res
@@ -532,83 +535,124 @@ class Storage {
 	static stage = {};
 	static options = {};
 	static init(){
+		YoutubeEvent.addEventListener("storageLoad",()=>{
+			chrome.storage.onChanged.addListener((items,type)=>{
+				if(type == "sync"){
+					for(let k in items){
+						if(k.match(/^flag-/)){
+							this.flags[k] = items[k].newValue;
+							items[k] = items[k].newValue;
+						}else{
+							delete items[k];
+						}
+					}
+				}else{
+					for(let k in items){
+						if(k.match(/^flag-use-local$/)){
+							this.flags[k] = items[k].newValue;
+							items[k] = items[k].newValue;
+						}else{
+							delete items[k];
+						}
+					}
+				}
+				YoutubeEvent.dispatchEvent("storageChanged",{key:"flags",data:items});
+			})
+		},{once:true});
 		YoutubeEvent.addEventListener("dispatch",e=>{
 			if(e.detail?.type == "Storage-sync"){
 				if(e.detail.key == "options"){
-					this.#setOptions(e.detail.data);
+					for(let k in e.detail.data){
+						this.options[k] = e.detail.data[k];
+					}
+					YoutubeEvent.dispatchEvent("storageChanged",{key:"options",data:e.detail.data});
 				}else if(e.detail.key == "flags"){
-					this.#setFlags(e.detail.data);
+					for(let k in e.detail.data){
+						this.flags[k] = e.detail.data[k];
+					}
+					YoutubeEvent.dispatchEvent("storageChanged",{key:"flags",data:e.detail.data});
 				}else if(e.detail.key == "stage"){
-					this.#setStage(e.detail.data);
+					for(let k in e.detail.data){
+						if(this.options[k] != e.detail.data[k]){
+							this.stage[k] = e.detail.data[k];
+						}else{
+							delete this.stage[k];
+						}
+					}
+					YoutubeEvent.dispatchEvent("storageChanged",{key:"stage",data:e.detail.data});
 				}else if(e.detail.key == "reflect"){
-					this.#reflectStage();
+					Object.assign(this.options,this.stage);
+					YoutubeEvent.dispatchEvent("storageChanged",{key:"reflect",data:Object.assign({},this.stage)});
+					this.stage = {};
 				}
 				if(e.detail.is == "first"){
 					YoutubeEvent.dispatchEvent("storageLoad");
 				}
 			}else if(e.detail?.type == "Storage-request"){
-				YoutubeEvent.dispatchEvent("dispatch",{type:"Storage-sync",data:Object.assign({},this.flags),key:"flags"},{window:e.detail.target});
-				YoutubeEvent.dispatchEvent("dispatch",{type:"Storage-sync",data:Object.assign({},this.stage),key:"stage"},{window:e.detail.target});
-				YoutubeEvent.dispatchEvent("dispatch",{type:"Storage-sync",data:Object.assign({},this.options),is:"first",key:"options"},{window:e.detail.target});
+				YoutubeEvent.dispatchEvent("dispatch",{type:"Storage-sync",key:"flags",data:Object.assign({},this.flags)},{window:e.detail.target});
+				YoutubeEvent.dispatchEvent("dispatch",{type:"Storage-sync",key:"stage",data:Object.assign({},this.stage)},{window:e.detail.target});
+				YoutubeEvent.dispatchEvent("dispatch",{type:"Storage-sync",key:"options",data:Object.assign({},this.options),is:"first"},{window:e.detail.target});
 			}
 		});
 		if(YoutubeState.isRootFrame()){
 			let sync, local;
-			let initOptions = (sync,local)=>{
-				if(local["v"] == undefined){
-					let def = {v:this.v};
-					for(let ex in extensions){
-						def[ex] = true;
-					}
-					chrome.storage.local.set(Object.assign({"flag-use-local":false},def));
-					if(sync["v"] == undefined){
-						chrome.storage.sync.set(Object.assign({},def));
-						this.options = def;
-					}else{
-						this.options = sync;
-					}
-					this.flags["flag-use-local"] = false;
-				}else{
-					for(let name in sync){
-						if(name.match(/^flag-/g)){
-							this.flags[name] = sync[name];
-							delete sync[name];
-						}
-					}
-					this.flags["flag-use-local"] = local["flag-use-local"];
-					delete local["flag-use-local"];
-					if(local["flag-use-local"]){
-						this.options = local;
-					}else{
-						this.options = sync;
-					}
-				}
-				delete this.options["v"];
-				YoutubeEvent.dispatchEvent("storageLoad");
-			}
 			chrome.storage.local.get(null,items=>{
 				local = items;
 				if(sync){
-					initOptions(sync,local);
+					this.#initOptions(sync,local);
+					YoutubeEvent.dispatchEvent("storageLoad");
 				}
 			});
 			chrome.storage.sync.get(null,items=>{
 				sync = items;
 				if(local){
-					initOptions(sync,local);
+					this.#initOptions(sync,local);
+					YoutubeEvent.dispatchEvent("storageLoad");
 				}
 			});
 		}else{
 			YoutubeEvent.dispatchEvent("dispatch",{type:"Storage-request",target:window},{frame:"root"});
 		}
 	}
-	static getFlag(name,def){
-		return this.flags[name] || def;
-	}
-	static #setFlags(data){
-		for(let k in data){
-			this.flags[k] = data[k];
+	static #initOptions(sync,local){
+		let def = {v:this.v};
+		if(local["v"] == undefined || sync["v"] == undefined){
+			for(let ex in extentions){
+				def[ex] = true;	// TODO
+			}
 		}
+		if(local["v"] == undefined){
+			local = Object.assign({"flag-use-local":false},def);
+			chrome.storage.local.set(Object.assign({},local));
+		}
+		if(sync["v"] == undefined){
+			sync = Object.assign({},def);
+			chrome.storage.sync.set(Object.assign({},sync));
+		}
+		for(let name in sync){
+			if(name.match(/^flag-/)){
+				this.flags[name] = sync[name];
+				delete sync[name];
+			}
+		}
+		this.flags["flag-use-local"] = local["flag-use-local"];
+		delete local["flag-use-local"];
+		if(this.flags["flag-use-local"]){
+			this.options = local;
+		}else{
+			this.options = sync;
+		}
+		delete this.options["v"];
+	}
+	static resetOptions(stg){
+		for(let name in stg){
+			if(name.match(/^[A-Z]/)){
+				this.setStage("name",stg[name]);
+			}
+		}
+	}
+	static getFlag(name,def){
+		return this.flags[name]??def;
 	}
 	static setFlag(name,val){
 		let data = {};
@@ -616,62 +660,41 @@ class Storage {
 		this.setFlags(data);
 	}
 	static setFlags(data){
-		YoutubeEvent.dispatchEvent("dispatch",{type:"Storage-sync",data:data,key:"flags"},{frame:"all"});
-		chrome.storage.sync.set(data);
-	}
-	static getOption(name,def){
-		return this.options[name] || def;
-	}
-	static #setOptions(data){
-		for(let k in data){
-			this.options[k] = data[k];
+		for(let d in data){
+			if(d == "flag-use-local"){
+				chrome.storage.local.set({"flag-use-local":data[d]});
+				delete data[d];
+			}
+		}
+		if(Object.keys(data).length > 0){
+			chrome.storage.sync.set(data);
 		}
 	}
-	static setOption(name,val){
+	static getOption(name,def){
+		return this.options[name]??def;
+	}
+	static setOption(name,val,save=false){
 		let data = {};
 		data[name] = val;
-		this.setOptions(data);
+		this.setOptions(data,save);
 	}
-	static setOptions(data){
+	static setOptions(data,save=false){
 		YoutubeEvent.dispatchEvent("dispatch",{type:"Storage-sync",data:data,key:"options"},{frame:"all"});
-	}
-	static saveOption(name,val){
-		let data = {};
-		data[name] = val;
-		this.saveOptions(data);
-	}
-	static saveOptions(data){
-		this.setOptions(data);
-		chrome.storage[this.flags["flag-use-local"]?"local":"sync"].set(data);
+		if(save){
+			chrome.storage[this.flags["flag-use-local"]?"local":"sync"].set(data);
+		}
 	}
 
 	// オプション画面時に使用
-	static #setStage(data){
-		for(let k in data){
-			if(this.options[k] != data[k]){
-				this.stage[k] = data[k];
-			}else{
-				delete this.stage[k];
-			}
-		}
-		YoutubeEvent.dispatchEvent("storageChanged",{key:"staged",data:data});
-	}
 	static setStage(name,val){
 		let data = {};
 		data[name] = val;
 		YoutubeEvent.dispatchEvent("dispatch",{type:"Storage-sync",data:data,key:"stage"},{frame:"all"});
 	}
-	static #reflectStage(){
-		for(let k in this.stage){
-			this.options[k] = this.stage[k];
-		}
-		YoutubeEvent.dispatchEvent("storageChanged",{key:"reflected",data:Object.assign({},this.stage)});
-		this.stage = {};
-	}
 	static reflectStage(){
 		YoutubeEvent.dispatchEvent("dispatch",{type:"Storage-sync",key:"reflect"},{frame:"all"});
 	}
-	static saveStorage(useLocal){
+	static saveOptions(useLocal=false){
 		let data = Object.assign(Object.assign({},this.options),this.stage);
 		chrome.storage[useLocal?"local":"sync"].set(data);
 	}
@@ -721,11 +744,23 @@ class DOMTemplate {
 				flex: none;
 				z-index: 1;
 			}
-			#ext-yc-options-wrapper #back-button {
+			#ext-yc-options-wrapper #header #back-button {
 				margin: 0 8px;
 			}
-			#ext-yc-options-wrapper #back-button > * {
+			#ext-yc-options-wrapper #header #back-button > * {
 				--yt-button-color: var( --yt-live-chat-primary-text-color, var(--yt-deprecated-luna-black-opacity-lighten-3) );
+			}
+			#ext-yc-options-wrapper #footer {
+				height: 48px;
+				padding: 6px;
+				background-color: var(--yt-live-chat-action-panel-background-color,var(--yt-deprecated-opalescence-soft-grey-opacity-lighten-3));
+				border-bottom: 1px solid var(--yt-spec-10-percent-layer);
+				box-sizing: border-box;
+				display: flex;
+				justify-content: space-around;
+			}
+			#ext-yc-options-wrapper #footer > * {
+				background: var(--yt-live-chat-vem-background-color);
 			}
 		`,
 		card: `
@@ -898,6 +933,7 @@ class DOMTemplate {
 				<div id="ext-yc-options" class="style-scope yt-live-chat-renderer">
 					<div id="items" class="style-scope yt-live-chat-renderer"></div>
 				</div>
+				<div id="footer" class="style-scope yt-live-chat-renderer"></div>
 			</div>
 		`,
 		backButton: `
@@ -928,6 +964,14 @@ class DOMTemplate {
 		`,
 
 		// DOM
+		paperButton: (pos,dom,templates)=>{
+			const paperButton = document.createElement("tp-yt-paper-button");
+			dom[this.#getPos(pos,false)](paperButton);
+			const formattedString = document.createElement("yt-formatted-string");
+			paperButton.appendChild(formattedString);
+			formattedString.removeAttribute("is-empty");
+			formattedString.innerHTML = templates["title"];
+		},
 		ytIconButton: (pos,dom,templates)=>{
 			const ytIconButton = document.createElement("yt-icon-button");
 			ytIconButton.id = "overflow";
@@ -966,7 +1010,7 @@ class DOMTemplate {
 			case "pre":
 				return ins ? "afterbegin" : "prepend";
 			case "app":
-				return ins ? "beforeend": "prepend";
+				return ins ? "beforeend": "append";
 			case "aft":
 				return ins ? "afterend" : "after";
 		}
@@ -1039,6 +1083,10 @@ class DOMTemplate {
 		this.#dom.setAttribute("data-ext-yc",name);
 		return this;
 	}
+	a(name,val){
+		this.#dom.setAttribute(name,val);
+		return this;
+	}
 	ins(pos,name,replacers={}){
 		if(typeof(this.constructor.html[name]) == "string"){
 			this.#dom.insertAdjacentHTML(this.constructor.#getPos(pos,true),this.constructor.#replace(this.constructor.html[name],replacers));
@@ -1088,11 +1136,38 @@ class Options extends Ext {
 					.r("#ext-yc-options-wrapper").q("yt-button-renderer").ins("app","backButton")
 					.on({q:"yt-icon-button",t:"click",f:this.backToChat})
 					.q("#header button").ins("app","ytIcon",{svg:"backIcon"})
+					.q("#footer").ins("app","paperButton",{title:chrome.i18n.getMessage("optionsReload")})
+					.on({q:"tp-yt-paper-button:first-child",t:"click",f:()=>{
+						if(Storage.getFlag("flag-use-local")){
+							chrome.storage.local.get(null,items=>{
+								Storage.resetOptions(items);
+								YoutubeEvent.dispatchEvent("storageChanged",{key:"stage",data:Object.assign({"flag-use-local":flag},Storage.options)})	
+							});
+						}else{
+							chrome.storage.sync.get(null,items=>{
+								Storage.resetOptions(items);
+								YoutubeEvent.dispatchEvent("storageChanged",{key:"stage",data:Object.assign({"flag-use-local":flag},Storage.options)})
+							});
+						}
+					}})
+					.ins("app","paperButton",{title:chrome.i18n.getMessage(`optionsSave${Storage.getFlag("flag-use-local",false)?"Local":"Sync"}`)})
+					.on({q:"tp-yt-paper-button:last-child",t:"click",f:()=>Storage.saveOptions(Storage.getFlag("flag-use-local",false))})
 					.q("#items",true);
 				if(Storage.getFlag("flag-options-description",0) < 1){
 					options.ins("app","card",{cardDescription:chrome.i18n.getMessage("optionsDescription")})
-					.on({q:"#ext-yc-card-close-button",t:"click",f:e=>{e.currentTarget.closest("#ext-yc-card").remove();Storage.setFlag("flag-options-description",1)}});
+					.on({q:"#ext-yc-card-close-button",t:"click",f:e=>{
+						e.currentTarget.closest("#ext-yc-card").remove();
+						Storage.setFlag("flag-options-description",1);
+					}});
 				}
+				options.ins("app","caption",{
+					captionInput: "toggle",
+					captionDescription: chrome.i18n.getMessage("optionsUseLocal"),
+					toggleOptionName: "flag-use-local",
+					toggleChecked: (Storage.getFlag("flag-use-local",false)?" checked":"")
+				})
+				.q("#ext-yc-caption-container").a("style","margin-bottom: 24px;")
+				.on({q:`#ext-yc-toggle[data-option="flag-use-local"]`,t:"click",f:(e)=>Storage.setFlag("flag-use-local",e.currentTarget.getAttribute("checked")==null)});
 
 				// 拡張機能設定初期化処理
 				for(let ex in extensions){
@@ -1103,7 +1178,7 @@ class Options extends Ext {
 								captionInput: "toggle",
 								captionDescription: extensions[ex].description,
 								toggleOptionName: ex,
-								toggleChecked: (Storage.getOption(ex)?" checked":"")
+								toggleChecked: (Storage.getOption(ex,false)?" checked":"")
 							})
 							.on({q:`#ext-yc-toggle[data-option="${ex}"]`,t:"click",f:this.toggle});
 						extensions[ex].registOptions(options.q("#ext-yc-toggle-collapse").q());
@@ -1131,7 +1206,7 @@ class Options extends Ext {
 		}
 	}
 	static optionsUpdated = (e)=>{
-		if(e.detail.key == "staged"){
+		if(e.detail.key == "stage"){
 			if(YoutubeState.isChatFrame()){
 				for(let k in e.detail.data){
 					const elm = document.querySelector(`#ext-yc-options [data-option="${k}"]`);
@@ -1155,7 +1230,21 @@ class Options extends Ext {
 					}
 				}
 			}
-		}else if(e.detail.key == "reflected"){
+		}else if(e.detail.key == "flags"){
+			if(YoutubeState.isChatFrame()){
+				for(let k in e.detail.data){
+					const elm = document.querySelector(`#ext-yc-options [data-option="${k}"]`);
+					if(k == "flag-use-local"){
+						document.querySelector("#ext-yc-options-wrapper #footer > tp-yt-paper-button:nth-child(2) yt-formatted-string").innerHTML = chrome.i18n.getMessage(`optionsSave${e.detail.data[k]?"Local":"Sync"}`);
+					}
+					if(e.detail.data[k]){
+						elm.setAttribute("checked","");
+					}else{
+						elm.removeAttribute("checked");
+					}
+				}
+			}
+		}else if(e.detail.key == "reflect"){
 			for(let ex in extensions){
 				const st = this.getExUpdated(ex,e.detail.data);
 				if(typeof st == "boolean"){

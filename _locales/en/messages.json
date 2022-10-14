@@ -13,21 +13,33 @@
 		"message": "Back"
 	},
 	"optionsDescription": {
-		"message": "この設定画面では設定項目はすぐに反映されます。ただし、設定項目は現在のページのみに適用されるため、設定を永続的に反映させたい場合は保存する必要があります。また、保存した内容を他のページで利用する場合は再読み込みをする必要があります。"
+		"message": "On this setting screen, the setting items are reflected immediately. However, the setting items are applied only to the current page, so if you want the settings to be reflected permanently, you need to save them. Also, if you want to use the saved contents on other pages, you need to reload the settings."
+	},
+	"optionsUseLocal": {
+		"message": "Use local storage"
+	},
+	"optionsReload": {
+		"message": "Reload the setting"
+	},
+	"optionsSaveLocal": {
+		"message": "Save to local"
+	},
+	"optionsSaveSync": {
+		"message": "Save to global"
 	},
 
 	"CommentFixerDescription": {
-		"message": "特定のコメントの下部固定化"
+		"message": "Bottom pinning of specific comments"
 	},
 	"CommentFixerReplaceText": {
 		"message": "Pinned comment"
 	},
 
 	"FullscreenChatDescription": {
-		"message": "フルスクリーンでのチャット覧表示"
+		"message": "View chat list in full screen"
 	},
 
 	"ChatTickerScrollDescription": {
-		"message": "スーパーチャット一覧の横スクロール"
+		"message": "Horizontal scrolling of Super Chat list"
 	}
 }

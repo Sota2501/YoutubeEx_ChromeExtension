@@ -407,7 +407,8 @@ class FullscreenChat extends Ext {
 			this.moveBtn = (new DOMTemplate("#chat-messages > yt-live-chat-header-renderer > yt-icon-button#overflow:last-child"))
 				.ins("bef","ytIconButton",{svg:this.grabIcon})
 				.q("#chat-messages > yt-live-chat-header-renderer > yt-icon-button#overflow:nth-last-child(2)",null).tag(this.name)
-				.on({t:"mousedown",f:this.iframeDownEvent});
+				.on({t:"mousedown",f:this.iframeDownEvent})
+				.q();
 
 			this.fullscreenHandler = YoutubeEvent.addEventListener("ytFullscreen",e=>{
 				if(e.detail.args[0]){
@@ -436,7 +437,7 @@ class FullscreenChat extends Ext {
 		}else if(YoutubeState.isIframeChatFrame()){
 			YoutubeEvent.removeEventListener("ytFullscreen",this.fullscreenHandler,{frame:"app"});
 			this.fullscreenHandler = null;
-			this.grabBtnOut.removeEventListener("mousedown",this.iframeDownEvent);
+			this.moveBtn.removeEventListener("mousedown",this.iframeDownEvent);
 			document.removeEventListener("mousemove",this.iframeMoveEvent);
 			document.removeEventListener("mouseup",this.iframeUpEvent);
 		}
@@ -468,11 +469,11 @@ class FullscreenChat extends Ext {
 	}
 	static iframeUngrabed = (e)=>{
 		const pos = this.calcFramePos(e);
-		Storage.saveOptions({
+		Storage.setOptions({
 			"FullscreenChat-frame-top": pos.top,
 			"FullscreenChat-frame-left": pos.left,
 			"FullscreenChat-frame-width": pos.width
-		});
+		},true);
 		document.removeEventListener("ext-yc-iframe-move",this.moveIframe);
 	}
 	static moveIframe = (e)=>{
