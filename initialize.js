@@ -1214,7 +1214,7 @@ class Options extends Ext {
 								toggleOptionName: ex,
 								toggleChecked: (Storage.getOption(ex,false)?" checked":"")
 							},true)
-							.on({q:`#ext-yc-toggle`,t:"click",f:this.toggle})
+							.on({q:"#ext-yc-toggle",t:"click",f:this.toggle})
 							.ins("append","toggleCollapse",{},true);
 						extensions[ex].registOptions(options.q());
 					}catch(e){

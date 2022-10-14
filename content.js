@@ -39,7 +39,7 @@ class CommentFixer extends Ext {
 				toggleOptionName: `${this.name}-opt-owner`,
 				toggleChecked: (Storage.getFlag(`${this.name}-opt-owner`,false)?" checked":"")
 			},true)
-			.on({q:`#ext-yc-toggle`,t:"click",f:Options.toggle})
+			.on({q:"#ext-yc-toggle",t:"click",f:Options.toggle})
 			.q(null)
 			.ins("append","caption",{
 				captionInput: "toggle",
@@ -47,7 +47,7 @@ class CommentFixer extends Ext {
 				toggleOptionName: `${this.name}-opt-verified`,
 				toggleChecked: (Storage.getFlag(`${this.name}-opt-verified`,false)?" checked":"")
 			},true)
-			.on({q:`#ext-yc-toggle`,t:"click",f:Options.toggle})
+			.on({q:"#ext-yc-toggle",t:"click",f:Options.toggle})
 			.q(null)
 			.ins("append","caption",{
 				captionInput: "toggle",
@@ -55,7 +55,7 @@ class CommentFixer extends Ext {
 				toggleOptionName: `${this.name}-opt-moderator`,
 				toggleChecked: (Storage.getFlag(`${this.name}-opt-moderator`,false)?" checked":"")
 			},true)
-			.on({q:`#ext-yc-toggle`,t:"click",f:Options.toggle});
+			.on({q:"#ext-yc-toggle",t:"click",f:Options.toggle});
 	}
 	static init(){
 		if(YoutubeState.isChatFrame()){
