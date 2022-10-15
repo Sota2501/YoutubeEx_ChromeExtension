@@ -2,6 +2,30 @@
  * frameはroot,app,mainChat,iframeChat,popupChatのみを想定する
  */
 class YoutubeState {
+	static parentsFrameIsYT(){
+		let win = window;
+		do{
+			let pIsYT = this.parentFrameIsYT(win);
+			if(pIsYT){
+				if(win.top != win){
+					win = win.parent;
+				}else{
+					win = win.opener;
+				}
+			}else{
+				return pIsYT;
+			}
+		}while(win.top != win || win.opener);
+		return true;
+	}
+	static parentFrameIsYT(win=window){
+		if(win.top != win || win.opener){
+			return new URL(win.document.referrer).hostname == "www.youtube.com"
+		}else{
+			return null;
+		}
+	}
+
 	static isMainWindow(){
 		return window.opener == null;
 	}
@@ -492,7 +516,6 @@ class YoutubeEvent {
 		}
 	}
 }
-YoutubeEvent.init();
 
 class Ext {
 	static name = "";
@@ -705,7 +728,6 @@ class Storage {
 		chrome.storage[useLocal?"local":"sync"].set(data);
 	}
 }
-Storage.init();
 
 class DOMTemplate {
 	static #tmp = document.createElement("div");
@@ -1156,7 +1178,6 @@ class DOMTemplate {
 		return this;
 	}
 }
-DOMTemplate.init();
 
 class Options extends Ext {
 	static name = "Options";
@@ -1330,4 +1351,10 @@ class Options extends Ext {
 		}
 	}
 }
-Options.init();
+
+if(YoutubeState.parentsFrameIsYT() != false){
+	YoutubeEvent.init();
+	Storage.init();
+	DOMTemplate.init();
+	Options.init();
+}

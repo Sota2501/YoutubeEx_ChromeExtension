@@ -575,4 +575,6 @@ class ChatTickerScroll extends Ext {
 	}
 }
 
-init();
+if(YoutubeState.parentsFrameIsYT() != false){
+	init();
+}
