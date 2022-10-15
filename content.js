@@ -31,13 +31,14 @@ class CommentFixer extends Ext {
 			display: none;
 		}
 	`;
+	static opts = {};
 	static registOptions(wrapper){
 		(new DOMTemplate(wrapper))
 			.ins("append","caption",{
 				captionInput: "toggle",
 				captionDescription: this.i18n("Owner"),
 				toggleOptionName: `${this.name}-opt-owner`,
-				toggleChecked: (Storage.getFlag(`${this.name}-opt-owner`,false)?" checked":"")
+				toggleChecked: (Storage.getOption(`${this.name}-opt-owner`,false)?" checked":"")
 			},true)
 			.on({q:"#ext-yc-toggle",t:"click",f:Options.toggle})
 			.q(null)
@@ -45,7 +46,7 @@ class CommentFixer extends Ext {
 				captionInput: "toggle",
 				captionDescription: this.i18n("Verified"),
 				toggleOptionName: `${this.name}-opt-verified`,
-				toggleChecked: (Storage.getFlag(`${this.name}-opt-verified`,false)?" checked":"")
+				toggleChecked: (Storage.getOption(`${this.name}-opt-verified`,false)?" checked":"")
 			},true)
 			.on({q:"#ext-yc-toggle",t:"click",f:Options.toggle})
 			.q(null)
@@ -53,14 +54,32 @@ class CommentFixer extends Ext {
 				captionInput: "toggle",
 				captionDescription: this.i18n("Moderator"),
 				toggleOptionName: `${this.name}-opt-moderator`,
-				toggleChecked: (Storage.getFlag(`${this.name}-opt-moderator`,false)?" checked":"")
+				toggleChecked: (Storage.getOption(`${this.name}-opt-moderator`,false)?" checked":"")
 			},true)
 			.on({q:"#ext-yc-toggle",t:"click",f:Options.toggle});
+	}
+	static optionsUpdated(opts){
+		if(YoutubeState.isChatFrame()){
+			Object.assign(this.opts,opts);
+			const items = document.querySelector("#items.yt-live-chat-item-list-renderer")
+			const fixedCommentList = document.querySelector("#fixedCommentList");
+			this.observer.disconnect();
+			Array.from(fixedCommentList.childNodes).forEach(node=>{
+				const replacement = items.querySelector(`*[data-comment-id="${node.id}"]`);
+				replacement.after(node);
+				replacement.remove();
+			});
+			this.observerCallback([{addedNodes:Array(...items.children),removedNodes:[]}]);
+			this.observer.observe(items,{childList:true});
+		}
 	}
 	static init(){
 		if(YoutubeState.isChatFrame()){
 			YoutubeEvent.addEventListener("load",()=>{
 				this.setStyle(this.style);
+				this.opts["opt-owner"] = Storage.getOption(`${this.name}-opt-owner`,true);
+				this.opts["opt-verified"] = Storage.getOption(`${this.name}-opt-verified`,true);
+				this.opts["opt-moderator"] = Storage.getOption(`${this.name}-opt-moderator`,true);
 				const items = document.querySelector("#items.yt-live-chat-item-list-renderer");
 				const fixedCommentList = document.createElement("div");
 				this.tagAddedDOM(fixedCommentList);
@@ -97,13 +116,13 @@ class CommentFixer extends Ext {
 	static observerCallback = (mutationList)=>{
 		const items = document.querySelector("#items.yt-live-chat-item-list-renderer")
 		const fixedCommentList = document.querySelector("#fixedCommentList");
-		const authorType = ["moderator","owner"];
 		mutationList.forEach(mutation=>{
 			if(mutation.addedNodes.length){
 				mutation.addedNodes.forEach(node=>{
 					if(
-						authorType.includes(node.getAttribute("author-type")) ||
-						node.querySelector("div#content > yt-live-chat-author-chip[is-highlighted]")
+						this.opts["opt-owner"] && node.getAttribute("author-type") == "owner" ||
+						this.opts["opt-verified"] && node.querySelector('yt-live-chat-author-badge-renderer[type="verified"]') ||
+						this.opts["opt-moderator"] && node.getAttribute("author-type") == "moderator"
 					){
 						const replacement = document.createElement("yt-live-chat-text-message-renderer");
 						replacement.classList.add("fixedComment");
