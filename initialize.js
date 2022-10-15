@@ -583,7 +583,9 @@ class Storage {
 						}
 					}
 				}
-				YoutubeEvent.dispatchEvent("storageChanged",{key:"flags",data:items});
+				if(Object.keys(items).length > 0){
+					YoutubeEvent.dispatchEvent("storageChanged",{key:"flags",data:items});
+				}
 			})
 		},{once:true});
 		YoutubeEvent.addEventListener("dispatch",e=>{
@@ -708,7 +710,7 @@ class Storage {
 		this.setOptions(data,save);
 	}
 	static setOptions(data,save=false){
-		YoutubeEvent.dispatchEvent("dispatch",{type:"Storage-sync",data:data,key:"options"},{frame:"all"});
+		YoutubeEvent.dispatchEvent("dispatch",{type:"Storage-sync",key:"options",data:data},{frame:"all"});
 		if(save){
 			chrome.storage[this.flags["flag-use-local"]?"local":"sync"].set(data);
 		}
@@ -718,7 +720,7 @@ class Storage {
 	static setStage(name,val){
 		let data = {};
 		data[name] = val;
-		YoutubeEvent.dispatchEvent("dispatch",{type:"Storage-sync",data:data,key:"stage"},{frame:"all"});
+		YoutubeEvent.dispatchEvent("dispatch",{type:"Storage-sync",key:"stage",data:data},{frame:"all"});
 	}
 	static reflectStage(){
 		YoutubeEvent.dispatchEvent("dispatch",{type:"Storage-sync",key:"reflect"},{frame:"all"});
@@ -1262,47 +1264,65 @@ class Options extends Ext {
 		}
 	}
 	static optionsUpdated = (e)=>{
-		if(e.detail.key == "stage"){
-			if(YoutubeState.isChatFrame()){
-				for(let k in e.detail.data){
-					const elm = document.querySelector(`#ext-yc-options [data-option="${k}"]`);
-					switch(typeof e.detail.data[k]){
-						case "boolean":
-							break;
-						case "number":
-							// TODO
-							break;
-						case "string":
-							// TODO
-							break;
-						default:
-							// TODO
-							break;
+		switch(e.detail.key){
+			case "stage":
+				if(YoutubeState.isChatFrame()){
+					for(let k in e.detail.data){
+						const elm = document.querySelector(`#ext-yc-options [data-option="${k}"]`);
+						switch(typeof e.detail.data[k]){
+							case "boolean":
+								if(elm){
+									if(e.detail.data[k]){
+										elm.setAttribute("checked","");
+									}else{
+										elm.removeAttribute("checked");
+									}
+								}
+								break;
+							case "number":
+								// TODO
+								break;
+							case "string":
+								// TODO
+								break;
+							default:
+								// TODO
+								break;
+						}
 					}
 				}
-			}
-		}else if(e.detail.key == "flags"){
-			if(YoutubeState.isChatFrame()){
-				for(let k in e.detail.data){
-					const elm = document.querySelector(`#ext-yc-options [data-option="${k}"]`);
-					if(k == "flag-use-local"){
-						document.querySelector("#ext-yc-options-wrapper #footer > tp-yt-paper-button:nth-child(2) yt-formatted-string").innerHTML = this.i18n(`Save${e.detail.data[k]?"Local":"Sync"}`);
+				break;
+			case "flags":
+				if(YoutubeState.isChatFrame()){
+					for(let k in e.detail.data){
+						const elm = document.querySelector(`#ext-yc-options [data-option="${k}"]`);
+						if(k == "flag-use-local"){
+							document.querySelector("#ext-yc-options-wrapper #footer > tp-yt-paper-button:nth-child(2) yt-formatted-string").innerHTML = this.i18n(`Save${e.detail.data[k]?"Local":"Sync"}`);
+							if(e.detail.data[k]){
+								elm.setAttribute("checked","");
+							}else{
+								elm.removeAttribute("checked");
+							}
+						}
 					}
 				}
-			}
-		}else if(e.detail.key == "reflect"){
-			for(let ex in extensions){
-				const st = this.getExUpdated(ex,e.detail.data);
-				if(typeof st == "boolean"){
-					if(st){
-						extensions[ex].init();
-					}else{
-						extensions[ex].deinit();
+				break;
+			case "reflect":
+				for(let ex in extensions){
+					const st = this.getExUpdated(ex,e.detail.data);
+					if(typeof st == "boolean"){
+						if(st){
+							extensions[ex].init();
+						}else{
+							extensions[ex].deinit();
+						}
+					}else if(st != null){
+						extensions[ex].optionsUpdated(st);
 					}
-				}else if(st != null){
-					extensions[ex].optionsUpdated(st);
 				}
-			}
+				break;
+			case "options":
+				break;
 		}
 	}
 	static getExUpdated = (name,stage)=>{
