@@ -544,12 +544,6 @@ class Ext {
 		const dom = document.querySelectorAll(`[data-ext-yc="${this.name}"]`);
 		dom.forEach(e=>e.remove());
 	}
-	static replace(html,placeholders){
-		for(let placeholder in placeholders){
-			html = html.replace("[["+placeholder+"]]",placeholders[placeholder]);
-		}
-		return html;
-	}
 	static i18n(key){
 		return chrome.i18n.getMessage(`${this.name}_${key}`);
 	}
