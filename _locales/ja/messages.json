@@ -38,7 +38,7 @@
 		"message": "配信者本人"
 	},
 	"CommentFixer_Verified": {
-		"message": "確認済み(認証マークあり)"
+		"message": "確認済み (認証マークあり)"
 	},
 	"CommentFixer_Moderator": {
 		"message": "モデレーター"
