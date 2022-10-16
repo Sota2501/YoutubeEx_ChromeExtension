@@ -18,19 +18,40 @@ class CommentFixer extends Ext {
 	static name = "CommentFixer";
 	static description = this.i18n("Description");
 	static style = `
-		#fixedCommentList {
-			left: 0;
-			right: 0;
-			bottom: 0;
-			position: absolute;
-			max-height: 150px;
-			overflow: scroll;
+		yt-live-chat-item-list-renderer {
+			display: flex;
+			flex-direction: column;
+		}
+		yt-live-chat-item-list-renderer #contents.yt-live-chat-item-list-renderer {
+			position: relative;
+			flex: 1;
+			overflow: hidden;
+		}
+		yt-live-chat-item-list-renderer #contents.yt-live-chat-item-list-renderer[data-ext-yc="${this.name}"] {
+			display: unset;
+			flex: unset;
+			max-height: 30%;
 			border-top: 1px solid rgba(255,255,255,0.1);
 		}
-		#fixedCommentList::-webkit-scrollbar {
-			display: none;
+		yt-live-chat-item-list-renderer #contents[data-ext-yc="${this.name}"] #item-scroller {
+			max-height: 100%;
+		}
+		yt-live-chat-item-list-renderer #contents[data-ext-yc="${this.name}"] #item-offset #items {
+			position: unset;
+			padding: unset;
 		}
 	`;
+	static fixedContainer = `
+		<div id="contents" class="style-scope yt-live-chat-item-list-renderer" data-ext-yc="${this.name}">
+			<div id="item-scroller" class="style-scope yt-live-chat-item-list-renderer animated">
+				<div id="item-offset" class="style-scope yt-live-chat-item-list-renderer">
+					<div id="items" class="style-scope yt-live-chat-item-list-renderer"></div>
+				</div>
+			</div>
+		</div>
+	`;
+	static baseItems;
+	static addedItems;
 	static opts = {};
 	static registOptions(wrapper){
 		(new DOMTemplate(wrapper))
@@ -61,16 +82,14 @@ class CommentFixer extends Ext {
 	static optionsUpdated(opts){
 		if(YoutubeState.isChatFrame()){
 			Object.assign(this.opts,opts);
-			const items = document.querySelector("#items.yt-live-chat-item-list-renderer")
-			const fixedCommentList = document.querySelector("#fixedCommentList");
 			this.observer.disconnect();
-			Array.from(fixedCommentList.childNodes).forEach(node=>{
-				const replacement = items.querySelector(`*[data-comment-id="${node.id}"]`);
+			Array.from(this.addedItems.childNodes).forEach(node=>{
+				const replacement = this.baseItems.querySelector(`*[data-comment-id="${node.id}"]`);
 				replacement.after(node);
 				replacement.remove();
 			});
-			this.observerCallback([{addedNodes:Array(...items.children),removedNodes:[]}]);
-			this.observer.observe(items,{childList:true});
+			this.observerCallback([{addedNodes:Array(...this.baseItems.children),removedNodes:[]}]);
+			this.observer.observe(this.baseItems,{childList:true});
 		}
 	}
 	static init(){
@@ -80,33 +99,23 @@ class CommentFixer extends Ext {
 				this.opts["opt-owner"] = Storage.getOption(`${this.name}-opt-owner`,true);
 				this.opts["opt-verified"] = Storage.getOption(`${this.name}-opt-verified`,true);
 				this.opts["opt-moderator"] = Storage.getOption(`${this.name}-opt-moderator`,true);
-				const items = document.querySelector("#items.yt-live-chat-item-list-renderer");
-				const fixedCommentList = document.createElement("div");
-				this.tagAddedDOM(fixedCommentList);
-				items.style.marginBottom = "0px";
-				items.after(fixedCommentList);
-				fixedCommentList.id = "fixedCommentList";
-				this.fullscreenHandler = YoutubeEvent.addEventListener("ytFullscreen",()=>{
-					items.style.marginBottom = fixedCommentList.clientHeight + "px";
-				},{frame:"app"});
-				this.observerCallback([{addedNodes:Array(...items.children),removedNodes:[]}]);
+				this.baseItems = document.querySelector("#items.yt-live-chat-item-list-renderer");
+				const wrapper = document.querySelector("yt-live-chat-item-list-renderer");
+				wrapper.insertAdjacentHTML("beforeend",this.fixedContainer);
+				this.addedItems = wrapper.querySelector(`[data-ext-yc="${this.name}"] #items`);
+				this.observerCallback([{addedNodes:Array(...this.baseItems.children),removedNodes:[]}]);
 				if(!this.observer){
 					this.observer = new MutationObserver(this.observerCallback);
 				}
-				this.observer.observe(items,{childList:true});
+				this.observer.observe(this.baseItems,{childList:true});
 			});
 		}
 	}
 	static deinit(){
 		if(YoutubeState.isChatFrame()){
-			const items = document.querySelector("#items.yt-live-chat-item-list-renderer");
-			const fixedCommentList = document.querySelector("div#fixedCommentList");
-			items.style.marginBottom = "";
 			this.observer.disconnect();
-			YoutubeEvent.removeEventListener("ytFullscreen", this.fullscreenHandler,{frame:"app"});
-			this.fullscreenHandler = null;
-			Array.from(fixedCommentList.childNodes).forEach(node=>{
-				const replacement = items.querySelector(`*[data-comment-id="${node.id}"]`);
+			Array.from(this.addedItems.childNodes).forEach(node=>{
+				const replacement = this.baseItems.querySelector(`*[data-comment-id="${node.id}"]`);
 				replacement.after(node);
 				replacement.remove();
 			});
@@ -114,8 +123,6 @@ class CommentFixer extends Ext {
 		}
 	}
 	static observerCallback = (mutationList)=>{
-		const items = document.querySelector("#items.yt-live-chat-item-list-renderer")
-		const fixedCommentList = document.querySelector("#fixedCommentList");
 		mutationList.forEach(mutation=>{
 			if(mutation.addedNodes.length){
 				mutation.addedNodes.forEach(node=>{
@@ -126,21 +133,24 @@ class CommentFixer extends Ext {
 					){
 						const replacement = document.createElement("yt-live-chat-text-message-renderer");
 						replacement.classList.add("fixedComment");
-						replacement.height = node.clientHeight;
 						replacement.dataset.commentId = node.id;
 						node.after(replacement);
-						fixedCommentList.appendChild(node);
 						replacement.querySelector("#content > #message").innerText = this.i18n("ReplaceText");
 						replacement.querySelector("#menu").setAttribute("hidden","");
-						items.style.marginBottom = fixedCommentList.clientHeight + "px";
-						fixedCommentList.scrollTo({"top":fixedCommentList.scrollHeight, "behavior":"smooth"});
+						const addedScroller = this.addedItems.closest("#item-scroller");
+						const scrolling = addedScroller.scrollTop < addedScroller.scrollHeight - addedScroller.clientHeight;
+						this.addedItems.append(node);
+						const baseScroller = this.baseItems.closest("#item-scroller");
+						baseScroller.scrollTo({"top":baseScroller.scrollHeight-baseScroller.clientHeight});
+						if(!scrolling){
+							addedScroller.scrollTo({"top":addedScroller.scrollHeight-addedScroller.clientHeight,"behavior":"smooth"});
+						}
 					}
 				});
 			}else if(mutation.removedNodes.length){
 				mutation.removedNodes.forEach(node=>{
 					if(Array.from(node.classList).includes("fixedComment")){
-						fixedCommentList.querySelector(`*[id="${node.dataset.commentId}"]`).remove();
-						items.style.marginBottom = fixedCommentList.clientHeight + "px";
+						this.addedItems.querySelector(`*[id="${node.dataset.commentId}"]`).remove();
 					}
 				})
 			}
