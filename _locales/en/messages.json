@@ -49,6 +49,9 @@
 	},
 
 	"ChatTickerScroll_Description": {
-		"message": "Horizontal scrolling of Super Chat list"
+		"message": "Mouse scrolling in Super Chat list"
+	},
+	"ChatTickerScroll_ButtonHide": {
+		"message": "Hide scroll buttons"
 	}
 }

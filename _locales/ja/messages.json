@@ -49,6 +49,9 @@
 	},
 
 	"ChatTickerScroll_Description": {
-		"message": "スーパーチャット一覧の横スクロール"
+		"message": "スーパーチャット一覧のマウスでのスクロール"
+	},
+	"ChatTickerScroll_ButtonHide": {
+		"message": "スクロールボタンを隠す"
 	}
 }
