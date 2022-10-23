@@ -1051,7 +1051,12 @@ class DOMTemplate {
 						e.currentTarget.removeAttribute("checked");
 					}
 				}
-			})
+			});
+			dom.addEventListener("keydown",e=>{
+				if(e.keyCode == 13){
+					dom.click();
+				}
+			});
 			return dom;
 		}
 	}
