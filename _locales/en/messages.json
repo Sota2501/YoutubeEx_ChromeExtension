@@ -1,13 +1,13 @@
 {
 	"extName": {
-		"message": "YoutubeEx"
+		"message": "Youtube Chat Ex"
 	},
 	"extDescription": {
 		"message": "Provides additional features to Youtube. It can be used by checking the item you want to add."
 	},
 
 	"optionsTitle": {
-		"message": "Extension settings"
+		"message": "Youtube Chat Ex settings"
 	},
 	"optionsBack": {
 		"message": "Back"

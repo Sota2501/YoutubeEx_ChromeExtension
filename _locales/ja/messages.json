@@ -1,13 +1,13 @@
 {
 	"extName": {
-		"message": "YoutubeEx"
+		"message": "Youtube Chat Ex"
 	},
 	"extDescription": {
 		"message": "Youtubeに追加機能を提供する拡張機能。追加したい項目をチェックすると使用可能。"
 	},
 
 	"optionsTitle": {
-		"message": "拡張機能の設定"
+		"message": "Youtube Chat Exの設定"
 	},
 	"optionsBack": {
 		"message": "戻る"
