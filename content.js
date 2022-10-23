@@ -1,7 +1,7 @@
 const extensions = {};
 function init(){
 	const exts = [
-		CommentFixer,
+		CommentPicker,
 		FullscreenChat,
 		ChatTickerScroll
 	];
@@ -13,9 +13,9 @@ function init(){
 	});
 }
 
-// Youtube CommentFixer
-class CommentFixer extends Ext {
-	static name = "CommentFixer";
+// Youtube CommentPicker
+class CommentPicker extends Ext {
+	static name = "CommentPicker";
 	static description = this.i18n("Description");
 	static style = `
 		yt-live-chat-item-list-renderer {
@@ -125,12 +125,18 @@ class CommentFixer extends Ext {
 	static observerCallback = (mutationList)=>{
 		mutationList.forEach(mutation=>{
 			if(mutation.addedNodes.length){
+				let anchor = false;
 				mutation.addedNodes.forEach(node=>{
 					if(
 						this.opts["opt-owner"] && node.getAttribute("author-type") == "owner" ||
 						this.opts["opt-verified"] && node.querySelector('yt-live-chat-author-badge-renderer[type="verified"]') ||
-						this.opts["opt-moderator"] && node.getAttribute("author-type") == "moderator"
+						this.opts["opt-moderator"] && node.getAttribute("author-type") == "moderator" || 
+						anchor
 					){
+						anchor = false;
+						if(this.opts["opt-owner"] && node.getAttribute("author-type") == "owner" && YoutubeState.isLiveStreaming() && node.querySelector("#message").innerText.match(/\↓/g)){
+							anchor = true;
+						}
 						const replacement = document.createElement("yt-live-chat-text-message-renderer");
 						replacement.classList.add("fixedComment");
 						replacement.dataset.commentId = node.id;
@@ -168,6 +174,8 @@ class FullscreenChat extends Ext {
 				top: unset!important;
 				left: unset!important;
 				width: unset!important;
+				height: var(--ytd-watch-flexy-chat-max-height)!important;
+				min-height: 596px!important;
 			}
 			
 			body.no-scroll ytd-live-chat-frame#chat {
@@ -415,11 +423,9 @@ class FullscreenChat extends Ext {
 			html:not(.fullscreen) #chat-messages yt-live-chat-header-renderer > yt-icon-button#overflow:first-of-type {
 				display: none;
 			}
-			
 			#chat-messages yt-live-chat-header-renderer > yt-icon-button#overflow:first-of-type button {
 				cursor: grab;
 			}
-			
 			#chat-messages yt-live-chat-header-renderer > yt-icon-button#overflow:first-of-type button:active {
 				cursor: grabbing;
 			}
@@ -437,6 +443,56 @@ class FullscreenChat extends Ext {
 			}
 			html.fullscreen yt-live-chat-ninja-message-renderer {
 				display: none;
+			}
+
+
+			#resizeButton {
+				position: absolute;
+				display: none;
+				top: 0;
+				left: 0;
+				bottom: 0;
+				right: 0;
+				grid-template-columns: 8px 1fr 8px;
+				grid-template-rows: 8px 1fr 8px;
+				pointer-events: none;
+			}
+			html.fullscreen #resizeButton {
+				display: grid;
+			}
+			#resizeButton > * {
+				margin: 0;
+				padding: 0;
+				background: none;
+				border: none;
+				pointer-events: auto;
+			}
+			#resizeButton > :is(:nth-child(1),:nth-child(9)) {
+				width: 8px;
+				height: 8px;
+				cursor: nwse-resize;
+			}
+			#resizeButton > :is(:nth-child(2),:nth-child(8)) {
+				height: 5px;
+				cursor: ns-resize;
+			}
+			#resizeButton > :is(:nth-child(3),:nth-child(7)) {
+				width: 8px;
+				height: 8px;
+				cursor: nesw-resize;
+			}
+			#resizeButton > :is(:nth-child(4),:nth-child(6)) {
+				width: 5px;
+				cursor: ew-resize;
+			}
+			#resizeButton > :nth-child(5) {
+				visibility: hidden;
+			}
+			#resizeButton > :nth-child(6) {
+				margin-left: auto;
+			}
+			#resizeButton > :nth-child(8) {
+				margin-top: auto;
 			}
 		`
 	};
@@ -462,12 +518,14 @@ class FullscreenChat extends Ext {
 			
 			YoutubeEvent.addEventListener("connected",(e)=>{
 				if(!e.detail.new && e.detail.frames.indexOf("iframe-chat") > 0 || e.detail.new == "iframe-chat"){
-					const chatFrame = document.querySelector("ytd-live-chat-frame#chat");
-					chatFrame.style.top = Storage.getOption("FullscreenChat-frame-top","0");
-					chatFrame.style.left = Storage.getOption("FullscreenChat-frame-left","0");
-					chatFrame.style.width = Storage.getOption("FullscreenChat-frame-width","400px");	
+					this.chatFrame = document.querySelector("ytd-live-chat-frame#chat");
+					this.chatFrame.style.minHeight = "400px";
+					this.chatFrame.style.top = Storage.getOption(`${this.name}-frame-top`,"0");
+					this.chatFrame.style.left = Storage.getOption(`${this.name}-frame-left`,"0");
+					this.chatFrame.style.width = Storage.getOption(`${this.name}-frame-width`,"400px");
+					this.chatFrame.style.height = Storage.getOption(`${this.name}-frame-height`,"600px");
 				}
-			},{overlapDeny:"FullscreenChat"});
+			},{overlapDeny:this.name});
 
 			document.addEventListener("ext-yc-iframe-grab",this.iframeGrabed);
 			document.addEventListener("ext-yc-iframe-ungrab",this.iframeUngrabed);
@@ -478,8 +536,21 @@ class FullscreenChat extends Ext {
 			this.moveBtn = (new DOMTemplate("#chat-messages > yt-live-chat-header-renderer > yt-icon-button#overflow:last-child"))
 				.ins("before","ytIconButton",{svg:this.grabIcon})
 				.q("#chat-messages > yt-live-chat-header-renderer > yt-icon-button#overflow:nth-last-child(2)",null).tag(this.name)
+				.a("data-btn-id",0)
 				.on({t:"mousedown",f:this.iframeDownEvent})
 				.q();
+				
+			this.resizeBtn = document.createElement("div");
+			this.resizeBtn.id = "resizeButton";
+			this.tagAddedDOM(this.resizeBtn);
+			for(let i = 0; i < 9; i++){
+				const btn = document.createElement("button");
+				btn.setAttribute("data-btn-id",i+1);
+				btn.setAttribute("tabindex","-1");
+				this.resizeBtn.append(btn);
+			}
+			document.body.append(this.resizeBtn);
+			this.resizeBtn.addEventListener("mousedown",this.iframeDownEvent);
 
 			this.fullscreenHandler = YoutubeEvent.addEventListener("ytFullscreen",e=>{
 				if(e.detail.args[0]){
@@ -500,15 +571,17 @@ class FullscreenChat extends Ext {
 			document.removeEventListener("ext-yc-iframe-grab",this.iframeGrabed);
 			document.removeEventListener("ext-yc-iframe-ungrab",this.iframeUngrabed);
 			document.removeEventListener("ext-yc-iframe-move",this.moveIframe);
-			const chatFrame = document.querySelector("ytd-live-chat-frame#chat");
-			chatFrame.style.top = "";
-			chatFrame.style.left = "";
-			chatFrame.style.width = "";
+			this.chatFrame.style.minHeight = "";
+			this.chatFrame.style.top = "";
+			this.chatFrame.style.left = "";
+			this.chatFrame.style.width = "";
+			this.chatFrame.style.height = "";
 			document.documentElement.classList.remove("fullscreen");
 		}else if(YoutubeState.isIframeChatFrame()){
 			YoutubeEvent.removeEventListener("ytFullscreen",this.fullscreenHandler,{frame:"app"});
 			this.fullscreenHandler = null;
 			this.moveBtn.removeEventListener("mousedown",this.iframeDownEvent);
+			this.resizeBtn.removeEventListener("mousedown",this.iframeDownEvent);
 			document.removeEventListener("mousemove",this.iframeMoveEvent);
 			document.removeEventListener("mouseup",this.iframeUpEvent);
 		}
@@ -527,52 +600,108 @@ class FullscreenChat extends Ext {
 		top.document.dispatchEvent(new CustomEvent("ext-yc-iframe-ungrab",{detail:e}));
 	}
 	static iframeGrabed = (e)=>{
-		const chatFrame = document.querySelector("ytd-live-chat-frame#chat");
 		this.basePos = {
-			offsetLeft: chatFrame.offsetLeft,
-			offsetTop: chatFrame.offsetTop,
-			offsetRight: window.screen.width - chatFrame.offsetLeft - chatFrame.offsetWidth,
-			offsetBottom: window.screen.height - chatFrame.offsetTop - chatFrame.offsetHeight,
+			grabId: e.detail.target.closest("[data-btn-id]").getAttribute("data-btn-id"),
+			offsetWidth: this.chatFrame.offsetWidth,
+			offsetHeight: this.chatFrame.offsetHeight,
+			offsetLeft: this.chatFrame.offsetLeft,
+			offsetTop: this.chatFrame.offsetTop,
+			offsetRight: window.screen.width - this.chatFrame.offsetLeft - this.chatFrame.offsetWidth,
+			offsetBottom: window.screen.height - this.chatFrame.offsetTop - this.chatFrame.offsetHeight,
 			grabX: e.detail.screenX,
 			grabY: e.detail.screenY
 		};
 		document.addEventListener("ext-yc-iframe-move",this.moveIframe);
+	}
+	static moveIframe = (e)=>{
+		const pos = this.calcFramePos(e);
+		this.chatFrame.style.top = pos.top;
+		this.chatFrame.style.left = pos.left;
+		this.chatFrame.style.width = pos.width;
+		this.chatFrame.style.height = pos.height;
 	}
 	static iframeUngrabed = (e)=>{
 		const pos = this.calcFramePos(e);
 		Storage.setOptions({
 			"FullscreenChat-frame-top": pos.top,
 			"FullscreenChat-frame-left": pos.left,
-			"FullscreenChat-frame-width": pos.width
+			"FullscreenChat-frame-width": pos.width,
+			"FullscreenChat-frame-height": pos.height
 		},true);
 		document.removeEventListener("ext-yc-iframe-move",this.moveIframe);
-	}
-	static moveIframe = (e)=>{
-		const pos = this.calcFramePos(e);
-		const chatFrame = document.querySelector("ytd-live-chat-frame#chat");
-		chatFrame.style.top = pos.top;
-		chatFrame.style.left = pos.left;
-		chatFrame.style.width = pos.width;
 	}
 	static calcFramePos = (e)=>{
 		let calced = {};
 		const moveX = e.detail.screenX - this.basePos.grabX;
 		const moveY = e.detail.screenY - this.basePos.grabY;
-		if(this.basePos.offsetTop + moveY < 0){
-			calced.top = "0px";
-		}else if(this.basePos.offsetBottom - moveY < 0){
-			calced.top = this.basePos.offsetTop + this.basePos.offsetBottom + "px";
-		}else{
-			calced.top = this.basePos.offsetTop + moveY + "px";
+		if(this.basePos.grabId == "0"){
+			if(this.basePos.offsetTop + moveY < 0){
+				calced.top = "0px";
+			}else if(this.basePos.offsetBottom - moveY < 0){
+				calced.top = this.basePos.offsetTop + this.basePos.offsetBottom + "px";
+			}else{
+				calced.top = this.basePos.offsetTop + moveY + "px";
+			}
+			if(this.basePos.offsetLeft + moveX < 0){
+				calced.left = "0px";
+			}else if(this.basePos.offsetRight - moveX < 0){
+				calced.left = this.basePos.offsetLeft + this.basePos.offsetRight + "px";
+			}else{
+				calced.left = this.basePos.offsetLeft + moveX + "px";
+			}
+			calced.width = this.basePos.offsetWidth + "px";
+			calced.height = this.basePos.offsetHeight + "px";
 		}
-		if(this.basePos.offsetLeft + moveX < 0){
-			calced.left = "0px";
-		}else if(this.basePos.offsetRight - moveX < 0){
-			calced.left = this.basePos.offsetLeft + this.basePos.offsetRight + "px";
-		}else{
-			calced.left = this.basePos.offsetLeft + moveX + "px";
+		if("123".indexOf(this.basePos.grabId) >= 0){
+			if(this.basePos.offsetTop + moveY < 0){
+				calced.top = "0px";
+				calced.height = this.basePos.offsetTop + this.basePos.offsetHeight + "px";
+			}else if(this.basePos.offsetHeight - moveY < 400){
+				calced.top = this.basePos.offsetTop + this.basePos.offsetHeight - 400 + "px";
+				calced.height = "400px";
+			}else{
+				calced.top = this.basePos.offsetTop + moveY + "px";
+				calced.height = this.basePos.offsetHeight - moveY + "px";
+			}
 		}
-		calced.width = "400px";
+		if("789".indexOf(this.basePos.grabId) >= 0){
+			if(this.basePos.offsetHeight + moveY < 400){
+				calced.height = "400px";
+			}else if(this.basePos.offsetBottom - moveY < 0){
+				calced.height = this.basePos.offsetHeight + this.basePos.offsetBottom + "px";
+			}else{
+				calced.height = this.basePos.offsetHeight + moveY + "px";
+			}
+		}
+		if("28".indexOf(this.basePos.grabId) >= 0){
+			calced.left = this.basePos.offsetLeft + "px";
+			calced.width = this.basePos.offsetWidth + "px";
+		}
+		if("147".indexOf(this.basePos.grabId) >= 0){
+			if(this.basePos.offsetLeft + moveX < 0){
+				calced.left = "0px";
+				calced.width = this.basePos.offsetLeft + this.basePos.offsetWidth + "px";
+			}else if(this.basePos.offsetWidth - moveX < 300){
+				calced.left = this.basePos.offsetLeft + this.basePos.offsetWidth - 300 + "px";
+				calced.width = "300px";
+			}else{
+				calced.left = this.basePos.offsetLeft + moveX + "px";
+				calced.width = this.basePos.offsetWidth - moveX + "px";
+			}
+		}
+		if("369".indexOf(this.basePos.grabId) >= 0){
+			if(this.basePos.offsetWidth + moveX < 300){
+				calced.width = "300px";
+			}else if(this.basePos.offsetRight - moveX < 0){
+				calced.width = this.basePos.offsetWidth + this.basePos.offsetRight + "px";
+			}else{
+				calced.width = this.basePos.offsetWidth + moveX + "px";
+			}
+		}
+		if("46".indexOf(this.basePos.grabId) >= 0){
+			calced.top = this.basePos.offsetTop + "px";
+			calced.height = this.basePos.offsetHeight + "px";
+		}
 		return calced;
 	}
 }

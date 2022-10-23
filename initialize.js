@@ -65,6 +65,13 @@ class YoutubeState {
 			return top.document.body.classList.contains("no-scroll");
 		}
 	}
+	// チャットフレームのみで使用可能
+	static isLiveStreaming(){
+		if(this.isChatFrame()){
+			return location.pathname == "/live_chat";
+		}
+		return null;
+	}
 
 	static getFrame(){
 		return this.isAppFrame() ? "app" : this.isMainChatFrame() ? "main-chat" : this.isIframeChatFrame() ? "iframe-chat" : this.isPopupChatFrame() ? "popup-chat" : "others";
@@ -698,15 +705,15 @@ class Storage {
 	static getOption(name,def){
 		return this.options[name]??def;
 	}
-	static setOption(name,val,save=false){
+	static setOption(name,val,save=false,useLocal=null){
 		let data = {};
 		data[name] = val;
-		this.setOptions(data,save);
+		this.setOptions(data,save,useLocal);
 	}
-	static setOptions(data,save=false){
+	static setOptions(data,save=false,useLocal=null){
 		YoutubeEvent.dispatchEvent("dispatch",{type:"Storage-sync",key:"options",data:data},{frame:"all"});
 		if(save){
-			chrome.storage[this.flags["flag-use-local"]?"local":"sync"].set(data);
+			chrome.storage[(useLocal==null?this.flags["flag-use-local"]:useLocal)?"local":"sync"].set(data);
 		}
 	}
 
@@ -754,6 +761,7 @@ class DOMTemplate {
 			}
 			#ext-yc-options #items {
 				padding: 8px 16px;
+				padding-right: 9px;
 			}
 			#ext-yc-options-wrapper #header {
 				padding: 8px;
@@ -778,6 +786,7 @@ class DOMTemplate {
 			#ext-yc-options-wrapper #footer {
 				height: 48px;
 				padding: 6px;
+				padding-right: 13px;
 				background-color: var(--yt-live-chat-action-panel-background-color,var(--yt-deprecated-opalescence-soft-grey-opacity-lighten-3));
 				border-bottom: 1px solid var(--yt-spec-10-percent-layer);
 				box-sizing: border-box;
@@ -824,6 +833,7 @@ class DOMTemplate {
 				flex-direction: row;
 				flex-wrap: wrap;
 				align-items: center;
+				width: 100%;
 				margin: 8px 0;
 			}
 			#ext-yc-caption-container #caption {
@@ -906,12 +916,14 @@ class DOMTemplate {
 				background: var(--paper-toggle-button-disabled-button-color, #bdbdbd);
 				opacity: 1;
 			}
-			#ext-yc-toggle + #ext-yc-toggle-collapse {
+			#ext-yc-toggle ~ #ext-yc-toggle-collapse {
 				display: none;
 				width: 100%;
-				padding-left: 1em;
+				padding-left: 1.2em;
 			}
-			#ext-yc-toggle[checked] + #ext-yc-toggle-collapse {
+			#ext-yc-toggle[checked] ~ #ext-yc-toggle-collapse[data-type="on"],
+			#ext-yc-toggle:not([checked]) ~ #ext-yc-toggle-collapse[data-type="off"],
+			#ext-yc-toggle ~ #ext-yc-toggle-collapse[data-type="always"] {
 				display: block;
 			}
 		`
@@ -993,7 +1005,7 @@ class DOMTemplate {
 			</div>
 		`,
 		toggleCollapse: `
-			<div id="ext-yc-toggle-collapse" class="style-scope"></div>
+			<div id="ext-yc-toggle-collapse" class="style-scope" data-type="[[collapseType]]"></div>
 		`
 	};
 	static #func = {
@@ -1218,7 +1230,11 @@ class Options extends Ext {
 					toggleChecked: (Storage.getFlag("flag-use-local",false)?" checked":"")
 				},true)
 				.a("style","margin-bottom: 24px;")
-				.on({q:"#ext-yc-toggle",t:"click",f:this.toggle});
+				.on({q:"#ext-yc-toggle",t:"click",f:this.toggle})
+				.ins("append","toggleCollapse",{collapseType: "on"},true)
+				.ins("append","caption",{captionDescription: this.i18n("UseLocalDescription")})
+				.ins("after","toggleCollapse",{collapseType: "off"},true)
+				.ins("append","caption",{captionDescription: this.i18n("UseSyncDescription")});
 
 				// 拡張機能設定初期化処理
 				for(let ex in extensions){
@@ -1232,7 +1248,7 @@ class Options extends Ext {
 								toggleChecked: (Storage.getOption(ex,false)?" checked":"")
 							},true)
 							.on({q:"#ext-yc-toggle",t:"click",f:this.toggle})
-							.ins("append","toggleCollapse",{},true);
+							.ins("append","toggleCollapse",{collapseType: "on"},true);
 						extensions[ex].registOptions(options.q());
 					}catch(e){
 						console.error(`chat-${ex}-regist-options`, e);

@@ -18,6 +18,12 @@
 	"Options_UseLocal": {
 		"message": "Use local storage"
 	},
+	"Options_UseLocalDescription": {
+		"message": "Use settings only on this device."
+	},
+	"Options_UseSyncDescription": {
+		"message": "Shared to devices that do not have \"Use local storage\" set to ON."
+	},
 	"Options_Reload": {
 		"message": "Reload the setting"
 	},
@@ -28,19 +34,19 @@
 		"message": "Save to global"
 	},
 
-	"CommentFixer_Description": {
+	"CommentPicker_Description": {
 		"message": "Bottom pinning of specific comments"
 	},
-	"CommentFixer_ReplaceText": {
+	"CommentPicker_ReplaceText": {
 		"message": "Pinned comment"
 	},
-	"CommentFixer_Owner": {
+	"CommentPicker_Owner": {
 		"message": "Owner"
 	},
-	"CommentFixer_Verified": {
+	"CommentPicker_Verified": {
 		"message": "Verified (With certification mark)"
 	},
-	"CommentFixer_Moderator": {
+	"CommentPicker_Moderator": {
 		"message": "Moderator"
 	},
 

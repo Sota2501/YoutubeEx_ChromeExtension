@@ -18,6 +18,12 @@
 	"Options_UseLocal": {
 		"message": "ローカルストレージを使用"
 	},
+	"Options_UseLocalDescription": {
+		"message": "設定をこのデバイスのみで使用します。"
+	},
+	"Options_UseSyncDescription": {
+		"message": "設定はローカルにしていないデバイスに共有されます。"
+	},
 	"Options_Reload": {
 		"message": "設定を再読み込みする"
 	},
@@ -28,19 +34,19 @@
 		"message": "グローバルに保存"
 	},
 
-	"CommentFixer_Description": {
+	"CommentPicker_Description": {
 		"message": "特定のコメントの下部固定化"
 	},
-	"CommentFixer_ReplaceText": {
+	"CommentPicker_ReplaceText": {
 		"message": "固定化されたコメントです"
 	},
-	"CommentFixer_Owner": {
+	"CommentPicker_Owner": {
 		"message": "配信者本人"
 	},
-	"CommentFixer_Verified": {
+	"CommentPicker_Verified": {
 		"message": "確認済み (認証マークあり)"
 	},
-	"CommentFixer_Moderator": {
+	"CommentPicker_Moderator": {
 		"message": "モデレーター"
 	},
 
