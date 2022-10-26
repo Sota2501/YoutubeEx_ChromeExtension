@@ -926,6 +926,55 @@ class DOMTemplate {
 			#ext-yc-toggle ~ #ext-yc-toggle-collapse[data-type="always"] {
 				display: block;
 			}
+		`,
+		slider: `
+			#ext-yc-slider {
+				position: relative;
+				width: 118px;
+				height: 25px;
+				margin: 0 8px;
+				overflow: clip visible;
+			}
+			#ext-yc-slider-handle {
+				position: absolute;
+				top: 3px;
+				width: 18px;
+				height: 18px;
+				border: 0;
+				border-radius: 9px;
+				background: white;
+			}
+			#ext-yc-slider-handle #ext-yc-slider-bright {
+				position: absolute;
+				top: 50%;
+				left: -100px;
+				margin-top: -2.5px;
+				width: 100px;
+				height: 5px;
+				background: white;
+			}
+			#ext-yc-slider-handle #ext-yc-slider-shadow {
+				position: absolute;
+				top: 50%;
+				left: 18px;
+				margin-top: -2.5px;
+				width: 100px;
+				height: 5px;
+				background: rgba(255,255,255,.2);
+			}
+			#ext-yc-slider-handle[active]:after {
+				content: attr(data-val);
+				position: absolute;
+				width: 18px;
+				height: 18px;
+				top: -30px;
+				left: 0;
+				color: lightyellow;
+				background: gray;
+				font-size: 16px;
+				text-align: center;
+				box-sizing: border-box;
+			}
 		`
 	}
 	static #svg = {
@@ -1004,6 +1053,14 @@ class DOMTemplate {
 				</div>
 			</div>
 		`,
+		slider: `
+			<div id="ext-yc-slider" class="style-scope" tabindex="0" data-option="[[sliderOptionName]]" value="[[sliderValue]]">
+				<button id="ext-yc-slider-handle" class="style-scope" tabindex="-1">
+					<div id="ext-yc-slider-bright"></div>
+					<div id="ext-yc-slider-shadow"></div>
+				</button>
+			</div>
+		`,
 		toggleCollapse: `
 			<div id="ext-yc-toggle-collapse" class="style-scope" data-type="[[collapseType]]"></div>
 		`
@@ -1043,18 +1100,75 @@ class DOMTemplate {
 		},
 		toggle: (dom,pos,templates)=>{
 			dom = this.#insh(dom,pos,"toggle",templates);
-			dom.addEventListener("click",e=>{
+			const tgl = (e)=>{
 				if(e.currentTarget.getAttribute("disabled") == null){
 					if(e.currentTarget.getAttribute("checked") == null){
 						e.currentTarget.setAttribute("checked","");
 					}else{
 						e.currentTarget.removeAttribute("checked");
 					}
+					dom.dispatchEvent(new Event("change"));
 				}
-			});
+			}
+			dom.addEventListener("click",tgl);
 			dom.addEventListener("keydown",e=>{
 				if(e.keyCode == 13){
-					dom.click();
+					tgl(e);
+				}
+			});
+			return dom;
+		},
+		slider: (dom,pos,templates)=>{
+			dom = this.#insh(dom,pos,"slider",templates);
+			let min = templates.sliderMin??0;
+			let max = templates.sliderMax??100;
+			let steps = templates.sliderSteps??(max-min);
+			steps = steps >= 1 ? steps : 1;
+			let lastStep;
+			const setStep = (step)=>{
+				let value = Math.round(step * 100 * ((max - min) / steps) + min * 100) / 100;		// min~maxの段状
+				dom.setAttribute("value",value);
+				dom.children[0].setAttribute("data-val",value);
+				let pos = step * 100 / steps;		// 0~100の段状
+				dom.children[0].style.transform = `translateX(${pos}px)`;
+				if(!lastStep){
+					lastStep = step;
+				}else if(lastStep != step){
+					lastStep = step;
+					dom.dispatchEvent(new Event("change"));
+				}
+			}
+			const setValue = (val)=>{
+				val = val < min ? min : val > max ? max : val;
+				val = Math.round((val - min) / (max - min) * steps);
+				setStep(val);
+			}
+			const setPos = (pos)=>{
+				pos = pos < 0 ? 0 : pos > 100 ? 100 : pos;		// 0~100の実数
+				pos = Math.round(pos * steps / 100);		// 0~stepsの整数
+				setStep(pos);
+			}
+			const move = (e)=>{
+				let absX = e.pageX - dom.getBoundingClientRect().left - 9;
+				setPos(absX);
+			}
+			setValue(templates.sliderValue);
+			dom.addEventListener("mousedown",e=>{
+				move(e);
+				dom.children[0].setAttribute("active","");
+				document.addEventListener("mousemove",move);
+				document.addEventListener("mouseup",e=>{
+					dom.children[0].removeAttribute("active");
+					dom.dispatchEvent(new Event("change"));
+					document.removeEventListener("mousemove",move);
+				},{once:true});
+			});
+			dom.addEventListener("keydown",e=>{
+				let val = Number(dom.getAttribute("value"));
+				if(e.keyCode == 37){
+					setValue(val - ((max - min) / steps));
+				}else if(e.keyCode == 39){
+					setValue(val + ((max - min) / steps));
 				}
 			});
 			return dom;

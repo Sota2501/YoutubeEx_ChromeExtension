@@ -61,7 +61,7 @@ class CommentPicker extends Ext {
 				toggleOptionName: `${this.name}-opt-owner`,
 				toggleChecked: (Storage.getOption(`${this.name}-opt-owner`,false)?" checked":"")
 			},true)
-			.on({q:"#ext-yc-toggle",t:"click",f:Options.toggle})
+			.on({q:"#ext-yc-toggle",t:"change",f:Options.toggle})
 			.q(null)
 			.ins("append","caption",{
 				captionInput: "toggle",
@@ -69,7 +69,7 @@ class CommentPicker extends Ext {
 				toggleOptionName: `${this.name}-opt-verified`,
 				toggleChecked: (Storage.getOption(`${this.name}-opt-verified`,false)?" checked":"")
 			},true)
-			.on({q:"#ext-yc-toggle",t:"click",f:Options.toggle})
+			.on({q:"#ext-yc-toggle",t:"change",f:Options.toggle})
 			.q(null)
 			.ins("append","caption",{
 				captionInput: "toggle",
@@ -77,7 +77,7 @@ class CommentPicker extends Ext {
 				toggleOptionName: `${this.name}-opt-moderator`,
 				toggleChecked: (Storage.getOption(`${this.name}-opt-moderator`,false)?" checked":"")
 			},true)
-			.on({q:"#ext-yc-toggle",t:"click",f:Options.toggle});
+			.on({q:"#ext-yc-toggle",t:"change",f:Options.toggle});
 	}
 	static optionsUpdated(opts){
 		if(YoutubeState.isChatFrame()){
@@ -512,6 +512,91 @@ class FullscreenChat extends Ext {
 		</svg>
 	`;
 	static basePos = {};
+	static registOptions(wrapper){
+		(new DOMTemplate(wrapper))
+			.ins("append","caption",{
+				captionInput: "slider",
+				captionDescription: "文字サイズ",
+				sliderOptionName: `${this.name}-opt-opacity-font-size`,
+				sliderValue: Storage.getOption(`${this.name}-opt-opacity-font-size`,16),
+				sliderMin: 8,
+				sliderMax: 32
+			},true)
+			.on({q:"#ext-yc-slider",t:"change",f:e=>{
+				Storage.setStage(e.target.getAttribute("data-option"),Number(e.target.getAttribute("value")));
+			}})
+			.q(null)
+			.ins("append","caption",{
+				captionInput: "slider",
+				captionDescription: "背景のぼかし",
+				sliderOptionName: `${this.name}-opt-opacity-blur`,
+				sliderValue: Storage.getOption(`${this.name}-opt-opacity-blur`,2),
+				sliderMin: 0,
+				sliderMax: 10
+			},true)
+			.on({q:"#ext-yc-slider",t:"change",f:e=>{
+				Storage.setStage(e.target.getAttribute("data-option"),Number(e.target.getAttribute("value")));
+			}})
+			.q(null)
+			.ins("append","caption",{
+				captionInput: "slider",
+				captionDescription: "コメント欄の不透明度",
+				sliderOptionName: `${this.name}-opt-opacity-def`,
+				sliderValue: Storage.getOption(`${this.name}-opt-opacity-def`,0.6),
+				sliderMin: 0,
+				sliderMax: 1,
+				sliderSteps: 10
+			},true)
+			.on({q:"#ext-yc-slider",t:"change",f:e=>{
+				Storage.setStage(e.target.getAttribute("data-option"),Number(e.target.getAttribute("value")));
+			}})
+			.q(null)
+			.ins("append","caption",{
+				captionInput: "slider",
+				captionDescription: "ホバー時の不透明度",
+				sliderOptionName: `${this.name}-opt-opacity-hover`,
+				sliderValue: Storage.getOption(`${this.name}-opt-opacity-hover`,0.9),
+				sliderMin: 0,
+				sliderMax: 1,
+				sliderSteps: 10
+			},true)
+			.on({q:"#ext-yc-slider",t:"change",f:e=>{
+				Storage.setStage(e.target.getAttribute("data-option"),Number(e.target.getAttribute("value")));
+			}})
+			.q(null)
+			.ins("append","caption",{
+				captionInput: "toggle",
+				captionDescription: "スーパーチャットの不透明度を設定",
+				toggleOptionName: `${this.name}-opt-use-card`,
+				toggleChecked: Storage.getFlag(`${this.name}-opt-use-card`,false)?" checked":""
+			},true)
+			.on({q:"#ext-yc-toggle",t:"click",f:Options.toggle})
+			.ins("append","toggleCollapse",{collapseType: "on"},true)
+			.ins("append","caption",{
+				captionInput: "slider",
+				captionDescription: "スーパーチャットの不透明度",
+				sliderOptionName: `${this.name}-opt-card-opacity`,
+				sliderValue: Storage.getOption(`${this.name}-opt-card-opacity`,0.7),
+				sliderMin: 0,
+				sliderMax: 1,
+				sliderSteps: 10
+			},true)
+			.on({q:"#ext-yc-slider",t:"change",f:e=>{
+				Storage.setStage(e.target.getAttribute("data-option"),Number(e.target.getAttribute("value")));
+			}})
+			.ins("after","caption",{
+				captionInput: "slider",
+				captionDescription: "ホバー時の不透明度",
+				sliderOptionName: `${this.name}-opt-card-opacity-hover`,
+				sliderValue: Storage.getOption(`${this.name}-opt-card-opacity-hover`,0.9),
+				sliderMin: 0,
+				sliderMax: 1,
+				sliderSteps: 10
+			},true)
+			.on({q:"#ext-yc-slider",t:"change",f:e=>{
+				Storage.setStage(e.target.getAttribute("data-option"),Number(e.target.getAttribute("value")));
+			}});
+	}
 	static init(){
 		if(YoutubeState.isAppFrame()){
 			this.setStyle(this.styles.top);
