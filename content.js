@@ -170,6 +170,9 @@ class FullscreenChat extends Ext {
 	static description = this.i18n("Description");
 	static styles = {
 		top: `
+			body.no-scroll #columns #secondary {
+				position: unset;
+			}
 			body:not(.no-scroll) ytd-live-chat-frame#chat {
 				top: unset!important;
 				left: unset!important;
