@@ -558,149 +558,102 @@ class Ext {
 
 class Storage {
 	static v = 1;
-	static flags = {};
 	static stage = {};
 	static options = {};
+	static local = {};
+	static sync = {};
 	static init(){
 		YoutubeEvent.addEventListener("storageLoad",()=>{
 			chrome.storage.onChanged.addListener((items,type)=>{
 				items = Object.assign({},items);
-				if(type == "sync"){
-					for(let k in items){
-						if(k.match(/^flag-/)){
-							this.flags[k] = items[k].newValue;
-							items[k] = items[k].newValue;
-						}else{
-							delete items[k];
-						}
+				for(let key in items){
+					if(items[key].newValue == undefined){
+						delete this[type][key];
+					}else{
+						this[type][key] = items[key].newValue;
 					}
-				}else{
-					for(let k in items){
-						if(k.match(/^flag-use-local$/)){
-							this.flags[k] = items[k].newValue;
-							items[k] = items[k].newValue;
-						}else{
-							delete items[k];
-						}
+					if(key.match(/^flag-/)){
+						items[key] = items[key].newValue;
+					}else{
+						delete items[key];
 					}
 				}
 				if(Object.keys(items).length > 0){
-					YoutubeEvent.dispatchEvent("storageChanged",{key:"flags",data:items});
+					YoutubeEvent.dispatchEvent("storageChanged",{key:"flags",type:type,data:items});
 				}
-			})
+			});
 		},{once:true});
 		YoutubeEvent.addEventListener("dispatch",e=>{
 			if(e.detail?.type == "Storage-sync"){
-				if(e.detail.key == "options"){
-					for(let k in e.detail.data){
-						this.options[k] = e.detail.data[k];
-					}
-					YoutubeEvent.dispatchEvent("storageChanged",{key:"options",data:e.detail.data});
-				}else if(e.detail.key == "flags"){
-					for(let k in e.detail.data){
-						this.flags[k] = e.detail.data[k];
-					}
-					YoutubeEvent.dispatchEvent("storageChanged",{key:"flags",data:e.detail.data});
-				}else if(e.detail.key == "stage"){
-					for(let k in e.detail.data){
-						if(this.options[k] != e.detail.data[k]){
-							this.stage[k] = e.detail.data[k];
-						}else{
-							delete this.stage[k];
+				for(let key in e.detail.data){
+					if(key == "stage"){
+						for(let k in e.detail.data[key]){
+							if(this.options[k] != e.detail.data[key][k]){
+								this.stage[k] = e.detail.data[key][k];
+							}else{
+								delete this.stage[k];
+							}
 						}
+					}else{
+						Object.assign(this[key]??{},e.detail.data[key]);
 					}
-					YoutubeEvent.dispatchEvent("storageChanged",{key:"stage",data:e.detail.data});
-				}else if(e.detail.key == "reflect"){
-					Object.assign(this.options,this.stage);
-					YoutubeEvent.dispatchEvent("storageChanged",{key:"reflect",data:Object.assign({},this.stage)});
-					this.stage = {};
+					YoutubeEvent.dispatchEvent("storageChanged",{key:key,data:e.detail.data[key]});
 				}
-				if(e.detail.is == "first"){
-					YoutubeEvent.dispatchEvent("storageLoad");
-				}
+			}else if(e.detail?.type == "Storage-reflect"){
+				Object.assign(this.options,this.stage);
+				let stage = this.stage;
+				this.stage = {};
+				YoutubeEvent.dispatchEvent("storageChanged",{key:"reflect",data:Object.assign({},stage)});
 			}else if(e.detail?.type == "Storage-request"){
-				YoutubeEvent.dispatchEvent("dispatch",{type:"Storage-sync",key:"flags",data:Object.assign({},this.flags)},{window:e.detail.target});
-				YoutubeEvent.dispatchEvent("dispatch",{type:"Storage-sync",key:"stage",data:Object.assign({},this.stage)},{window:e.detail.target});
-				YoutubeEvent.dispatchEvent("dispatch",{type:"Storage-sync",key:"options",data:Object.assign({},this.options),is:"first"},{window:e.detail.target});
+				YoutubeEvent.dispatchEvent("dispatch",{type:"Storage-sync",data:{
+					stage: Object.assign({},this.stage),
+					options: Object.assign({},this.options),
+					local: Object.assign({},this.local),
+					sync: Object.assign({},this.sync)
+				}},{window:e.detail.target});
 			}
 		});
 		if(YoutubeState.isRootFrame()){
-			let sync, local;
+			let flag = false;
 			chrome.storage.local.get(null,items=>{
-				local = items;
-				if(sync){
-					this.#initOptions(sync,local);
-					YoutubeEvent.dispatchEvent("storageLoad");
+				this.local = items;
+				if(flag){
+					this.#initOptions();
 				}
+				flag = true;
 			});
 			chrome.storage.sync.get(null,items=>{
-				sync = items;
-				if(local){
-					this.#initOptions(sync,local);
-					YoutubeEvent.dispatchEvent("storageLoad");
+				this.sync = items;
+				if(flag){
+					this.#initOptions();
 				}
+				flag = true;
 			});
 		}else{
 			YoutubeEvent.dispatchEvent("dispatch",{type:"Storage-request",target:window},{frame:"root"});
+			YoutubeEvent.dispatchEvent("storageLoad");
 		}
 	}
-	static #initOptions(sync,local){
+	static #initOptions(){
 		let def = {v:this.v};
-		if(local["v"] == undefined || sync["v"] == undefined){
+		if(this.local["v"] == undefined || this.sync["v"] == undefined){
 			for(let ex in extensions){
 				def[ex] = true;	// TODO
 			}
 		}
-		if(local["v"] == undefined){
-			local = Object.assign({"flag-use-local":false},def);
-			chrome.storage.local.set(local);
+		if(this.local["v"] == undefined){
+			this.local = Object.assign({"flag-use-local":false},def);
+			chrome.storage.local.set(this.local);
 		}
-		if(sync["v"] == undefined){
-			sync = Object.assign({},def);
-			chrome.storage.sync.set(sync);
+		if(this.sync["v"] == undefined){
+			this.sync = Object.assign({},def);
+			chrome.storage.sync.set(this.sync);
 		}
-		for(let name in sync){
-			if(name.match(/^flag-/)){
-				this.flags[name] = sync[name];
-				delete sync[name];
-			}
+		let type = this.local["flag-use-local"] ? "local" : "sync";
+		for(let name in this[type]){
+			this.options[name] = this[type][name];
 		}
-		this.flags["flag-use-local"] = local["flag-use-local"];
-		delete local["flag-use-local"];
-		if(this.flags["flag-use-local"]){
-			this.options = local;
-		}else{
-			this.options = sync;
-		}
-		delete this.options["v"];
-	}
-	static resetOptions = ()=>{
-		chrome.storage[this.getFlag("flag-use-local",false)?"local":"sync"].get(null,items=>{
-			for(let name in items){
-				if(name.match(/^[A-Z]\w*(-opt-\w*)?$/)){
-					this.setStage(name,items[name]);
-				}
-			}
-		});
-	}
-	static getFlag(name,def){
-		return this.flags[name]??def;
-	}
-	static setFlag(name,val){
-		let data = {};
-		data[name] = val;
-		this.setFlags(data);
-	}
-	static setFlags(data){
-		for(let d in data){
-			if(d == "flag-use-local"){
-				chrome.storage.local.set({"flag-use-local":data[d]});
-				delete data[d];
-			}
-		}
-		if(Object.keys(data).length > 0){
-			chrome.storage.sync.set(data);
-		}
+		YoutubeEvent.dispatchEvent("storageLoad");
 	}
 	static getOption(name,def){
 		return this.options[name]??def;
@@ -711,24 +664,43 @@ class Storage {
 		this.setOptions(data,save,useLocal);
 	}
 	static setOptions(data,save=false,useLocal=null){
-		YoutubeEvent.dispatchEvent("dispatch",{type:"Storage-sync",key:"options",data:data},{frame:"all"});
+		YoutubeEvent.dispatchEvent("dispatch",{type:"Storage-sync",data:{options:Object.assign({},data)}},{frame:"all"});
 		if(save){
-			chrome.storage[(useLocal==null?this.flags["flag-use-local"]:useLocal)?"local":"sync"].set(data);
+			this.setStorages(data,useLocal);
 		}
+	}
+	static getStorage(name,def,useLocal=null){
+		return this[(useLocal==null?this.local["flag-use-local"]:useLocal)?"local":"sync"][name]??def;
+	}
+	static setStorage(name,val,useLocal=null){
+		let data = {};
+		data[name] = val;
+		this.setStorages(data,useLocal);
+	}
+	static setStorages(data,useLocal=null){
+		chrome.storage[(useLocal==null?this.local["flag-use-local"]:useLocal)?"local":"sync"].set(data);
 	}
 
 	// オプション画面時に使用
 	static setStage(name,val){
 		let data = {};
 		data[name] = val;
-		YoutubeEvent.dispatchEvent("dispatch",{type:"Storage-sync",key:"stage",data:data},{frame:"all"});
+		YoutubeEvent.dispatchEvent("dispatch",{type:"Storage-sync",data:{stage:data}},{frame:"all"});
 	}
 	static reflectStage(){
-		YoutubeEvent.dispatchEvent("dispatch",{type:"Storage-sync",key:"reflect"},{frame:"all"});
+		YoutubeEvent.dispatchEvent("dispatch",{type:"Storage-reflect"},{frame:"all"});
 	}
-	static saveOptions(useLocal=false){
+	static resetOptions = ()=>{
+		let items = this[this.getStorage("flag-use-local",false,true)?"local":"sync"];
+		for(let name in items){
+			if(name.match(/^[A-Z]\w*(-opt-\w*)?$/)){
+				this.setStage(name,items[name]);
+			}
+		}
+	}
+	static saveOptions(useLocal=null){
 		let data = Object.assign(Object.assign({},this.options),this.stage);
-		chrome.storage[useLocal?"local":"sync"].set(data);
+		chrome.storage[(useLocal==null?this.getStorage("flag-use-local",false,true):useLocal)?"local":"sync"].set(data);
 	}
 }
 
@@ -755,7 +727,7 @@ class DOMTemplate {
 				flex-direction: column;
 			}
 			#ext-yc-options {
-				overflow-y: auto;
+				overflow-y: scroll;
 				flex: 1;
 				flex-basis: 1e-9px;
 			}
@@ -942,7 +914,7 @@ class DOMTemplate {
 				height: 18px;
 				border: 0;
 				border-radius: 9px;
-				background: white;
+				background: var(--yt-spec-icon-inactive,#fafafa);;
 			}
 			#ext-yc-slider-handle #ext-yc-slider-bright {
 				position: absolute;
@@ -951,7 +923,7 @@ class DOMTemplate {
 				margin-top: -2.5px;
 				width: 100px;
 				height: 5px;
-				background: white;
+				background: var(--yt-spec-icon-inactive,#fafafa);
 			}
 			#ext-yc-slider-handle #ext-yc-slider-shadow {
 				position: absolute;
@@ -960,7 +932,17 @@ class DOMTemplate {
 				margin-top: -2.5px;
 				width: 100px;
 				height: 5px;
-				background: rgba(255,255,255,.2);
+				background: var(--yt-spec-icon-disabled,#000);
+			}
+			#ext-yc-slider[disabled] #ext-yc-slider-handle {
+				background: #bdbdbd;
+			}
+			#ext-yc-slider[disabled] #ext-yc-slider-handle #ext-yc-slider-bright {
+				background: #bdbdbd;
+			}
+			#ext-yc-slider[disabled] #ext-yc-slider-shadow {
+				background: #000;
+				opacity: 0.12;
 			}
 			#ext-yc-slider-handle[active]:after {
 				content: attr(data-val);
@@ -1100,12 +1082,12 @@ class DOMTemplate {
 		},
 		toggle: (dom,pos,templates)=>{
 			dom = this.#insh(dom,pos,"toggle",templates);
-			const tgl = (e)=>{
-				if(e.currentTarget.getAttribute("disabled") == null){
-					if(e.currentTarget.getAttribute("checked") == null){
-						e.currentTarget.setAttribute("checked","");
+			const tgl = ()=>{
+				if(dom.getAttribute("disabled") == null){
+					if(dom.getAttribute("checked") == null){
+						dom.setAttribute("checked","");
 					}else{
-						e.currentTarget.removeAttribute("checked");
+						dom.removeAttribute("checked");
 					}
 					dom.dispatchEvent(new Event("change"));
 				}
@@ -1113,7 +1095,14 @@ class DOMTemplate {
 			dom.addEventListener("click",tgl);
 			dom.addEventListener("keydown",e=>{
 				if(e.keyCode == 13){
-					tgl(e);
+					tgl();
+				}
+			});
+			dom.addEventListener("setData",e=>{
+				if(e.detail.value){
+					dom.setAttribute("checked",true);
+				}else{
+					dom.removeAttribute("checked");
 				}
 			});
 			return dom;
@@ -1154,21 +1143,36 @@ class DOMTemplate {
 			}
 			setValue(templates.sliderValue);
 			dom.addEventListener("mousedown",e=>{
-				move(e);
 				dom.children[0].setAttribute("active","");
-				document.addEventListener("mousemove",move);
+				if(dom.getAttribute("disabled") == null){
+					move(e);
+					document.addEventListener("mousemove",move);
+					document.addEventListener("mouseup",e=>{
+						dom.dispatchEvent(new Event("change"));
+						document.removeEventListener("mousemove",move);
+					},{once:true});
+				}
 				document.addEventListener("mouseup",e=>{
 					dom.children[0].removeAttribute("active");
-					dom.dispatchEvent(new Event("change"));
-					document.removeEventListener("mousemove",move);
-				},{once:true});
+				});
 			});
 			dom.addEventListener("keydown",e=>{
-				let val = Number(dom.getAttribute("value"));
-				if(e.keyCode == 37){
-					setValue(val - ((max - min) / steps));
-				}else if(e.keyCode == 39){
-					setValue(val + ((max - min) / steps));
+				if(dom.getAttribute("disabled") == null){
+					let val = Number(dom.getAttribute("value"));
+					if(e.keyCode == 37){
+						setValue(val - ((max - min) / steps));
+					}else if(e.keyCode == 39){
+						setValue(val + ((max - min) / steps));
+					}
+				}
+			});
+			dom.addEventListener("setData",e=>{
+				if(e.detail.type == undefined || e.detail.type == "value"){
+					setValue(e.detail.value);
+				}else if(e.detail.type == "pos"){
+					setPos(e.detail.value);
+				}else if(e.detail.type == "step"){
+					setStep(e.detail.value);
 				}
 			});
 			return dom;
@@ -1313,7 +1317,7 @@ class Options extends Ext {
 			YoutubeEvent.addEventListener("exLoad",()=>{
 				for(let ex in extensions){
 					try{
-						if(Storage.getOption(ex)){
+						if(Storage.getOption(ex,false)){
 							extensions[ex].init();
 						}
 					}catch(e){
@@ -1332,24 +1336,26 @@ class Options extends Ext {
 					.q("#header button").ins("append","ytIcon",{svg:"backIcon"})
 					.q("#footer").ins("append","paperButton",{title:this.i18n("Reload")})
 					.on({q:"tp-yt-paper-button:first-child",t:"click",f:Storage.resetOptions})
-					.ins("append","paperButton",{title:this.i18n(`Save${Storage.getFlag("flag-use-local",false)?"Local":"Sync"}`)})
-					.on({q:"tp-yt-paper-button:last-child",t:"click",f:()=>Storage.saveOptions(Storage.getFlag("flag-use-local",false))})
+					.ins("append","paperButton",{title:this.i18n(`Save${Storage.getStorage("flag-use-local",false,true)?"Local":"Sync"}`)})
+					.on({q:"tp-yt-paper-button:last-child",t:"click",f:()=>Storage.saveOptions(Storage.getStorage("flag-use-local",false,true))})
 					.q("#items",true,true);
-				if(Storage.getFlag("flag-options-description",0) < 1){
+				if(Storage.getStorage("flag-options-description",0,false) < 1){
 					options.ins("append","card",{cardDescription:this.i18n("Description")})
 					.on({q:"#ext-yc-card-close-button",t:"click",f:e=>{
 						e.currentTarget.closest("#ext-yc-card").remove();
-						Storage.setFlag("flag-options-description",1);
+						Storage.setStorage("flag-options-description",1,false);
 					}});
 				}
 				options.ins("append","caption",{
 					captionInput: "toggle",
 					captionDescription: this.i18n("UseLocal"),
 					toggleOptionName: "flag-use-local",
-					toggleChecked: (Storage.getFlag("flag-use-local",false)?" checked":"")
+					toggleChecked: (Storage.getStorage("flag-use-local",false,true)?" checked":"")
 				},true)
 				.a("style","margin-bottom: 24px;")
-				.on({q:"#ext-yc-toggle",t:"click",f:this.toggle})
+				.on({q:"#ext-yc-toggle",t:"change",f:e=>{
+					Storage.setStage(e.target.getAttribute("data-option"),e.target.getAttribute("checked") != null);
+				}})
 				.ins("append","toggleCollapse",{collapseType: "on"},true)
 				.ins("append","caption",{captionDescription: this.i18n("UseLocalDescription")})
 				.ins("after","toggleCollapse",{collapseType: "off"},true)
@@ -1366,7 +1372,9 @@ class Options extends Ext {
 								toggleOptionName: ex,
 								toggleChecked: (Storage.getOption(ex,false)?" checked":"")
 							},true)
-							.on({q:"#ext-yc-toggle",t:"click",f:this.toggle})
+							.on({q:"#ext-yc-toggle",t:"change",f:e=>{
+								Storage.setStage(e.target.getAttribute("data-option"),e.target.getAttribute("checked") != null);
+							}})
 							.ins("append","toggleCollapse",{collapseType: "on"},true);
 						extensions[ex].registOptions(options.q());
 					}catch(e){
@@ -1374,7 +1382,7 @@ class Options extends Ext {
 					}
 					try{
 						// 初期化処理
-						if(Storage.getOption(ex)){
+						if(Storage.getOption(ex,false)){
 							extensions[ex].init();
 						}
 					}catch(e){
@@ -1398,26 +1406,7 @@ class Options extends Ext {
 				if(YoutubeState.isChatFrame()){
 					for(let k in e.detail.data){
 						const elm = document.querySelector(`#ext-yc-options [data-option="${k}"]`);
-						switch(typeof e.detail.data[k]){
-							case "boolean":
-								if(elm){
-									if(e.detail.data[k]){
-										elm.setAttribute("checked","");
-									}else{
-										elm.removeAttribute("checked");
-									}
-								}
-								break;
-							case "number":
-								// TODO
-								break;
-							case "string":
-								// TODO
-								break;
-							default:
-								// TODO
-								break;
-						}
+						elm.dispatchEvent(new CustomEvent("setData",{detail:{value:e.detail.data[k]}}));
 					}
 				}
 				break;
@@ -1427,11 +1416,7 @@ class Options extends Ext {
 						const elm = document.querySelector(`#ext-yc-options [data-option="${k}"]`);
 						if(k == "flag-use-local"){
 							document.querySelector("#ext-yc-options-wrapper #footer > tp-yt-paper-button:nth-child(2) yt-formatted-string").innerHTML = this.i18n(`Save${e.detail.data[k]?"Local":"Sync"}`);
-							if(e.detail.data[k]){
-								elm.setAttribute("checked","");
-							}else{
-								elm.removeAttribute("checked");
-							}
+							elm.dispatchEvent(new CustomEvent("setData",{detail:{value:e.detail.data[k]}}));
 						}
 					}
 				}
@@ -1449,8 +1434,6 @@ class Options extends Ext {
 						extensions[ex].optionsUpdated(st);
 					}
 				}
-				break;
-			case "options":
 				break;
 		}
 	}
@@ -1489,15 +1472,6 @@ class Options extends Ext {
 		
 		// Storage変更適用
 		Storage.reflectStage();
-	}
-	static toggle = (e)=>{
-		if(e.currentTarget.getAttribute("disabled") == null){
-			if(e.currentTarget.dataset.option == "flag-use-local"){
-				Storage.setFlag(e.currentTarget.dataset.option, e.currentTarget.getAttribute("checked") != null);
-			}else{
-				Storage.setStage(e.currentTarget.dataset.option,e.currentTarget.getAttribute("checked") != null);
-			}
-		}
 	}
 }
 

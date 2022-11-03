@@ -61,7 +61,9 @@ class CommentPicker extends Ext {
 				toggleOptionName: `${this.name}-opt-owner`,
 				toggleChecked: (Storage.getOption(`${this.name}-opt-owner`,false)?" checked":"")
 			},true)
-			.on({q:"#ext-yc-toggle",t:"change",f:Options.toggle})
+			.on({q:"#ext-yc-toggle",t:"change",f:e=>{
+				Storage.setStage(e.target.getAttribute("data-option"),e.target.getAttribute("checked") != null);
+			}})
 			.q(null)
 			.ins("append","caption",{
 				captionInput: "toggle",
@@ -69,7 +71,9 @@ class CommentPicker extends Ext {
 				toggleOptionName: `${this.name}-opt-verified`,
 				toggleChecked: (Storage.getOption(`${this.name}-opt-verified`,false)?" checked":"")
 			},true)
-			.on({q:"#ext-yc-toggle",t:"change",f:Options.toggle})
+			.on({q:"#ext-yc-toggle",t:"change",f:e=>{
+				Storage.setStage(e.target.getAttribute("data-option"),e.target.getAttribute("checked") != null);
+			}})
 			.q(null)
 			.ins("append","caption",{
 				captionInput: "toggle",
@@ -77,7 +81,9 @@ class CommentPicker extends Ext {
 				toggleOptionName: `${this.name}-opt-moderator`,
 				toggleChecked: (Storage.getOption(`${this.name}-opt-moderator`,false)?" checked":"")
 			},true)
-			.on({q:"#ext-yc-toggle",t:"change",f:Options.toggle});
+			.on({q:"#ext-yc-toggle",t:"change",f:e=>{
+				Storage.setStage(e.target.getAttribute("data-option"),e.target.getAttribute("checked") != null);
+			}});
 	}
 	static optionsUpdated(opts){
 		if(YoutubeState.isChatFrame()){
@@ -571,9 +577,11 @@ class FullscreenChat extends Ext {
 				captionInput: "toggle",
 				captionDescription: "スーパーチャットの不透明度を設定",
 				toggleOptionName: `${this.name}-opt-use-card`,
-				toggleChecked: Storage.getFlag(`${this.name}-opt-use-card`,false)?" checked":""
+				toggleChecked: Storage.getOption(`${this.name}-opt-use-card`,false)?" checked":""
 			},true)
-			.on({q:"#ext-yc-toggle",t:"click",f:Options.toggle})
+			.on({q:"#ext-yc-toggle",t:"change",f:e=>{
+				Storage.setStage(e.target.getAttribute("data-option"),e.target.getAttribute("checked") != null);
+			}})
 			.ins("append","toggleCollapse",{collapseType: "on"},true)
 			.ins("append","caption",{
 				captionInput: "slider",
@@ -715,7 +723,7 @@ class FullscreenChat extends Ext {
 			"FullscreenChat-frame-left": pos.left,
 			"FullscreenChat-frame-width": pos.width,
 			"FullscreenChat-frame-height": pos.height
-		},true);
+		},true,true);
 		document.removeEventListener("ext-yc-iframe-move",this.moveIframe);
 	}
 	static calcFramePos = (e)=>{
@@ -819,7 +827,9 @@ class ChatTickerScroll extends Ext {
 				toggleOptionName: `${this.name}-opt-button-hide`,
 				toggleChecked: (Storage.getOption(`${this.name}-opt-button-hide`,true)?" checked":"")
 			},true)
-			.on({q:"#ext-yc-toggle",t:"click",f:Options.toggle})
+			.on({q:"#ext-yc-toggle",t:"change",f:e=>{
+				Storage.setStage(e.target.getAttribute("data-option"),e.target.getAttribute("checked") != null);
+			}})
 	}
 	static optionsUpdated(opts){
 		if(opts["opt-button-hide"]){
