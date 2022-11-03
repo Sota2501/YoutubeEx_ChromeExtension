@@ -693,7 +693,7 @@ class Storage {
 	static resetOptions = ()=>{
 		let items = this[this.getStorage("flag-use-local",false,true)?"local":"sync"];
 		for(let name in items){
-			if(name.match(/^[A-Z]\w*(-opt-\w*)?$/)){
+			if(name.match(/^[A-Z]\w*(-opt-.+)?$/)){
 				this.setStage(name,items[name]);
 			}
 		}
@@ -914,7 +914,8 @@ class DOMTemplate {
 				height: 18px;
 				border: 0;
 				border-radius: 9px;
-				background: var(--yt-spec-icon-inactive,#fafafa);;
+				background: var(--yt-spec-icon-inactive,#fafafa);
+				transition: transform 0.08s;
 			}
 			#ext-yc-slider-handle #ext-yc-slider-bright {
 				position: absolute;
