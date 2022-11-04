@@ -239,7 +239,11 @@ class YoutubeEvent {
 							wins.push(win);
 						}
 					}
-					this.frames[name] = wins;
+					if(wins.length){
+						this.frames[name] = wins;
+					}else{
+						delete this.frames[name];
+					}
 				}
 				this.#dispatchEvent(this.events.signal.responseWindow,{
 					windows: res
@@ -558,6 +562,7 @@ class Ext {
 
 class Storage {
 	static v = 1;
+	static defOpts = {};
 	static stage = {};
 	static options = {};
 	static local = {};
@@ -656,6 +661,7 @@ class Storage {
 		YoutubeEvent.dispatchEvent("storageLoad");
 	}
 	static getOption(name,def){
+		this.defOpts[name] = def;
 		return this.options[name]??def;
 	}
 	static setOption(name,val,save=false,useLocal=null){
@@ -691,7 +697,7 @@ class Storage {
 		YoutubeEvent.dispatchEvent("dispatch",{type:"Storage-reflect"},{frame:"all"});
 	}
 	static resetOptions = ()=>{
-		let items = this[this.getStorage("flag-use-local",false,true)?"local":"sync"];
+		let items = Object.assign({},this.defOpts,this[this.getStorage("flag-use-local",false,true)?"local":"sync"]);
 		for(let name in items){
 			if(name.match(/^[A-Z]\w*(-opt-.+)?$/)){
 				this.setStage(name,items[name]);
@@ -699,7 +705,7 @@ class Storage {
 		}
 	}
 	static saveOptions(useLocal=null){
-		let data = Object.assign(Object.assign({},this.options),this.stage);
+		let data = Object.assign({},this.options,this.stage);
 		chrome.storage[(useLocal==null?this.getStorage("flag-use-local",false,true):useLocal)?"local":"sync"].set(data);
 	}
 }
@@ -1355,7 +1361,7 @@ class Options extends Ext {
 				},true)
 				.a("style","margin-bottom: 24px;")
 				.on({q:"#ext-yc-toggle",t:"change",f:e=>{
-					Storage.setStage(e.target.getAttribute("data-option"),e.target.getAttribute("checked") != null);
+					Storage.setOption(e.target.getAttribute("data-option"),e.target.getAttribute("checked") != null,true,true);
 				}})
 				.ins("append","toggleCollapse",{collapseType: "on"},true)
 				.ins("append","caption",{captionDescription: this.i18n("UseLocalDescription")})

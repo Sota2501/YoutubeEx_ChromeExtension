@@ -59,7 +59,7 @@ class CommentPicker extends Ext {
 				captionInput: "toggle",
 				captionDescription: this.i18n("Owner"),
 				toggleOptionName: `${this.name}-opt-owner`,
-				toggleChecked: (Storage.getOption(`${this.name}-opt-owner`,false)?" checked":"")
+				toggleChecked: (Storage.getOption(`${this.name}-opt-owner`,true)?" checked":"")
 			},true)
 			.on({q:"#ext-yc-toggle",t:"change",f:e=>{
 				Storage.setStage(e.target.getAttribute("data-option"),e.target.getAttribute("checked") != null);
@@ -69,7 +69,7 @@ class CommentPicker extends Ext {
 				captionInput: "toggle",
 				captionDescription: this.i18n("Verified"),
 				toggleOptionName: `${this.name}-opt-verified`,
-				toggleChecked: (Storage.getOption(`${this.name}-opt-verified`,false)?" checked":"")
+				toggleChecked: (Storage.getOption(`${this.name}-opt-verified`,true)?" checked":"")
 			},true)
 			.on({q:"#ext-yc-toggle",t:"change",f:e=>{
 				Storage.setStage(e.target.getAttribute("data-option"),e.target.getAttribute("checked") != null);
@@ -79,7 +79,7 @@ class CommentPicker extends Ext {
 				captionInput: "toggle",
 				captionDescription: this.i18n("Moderator"),
 				toggleOptionName: `${this.name}-opt-moderator`,
-				toggleChecked: (Storage.getOption(`${this.name}-opt-moderator`,false)?" checked":"")
+				toggleChecked: (Storage.getOption(`${this.name}-opt-moderator`,true)?" checked":"")
 			},true)
 			.on({q:"#ext-yc-toggle",t:"change",f:e=>{
 				Storage.setStage(e.target.getAttribute("data-option"),e.target.getAttribute("checked") != null);
@@ -179,19 +179,11 @@ class FullscreenChat extends Ext {
 			body.no-scroll #columns #secondary {
 				position: unset;
 			}
-			body:not(.no-scroll) ytd-live-chat-frame#chat {
-				top: unset!important;
-				left: unset!important;
-				width: unset!important;
-				height: var(--ytd-watch-flexy-chat-max-height)!important;
-				min-height: 596px!important;
-			}
 			
 			body.no-scroll ytd-live-chat-frame#chat {
 				margin: 0;
 				position: absolute;
 				border: none;
-				border-radius: 6px;
 				overflow: hidden;
 			}
 			
@@ -611,18 +603,8 @@ class FullscreenChat extends Ext {
 	static init(){
 		if(YoutubeState.isAppFrame()){
 			this.setStyle(this.styles.top);
-			
-			YoutubeEvent.addEventListener("connected",(e)=>{
-				if(!e.detail.new && e.detail.frames.indexOf("iframe-chat") > 0 || e.detail.new == "iframe-chat"){
-					this.chatFrame = document.querySelector("ytd-live-chat-frame#chat");
-					this.chatFrame.style.minHeight = "400px";
-					this.chatFrame.style.top = Storage.getOption(`${this.name}-frame-top`,"0");
-					this.chatFrame.style.left = Storage.getOption(`${this.name}-frame-left`,"0");
-					this.chatFrame.style.width = Storage.getOption(`${this.name}-frame-width`,"400px");
-					this.chatFrame.style.height = Storage.getOption(`${this.name}-frame-height`,"600px");
-				}
-			},{overlapDeny:this.name});
 
+			document.addEventListener("ext-yc-iframe-set",this.setIframe);
 			document.addEventListener("ext-yc-iframe-grab",this.iframeGrabed);
 			document.addEventListener("ext-yc-iframe-ungrab",this.iframeUngrabed);
 		}else if(YoutubeState.isIframeChatFrame()){
@@ -651,14 +633,18 @@ class FullscreenChat extends Ext {
 			this.fullscreenHandler = YoutubeEvent.addEventListener("ytFullscreen",e=>{
 				if(e.detail.args[0]){
 					document.documentElement.classList.add("fullscreen");
+					this.iframeSet(true);
 				}else{
 					document.documentElement.classList.remove("fullscreen");
+					this.iframeSet(false);
 				}
 			},{frame:"app"});
 			if(YoutubeState.isFullscreen()){
 				document.documentElement.classList.add("fullscreen");
+				this.iframeSet(true);
 			}else{
 				document.documentElement.classList.remove("fullscreen");
+				this.iframeSet(false);
 			}
 		}
 	}
@@ -682,6 +668,9 @@ class FullscreenChat extends Ext {
 			document.removeEventListener("mouseup",this.iframeUpEvent);
 		}
 		this.removeAddedDOM();
+	}
+	static iframeSet = (e)=>{
+		top.document.dispatchEvent(new CustomEvent("ext-yc-iframe-set",{detail:e}));
 	}
 	static iframeDownEvent = (e)=>{
 		top.document.dispatchEvent(new CustomEvent("ext-yc-iframe-grab",{detail:e}));
@@ -709,12 +698,29 @@ class FullscreenChat extends Ext {
 		};
 		document.addEventListener("ext-yc-iframe-move",this.moveIframe);
 	}
+	static setIframe = (e)=>{
+		if(e.detail){
+			this.chatFrame = document.querySelector("ytd-live-chat-frame#chat");
+			this.chatFrame.style.minHeight = "400px";
+			this.chatFrame.style.top = Storage.getOption(`${this.name}-frame-top`,0) + "px";
+			this.chatFrame.style.left = Storage.getOption(`${this.name}-frame-left`,0) + "px";
+			this.chatFrame.style.width = Storage.getOption(`${this.name}-frame-width`,400) + "px";
+			this.chatFrame.style.height = Storage.getOption(`${this.name}-frame-height`,600) + "px";
+		}else{
+			this.chatFrame = document.querySelector("ytd-live-chat-frame#chat");
+			this.chatFrame.style.minHeight = "";
+			this.chatFrame.style.top = "";
+			this.chatFrame.style.left = "";
+			this.chatFrame.style.width = "";
+			this.chatFrame.style.height = "";
+		}
+	}
 	static moveIframe = (e)=>{
 		const pos = this.calcFramePos(e);
-		this.chatFrame.style.top = pos.top;
-		this.chatFrame.style.left = pos.left;
-		this.chatFrame.style.width = pos.width;
-		this.chatFrame.style.height = pos.height;
+		this.chatFrame.style.top = pos.top + "px";
+		this.chatFrame.style.left = pos.left + "px";
+		this.chatFrame.style.width = pos.width + "px";
+		this.chatFrame.style.height = pos.height + "px";
 	}
 	static iframeUngrabed = (e)=>{
 		const pos = this.calcFramePos(e);
@@ -732,71 +738,71 @@ class FullscreenChat extends Ext {
 		const moveY = e.detail.screenY - this.basePos.grabY;
 		if(this.basePos.grabId == "0"){
 			if(this.basePos.offsetTop + moveY < 0){
-				calced.top = "0px";
+				calced.top = 0;
 			}else if(this.basePos.offsetBottom - moveY < 0){
-				calced.top = this.basePos.offsetTop + this.basePos.offsetBottom + "px";
+				calced.top = this.basePos.offsetTop + this.basePos.offsetBottom;
 			}else{
-				calced.top = this.basePos.offsetTop + moveY + "px";
+				calced.top = this.basePos.offsetTop + moveY;
 			}
 			if(this.basePos.offsetLeft + moveX < 0){
-				calced.left = "0px";
+				calced.left = 0;
 			}else if(this.basePos.offsetRight - moveX < 0){
-				calced.left = this.basePos.offsetLeft + this.basePos.offsetRight + "px";
+				calced.left = this.basePos.offsetLeft + this.basePos.offsetRight;
 			}else{
-				calced.left = this.basePos.offsetLeft + moveX + "px";
+				calced.left = this.basePos.offsetLeft + moveX;
 			}
-			calced.width = this.basePos.offsetWidth + "px";
-			calced.height = this.basePos.offsetHeight + "px";
+			calced.width = this.basePos.offsetWidth;
+			calced.height = this.basePos.offsetHeight;
 		}
 		if("123".indexOf(this.basePos.grabId) >= 0){
 			if(this.basePos.offsetTop + moveY < 0){
-				calced.top = "0px";
-				calced.height = this.basePos.offsetTop + this.basePos.offsetHeight + "px";
+				calced.top = 0;
+				calced.height = this.basePos.offsetTop + this.basePos.offsetHeight;
 			}else if(this.basePos.offsetHeight - moveY < 400){
-				calced.top = this.basePos.offsetTop + this.basePos.offsetHeight - 400 + "px";
-				calced.height = "400px";
+				calced.top = this.basePos.offsetTop + this.basePos.offsetHeight - 400;
+				calced.height = 400;
 			}else{
-				calced.top = this.basePos.offsetTop + moveY + "px";
-				calced.height = this.basePos.offsetHeight - moveY + "px";
+				calced.top = this.basePos.offsetTop + moveY;
+				calced.height = this.basePos.offsetHeight - moveY;
 			}
 		}
 		if("789".indexOf(this.basePos.grabId) >= 0){
 			if(this.basePos.offsetHeight + moveY < 400){
-				calced.height = "400px";
+				calced.height = 400;
 			}else if(this.basePos.offsetBottom - moveY < 0){
-				calced.height = this.basePos.offsetHeight + this.basePos.offsetBottom + "px";
+				calced.height = this.basePos.offsetHeight + this.basePos.offsetBottom;
 			}else{
-				calced.height = this.basePos.offsetHeight + moveY + "px";
+				calced.height = this.basePos.offsetHeight + moveY;
 			}
 		}
 		if("28".indexOf(this.basePos.grabId) >= 0){
-			calced.left = this.basePos.offsetLeft + "px";
-			calced.width = this.basePos.offsetWidth + "px";
+			calced.left = this.basePos.offsetLeft;
+			calced.width = this.basePos.offsetWidth;
 		}
 		if("147".indexOf(this.basePos.grabId) >= 0){
 			if(this.basePos.offsetLeft + moveX < 0){
-				calced.left = "0px";
-				calced.width = this.basePos.offsetLeft + this.basePos.offsetWidth + "px";
+				calced.left = 0;
+				calced.width = this.basePos.offsetLeft + this.basePos.offsetWidth;
 			}else if(this.basePos.offsetWidth - moveX < 300){
-				calced.left = this.basePos.offsetLeft + this.basePos.offsetWidth - 300 + "px";
-				calced.width = "300px";
+				calced.left = this.basePos.offsetLeft + this.basePos.offsetWidth - 300;
+				calced.width = 300;
 			}else{
-				calced.left = this.basePos.offsetLeft + moveX + "px";
-				calced.width = this.basePos.offsetWidth - moveX + "px";
+				calced.left = this.basePos.offsetLeft + moveX;
+				calced.width = this.basePos.offsetWidth - moveX;
 			}
 		}
 		if("369".indexOf(this.basePos.grabId) >= 0){
 			if(this.basePos.offsetWidth + moveX < 300){
-				calced.width = "300px";
+				calced.width = 300;
 			}else if(this.basePos.offsetRight - moveX < 0){
-				calced.width = this.basePos.offsetWidth + this.basePos.offsetRight + "px";
+				calced.width = this.basePos.offsetWidth + this.basePos.offsetRight;
 			}else{
-				calced.width = this.basePos.offsetWidth + moveX + "px";
+				calced.width = this.basePos.offsetWidth + moveX;
 			}
 		}
 		if("46".indexOf(this.basePos.grabId) >= 0){
-			calced.top = this.basePos.offsetTop + "px";
-			calced.height = this.basePos.offsetHeight + "px";
+			calced.top = this.basePos.offsetTop;
+			calced.height = this.basePos.offsetHeight;
 		}
 		return calced;
 	}
