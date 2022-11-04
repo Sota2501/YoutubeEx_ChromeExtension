@@ -539,11 +539,11 @@ class Ext {
 	static tagAddedDOM(dom){
 		dom.setAttribute("data-ext-yc",this.name);
 	}
-	static setStyle(css){
+	static setStyle(css,replacers={}){
 		const style = document.createElement("style");
 		this.tagAddedDOM(style);
 		style.setAttribute("data-style-id",this.styleNum);
-		style.innerHTML = css;
+		style.innerHTML = this.replaceAll(css,replacers);
 		document.head.appendChild(style);
 		return this.styleNum++;
 	}
@@ -557,6 +557,12 @@ class Ext {
 	}
 	static i18n(key){
 		return chrome.i18n.getMessage(`${this.name}_${key}`);
+	}
+	static replaceAll(str,replacers){
+		for(let replacer in replacers){
+			str = str.replaceAll("[["+replacer+"]]",replacers[replacer]);
+		}
+		return str;
 	}
 }
 
