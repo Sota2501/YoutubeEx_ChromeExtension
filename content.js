@@ -298,14 +298,15 @@ class FullscreenChat extends Ext {
 					yt-live-chat-participant-list-renderer #participants,
 					#ext-yc-options
 				) {
+					position: unset;
 					margin-right: 7px;
+					--scrollbar-width: 7px;
 				}
 				html.fullscreen :is(
 					#chat #item-scroller,
 					#participants,
 					#ext-yc-options
 				) {
-					--scrollbar-width: 7px;
 					padding-right: 7px;
 				}
 				html.fullscreen :is(
@@ -388,6 +389,7 @@ class FullscreenChat extends Ext {
 					padding: 0;
 					background: none;
 					border: none;
+					outline: none;
 					pointer-events: auto;
 				}
 				#resizeButton > :is(:nth-child(1),:nth-child(9)) {
@@ -673,6 +675,7 @@ class FullscreenChat extends Ext {
 			document.addEventListener("ext-yc-iframe-set",this.setIframe);
 			document.addEventListener("ext-yc-iframe-grab",this.iframeGrabed);
 			document.addEventListener("ext-yc-iframe-ungrab",this.iframeUngrabed);
+			document.addEventListener("ext-yc-iframe-adjust-fixed-length",this.adjustFixedLengthIfram);
 		}else if(YoutubeState.isIframeChatFrame()){
 			this.setStyle(this.styles.child.base);
 			this.styleIds.fontSize = this.setStyle(this.styles.child.fontSize,{fontSize:Storage.getOption(`${this.name}-opt-font-size`,16)});
@@ -752,10 +755,21 @@ class FullscreenChat extends Ext {
 	static iframeSet = (e)=>{
 		top.document.dispatchEvent(new CustomEvent("ext-yc-iframe-set",{detail:e}));
 	}
+	static iframeAdjustFixedLength = (e)=>{
+		if(e.keyCode == 16){
+			if(e.type == "keydown"){
+				top.document.dispatchEvent(new CustomEvent("ext-yc-iframe-adjust-fixed-length",{detail:true}));
+			}else if(e.type == "keyup"){
+				top.document.dispatchEvent(new CustomEvent("ext-yc-iframe-adjust-fixed-length",{detail:false}));
+			}
+		}
+	}
 	static iframeDownEvent = (e)=>{
 		top.document.dispatchEvent(new CustomEvent("ext-yc-iframe-grab",{detail:e}));
 		document.addEventListener("mousemove",this.iframeMoveEvent);
 		document.addEventListener("mouseup",this.iframeUpEvent,{once:true});
+		document.addEventListener("keydown",this.iframeAdjustFixedLength);
+		document.addEventListener("keyup",this.iframeAdjustFixedLength);
 	}
 	static iframeMoveEvent = (e)=>{
 		top.document.dispatchEvent(new CustomEvent("ext-yc-iframe-move",{detail:e}));
@@ -764,9 +778,30 @@ class FullscreenChat extends Ext {
 		document.removeEventListener("mousemove",this.iframeMoveEvent);
 		top.document.dispatchEvent(new CustomEvent("ext-yc-iframe-ungrab",{detail:e}));
 	}
+	static setIframe = (e)=>{
+		if(e.detail){
+			this.chatFrame = document.querySelector("ytd-live-chat-frame#chat");
+			this.chatFrame.style.minHeight = "400px";
+			this.chatFrame.style.top = Storage.getStorage(`${this.name}-frame-top`,0,true) + "px";
+			this.chatFrame.style.left = Storage.getStorage(`${this.name}-frame-left`,0,true) + "px";
+			this.chatFrame.style.width = Storage.getStorage(`${this.name}-frame-width`,400,true) + "px";
+			this.chatFrame.style.height = Storage.getStorage(`${this.name}-frame-height`,600,true) + "px";
+		}else{
+			this.chatFrame = document.querySelector("ytd-live-chat-frame#chat");
+			this.chatFrame.style.minHeight = "";
+			this.chatFrame.style.top = "";
+			this.chatFrame.style.left = "";
+			this.chatFrame.style.width = "";
+			this.chatFrame.style.height = "";
+		}
+	}
+	static adjustFixedLengthIfram = (e)=>{
+		this.basePos.adjust = e.detail;
+	}
 	static iframeGrabed = (e)=>{
 		this.basePos = {
 			grabId: e.detail.target.closest("[data-btn-id]").getAttribute("data-btn-id"),
+			adjust: false,
 			offsetWidth: this.chatFrame.offsetWidth,
 			offsetHeight: this.chatFrame.offsetHeight,
 			offsetLeft: this.chatFrame.offsetLeft,
@@ -778,23 +813,6 @@ class FullscreenChat extends Ext {
 		};
 		document.addEventListener("ext-yc-iframe-move",this.moveIframe);
 	}
-	static setIframe = (e)=>{
-		if(e.detail){
-			this.chatFrame = document.querySelector("ytd-live-chat-frame#chat");
-			this.chatFrame.style.minHeight = "400px";
-			this.chatFrame.style.top = Storage.getOption(`${this.name}-frame-top`,0) + "px";
-			this.chatFrame.style.left = Storage.getOption(`${this.name}-frame-left`,0) + "px";
-			this.chatFrame.style.width = Storage.getOption(`${this.name}-frame-width`,400) + "px";
-			this.chatFrame.style.height = Storage.getOption(`${this.name}-frame-height`,600) + "px";
-		}else{
-			this.chatFrame = document.querySelector("ytd-live-chat-frame#chat");
-			this.chatFrame.style.minHeight = "";
-			this.chatFrame.style.top = "";
-			this.chatFrame.style.left = "";
-			this.chatFrame.style.width = "";
-			this.chatFrame.style.height = "";
-		}
-	}
 	static moveIframe = (e)=>{
 		const pos = this.calcFramePos(e);
 		this.chatFrame.style.top = pos.top + "px";
@@ -804,12 +822,12 @@ class FullscreenChat extends Ext {
 	}
 	static iframeUngrabed = (e)=>{
 		const pos = this.calcFramePos(e);
-		Storage.setOptions({
+		Storage.setStorages({
 			"FullscreenChat-frame-top": pos.top,
 			"FullscreenChat-frame-left": pos.left,
 			"FullscreenChat-frame-width": pos.width,
 			"FullscreenChat-frame-height": pos.height
-		},true,true);
+		},true);
 		document.removeEventListener("ext-yc-iframe-move",this.moveIframe);
 	}
 	static calcFramePos = (e)=>{
@@ -822,14 +840,24 @@ class FullscreenChat extends Ext {
 			}else if(this.basePos.offsetBottom - moveY < 0){
 				calced.top = this.basePos.offsetTop + this.basePos.offsetBottom;
 			}else{
-				calced.top = this.basePos.offsetTop + moveY;
+				const top = this.basePos.offsetTop + moveY;
+				if(this.basePos.adjust){
+					calced.top = Math.round(top / 20) * 20;
+				}else{
+					calced.top = top;
+				}
 			}
 			if(this.basePos.offsetLeft + moveX < 0){
 				calced.left = 0;
 			}else if(this.basePos.offsetRight - moveX < 0){
 				calced.left = this.basePos.offsetLeft + this.basePos.offsetRight;
 			}else{
-				calced.left = this.basePos.offsetLeft + moveX;
+				const left = this.basePos.offsetLeft + moveX;
+				if(this.basePos.adjust){
+					calced.left = Math.round(left / 20) * 20;
+				}else{
+					calced.left = left;
+				}
 			}
 			calced.width = this.basePos.offsetWidth;
 			calced.height = this.basePos.offsetHeight;
@@ -842,8 +870,15 @@ class FullscreenChat extends Ext {
 				calced.top = this.basePos.offsetTop + this.basePos.offsetHeight - 400;
 				calced.height = 400;
 			}else{
-				calced.top = this.basePos.offsetTop + moveY;
-				calced.height = this.basePos.offsetHeight - moveY;
+				const height = this.basePos.offsetHeight - moveY;
+				const top = this.basePos.offsetTop + moveY;
+				if(this.basePos.adjust){
+					calced.height = Math.round(height / 20) * 20;
+					calced.top = top + height - calced.height
+				}else{
+					calced.height = height;
+					calced.top = top;
+				}
 			}
 		}
 		if("789".indexOf(this.basePos.grabId) >= 0){
@@ -852,7 +887,12 @@ class FullscreenChat extends Ext {
 			}else if(this.basePos.offsetBottom - moveY < 0){
 				calced.height = this.basePos.offsetHeight + this.basePos.offsetBottom;
 			}else{
-				calced.height = this.basePos.offsetHeight + moveY;
+				const height = this.basePos.offsetHeight + moveY;
+				if(this.basePos.adjust){
+					calced.height = Math.round(height / 20) * 20;
+				}else{
+					calced.height = height;
+				}
 			}
 		}
 		if("28".indexOf(this.basePos.grabId) >= 0){
@@ -867,8 +907,15 @@ class FullscreenChat extends Ext {
 				calced.left = this.basePos.offsetLeft + this.basePos.offsetWidth - 300;
 				calced.width = 300;
 			}else{
-				calced.left = this.basePos.offsetLeft + moveX;
-				calced.width = this.basePos.offsetWidth - moveX;
+				const width = this.basePos.offsetWidth - moveX;
+				const left = this.basePos.offsetLeft + moveX;
+				if(this.basePos.adjust){
+					calced.width = Math.round(width / 20) * 20;
+					calced.left = left + width - calced.width;
+				}else{
+					calced.width = width;
+					calced.left = left;
+				}
 			}
 		}
 		if("369".indexOf(this.basePos.grabId) >= 0){
@@ -877,7 +924,12 @@ class FullscreenChat extends Ext {
 			}else if(this.basePos.offsetRight - moveX < 0){
 				calced.width = this.basePos.offsetWidth + this.basePos.offsetRight;
 			}else{
-				calced.width = this.basePos.offsetWidth + moveX;
+				const width = this.basePos.offsetWidth + moveX;
+				if(this.basePos.adjust){
+					calced.width = Math.round(width / 20) * 20;
+				}else{
+					calced.width = width;
+				}
 			}
 		}
 		if("46".indexOf(this.basePos.grabId) >= 0){

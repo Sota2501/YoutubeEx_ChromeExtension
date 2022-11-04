@@ -1367,7 +1367,7 @@ class Options extends Ext {
 				},true)
 				.a("style","margin-bottom: 24px;")
 				.on({q:"#ext-yc-toggle",t:"change",f:e=>{
-					Storage.setOption(e.target.getAttribute("data-option"),e.target.getAttribute("checked") != null,true,true);
+					Storage.setStorage(e.target.getAttribute("data-option"),e.target.getAttribute("checked") != null,true);
 				}})
 				.ins("append","toggleCollapse",{collapseType: "on"},true)
 				.ins("append","caption",{captionDescription: this.i18n("UseLocalDescription")})
