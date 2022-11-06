@@ -991,6 +991,13 @@ class DOMTemplate {
 					<path d="M21,11v1H5.64l6.72,6.72l-0.71,0.71L3.72,11.5l7.92-7.92l0.71,0.71L5.64,11H21z" class="style-scope yt-icon"></path>
 				</g>
 			</svg>
+		`,
+		downArrow: `
+			<svg viewBox="0 0 24 24" preserveAspectRatio="xMidYMid meet" focusable="false" class="style-scope yt-icon" style="pointer-events: none; display: block; width: 100%; height: 100%;">
+				<g class="style-scope yt-icon">
+					<polygon points="18.65,11.65 12,18.29 12,4 11,4 11,18.29 4.35,11.65 3.65,12.35 11.5,20.21 19.35,12.35 " class="style-scope yt-icon"></polygon>
+				</g>
+			</svg>
 		`
 	};
 	static #replacers = {
@@ -1080,8 +1087,8 @@ class DOMTemplate {
 		},
 		ytIconButton: (dom,pos,templates)=>{
 			const ytIconButton = document.createElement("yt-icon-button");
-			ytIconButton.id = "overflow";
-			ytIconButton.classList.add("style-scope","yt-live-chat-header-renderer");
+			ytIconButton.id = templates.id;
+			ytIconButton.classList.add("style-scope",templates.domTag);
 			dom[pos](ytIconButton);
 			this.#func.ytIcon(ytIconButton.querySelector("#button"),"prepend",templates);
 			return ytIconButton;
@@ -1346,7 +1353,7 @@ class Options extends Ext {
 					.ins("before","optionsPage")
 					.r("#ext-yc-options-wrapper",true).q("#header yt-button-renderer").ins("append","backButton")
 					.on({q:"yt-icon-button",t:"click",f:this.backToChat})
-					.q("#header button").ins("append","ytIcon",{svg:"backIcon"})
+					.q("#header button").ins("append","ytIcon",{id:"overflow",domTag:"yt-live-chat-header-renderer",svg:"backIcon"})
 					.q("#footer").ins("append","paperButton",{title:this.i18n("Reload")})
 					.on({q:"tp-yt-paper-button:first-child",t:"click",f:Storage.resetOptions})
 					.ins("append","paperButton",{title:this.i18n(`Save${Storage.getStorage("flag-use-local",false,true)?"Local":"Sync"}`)})
