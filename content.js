@@ -87,7 +87,7 @@ class CommentPicker extends Ext {
 				captionInput: "toggle",
 				captionDescription: this.i18n("Moderator"),
 				toggleOptionName: `${this.name}-opt-moderator`,
-				toggleChecked: (Storage.getOption(`${this.name}-opt-moderator`,true)?" checked":"")
+				toggleChecked: (Storage.getOption(`${this.name}-opt-moderator`,false)?" checked":"")
 			},true)
 			.on({q:"#ext-yc-toggle",t:"change",f:e=>{
 				Storage.setStage(e.target.getAttribute("data-option"),e.target.getAttribute("checked") != null);
@@ -112,7 +112,7 @@ class CommentPicker extends Ext {
 				this.setStyle(this.style);
 				this.opts["opt-owner"] = Storage.getOption(`${this.name}-opt-owner`,true);
 				this.opts["opt-verified"] = Storage.getOption(`${this.name}-opt-verified`,true);
-				this.opts["opt-moderator"] = Storage.getOption(`${this.name}-opt-moderator`,true);
+				this.opts["opt-moderator"] = Storage.getOption(`${this.name}-opt-moderator`,false);
 
 				const wrapper = document.querySelector("#chat > #item-list");
 				this.baseItems = wrapper.querySelector("#items");
@@ -671,7 +671,7 @@ class FullscreenChat extends Ext {
 				captionInput: "toggle",
 				captionDescription: "スーパーチャットの不透明度を設定",
 				toggleOptionName: `${this.name}-opt-use-card`,
-				toggleChecked: Storage.getOption(`${this.name}-opt-use-card`,false)?" checked":""
+				toggleChecked: Storage.getOption(`${this.name}-opt-use-card`,true)?" checked":""
 			},true)
 			.on({q:"#ext-yc-toggle",t:"change",f:e=>{
 				Storage.setStage(e.target.getAttribute("data-option"),e.target.getAttribute("checked") != null);
@@ -681,7 +681,7 @@ class FullscreenChat extends Ext {
 				captionInput: "slider",
 				captionDescription: "スーパーチャットの不透明度",
 				sliderOptionName: `${this.name}-opt-card-opacity-def`,
-				sliderValue: Storage.getOption(`${this.name}-opt-card-opacity-def`,0.7),
+				sliderValue: Storage.getOption(`${this.name}-opt-card-opacity-def`,0.9),
 				sliderMin: 0,
 				sliderMax: 1,
 				sliderSteps: 10
@@ -726,7 +726,7 @@ class FullscreenChat extends Ext {
 					if(opts["opt-card-opacity-def"] != undefined){
 						this.styleIds.cardOpacityDef = this.setStyle(this.styles.child.cardOpacityDef,{cardOpacityDef:opts["opt-card-opacity-def"]});
 					}else{
-						this.styleIds.cardOpacityDef = this.setStyle(this.styles.child.cardOpacityDef,{cardOpacityDef:Storage.getOption(`${this.name}-opt-card-opacity-def`,0.7)});
+						this.styleIds.cardOpacityDef = this.setStyle(this.styles.child.cardOpacityDef,{cardOpacityDef:Storage.getOption(`${this.name}-opt-card-opacity-def`,0.9)});
 					}
 					this.removeStyle(this.styleIds.cardOpacityHover);
 					if(opts["opt-card-opacity-hover"] != undefined){
@@ -766,8 +766,8 @@ class FullscreenChat extends Ext {
 			this.styleIds.backgroundBlur = this.setStyle(this.styles.child.backgroundBlur,{backgroundBlur:Storage.getOption(`${this.name}-opt-background-blur`,2)});
 			this.styleIds.opacityDef = this.setStyle(this.styles.child.opacityDef,{opacityDef:Storage.getOption(`${this.name}-opt-opacity-def`,0.6)});
 			this.styleIds.opacityHover = this.setStyle(this.styles.child.opacityHover,{opacityHover:Storage.getOption(`${this.name}-opt-opacity-hover`,0.9)});
-			if(Storage.getOption(`${this.name}-opt-use-card`,false)){
-				this.styleIds.cardOpacityDef = this.setStyle(this.styles.child.cardOpacityDef,{cardOpacityDef:Storage.getOption(`${this.name}-opt-card-opacity-def`,0.7)});
+			if(Storage.getOption(`${this.name}-opt-use-card`,true)){
+				this.styleIds.cardOpacityDef = this.setStyle(this.styles.child.cardOpacityDef,{cardOpacityDef:Storage.getOption(`${this.name}-opt-card-opacity-def`,0.9)});
 				this.styleIds.cardOpacityHover = this.setStyle(this.styles.child.cardOpacityHover,{cardOpacityHover:Storage.getOption(`${this.name}-opt-card-opacity-hover`,0.9)});
 			}else{
 				this.styleIds.cardOpacityDef = this.setStyle(this.styles.child.cardOpacityDef,{cardOpacityDef:1});
