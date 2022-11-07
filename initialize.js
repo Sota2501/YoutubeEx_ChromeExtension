@@ -960,10 +960,10 @@ class DOMTemplate {
 			#ext-yc-slider-handle[active]:after {
 				content: attr(data-val);
 				position: absolute;
-				width: 18px;
-				height: 18px;
+				width: 25px;
+				height: 17px;
 				top: -30px;
-				left: 0;
+				transform: translateX(-50%);
 				color: lightyellow;
 				background: gray;
 				font-size: 16px;
