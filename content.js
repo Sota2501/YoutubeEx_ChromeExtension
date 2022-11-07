@@ -447,9 +447,6 @@ class FullscreenChat extends Ext {
 					font-weight: 600;
 				}
 				
-				html.nodisplay yt-live-chat-renderer {		// TODO
-					// background: transparent;
-				}
 				html.fullscreen yt-live-chat-ninja-message-renderer {
 					display: none;
 				}
