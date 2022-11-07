@@ -378,12 +378,15 @@ class FullscreenChat extends Ext {
 					background-color: var(--yt-live-chat-vem-background-color);
 				}
 				
+				html.fullscreen #chat {
+					padding-right: 7px;
+					--scrollbar-width: 7px;
+				}
 				html.fullscreen :is(
-					#chat,
 					yt-live-chat-participant-list-renderer #participants,
 					#ext-yc-options
 				) {
-					padding-right: 7px;
+					margin-right: 7px;
 					--scrollbar-width: 7px;
 				}
 				html.fullscreen :is(
