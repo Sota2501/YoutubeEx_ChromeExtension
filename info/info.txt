@@ -1,0 +1,51 @@
+[[JP]]
+
+Youtubeに追加機能を提供する拡張機能。追加したい項目をチェックすると使用可能。
+
+主な機能
+	配信者・認証済みユーザーなどからのコメントの下部固定化
+	フルスクリーンでYoutubeのチャット欄を表示する
+	スーパーチャット一覧のマウスでのスクロール
+
+設定画面の開き方
+	チャット欄の右上のボタンから設定画面を開くボタンにアクセス可能
+
+更新履歴
+	1.3.0 2022-11-07
+		特定コメントの固定化機能の実装
+		フルスクリーンでのチャット欄表示機能の実装
+		スーパーチャット一覧のマウスでのスクロール機能の実装
+
+
+
+[[EN]]
+
+Provides additional features to Youtube. It can be used by checking the item you want to add.
+
+Main features
+	Bottom pinning of specific comments like streamer and verified user.
+	Show the Youtube chat in full screen viewing.
+	Mouse scrolling in Super Chat list.
+
+How to open the settings screen
+	Click on the button in the upper right corner of the chat field to access the settings.
+
+Update history
+	1.3.0 (2022-11-07)
+		implementation
+			Bottom pinning of specific comments
+			View chat list in full screen
+			Mouse scrolling in Super Chat list
+
+
+
+
+[[プライバシーへの取り組み]]
+単一用途
+当拡張機能はYoutubeの主にチャット欄の見た目や使いやすさを向上させることを目的として作成されています。
+
+Storage
+当拡張機能がユーザーの設定・状態を保持する機能を有するため。
+
+ホスト権限
+当拡張機能はYoutube上でのみの使用を想定しており、contentsスクリプトを用いてDOM操作やイベント登録などを行っているため。
