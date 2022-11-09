@@ -619,7 +619,7 @@ class FullscreenChat extends Ext {
 		(new DOMTemplate(wrapper))
 			.ins("append","caption",{
 				captionInput: "slider",
-				captionDescription: "文字サイズ",
+				captionDescription: this.i18n('FontSize'),
 				sliderOptionName: `${this.name}-opt-font-size`,
 				sliderValue: Storage.getOption(`${this.name}-opt-font-size`,16),
 				sliderMin: 8,
@@ -631,7 +631,7 @@ class FullscreenChat extends Ext {
 			.q(null)
 			.ins("append","caption",{
 				captionInput: "slider",
-				captionDescription: "背景のぼかし",
+				captionDescription: this.i18n("BackgroundBlur"),
 				sliderOptionName: `${this.name}-opt-background-blur`,
 				sliderValue: Storage.getOption(`${this.name}-opt-background-blur`,2),
 				sliderMin: 0,
@@ -643,7 +643,7 @@ class FullscreenChat extends Ext {
 			.q(null)
 			.ins("append","caption",{
 				captionInput: "slider",
-				captionDescription: "コメント欄の不透明度",
+				captionDescription: this.i18n("OpacityDef"),
 				sliderOptionName: `${this.name}-opt-opacity-def`,
 				sliderValue: Storage.getOption(`${this.name}-opt-opacity-def`,0.6),
 				sliderMin: 0,
@@ -656,7 +656,7 @@ class FullscreenChat extends Ext {
 			.q(null)
 			.ins("append","caption",{
 				captionInput: "slider",
-				captionDescription: "ホバー時の不透明度",
+				captionDescription: this.i18n("OpacityHover"),
 				sliderOptionName: `${this.name}-opt-opacity-hover`,
 				sliderValue: Storage.getOption(`${this.name}-opt-opacity-hover`,0.9),
 				sliderMin: 0,
@@ -669,7 +669,7 @@ class FullscreenChat extends Ext {
 			.q(null)
 			.ins("append","caption",{
 				captionInput: "toggle",
-				captionDescription: "スーパーチャットの不透明度を設定",
+				captionDescription: this.i18n("UseCard"),
 				toggleOptionName: `${this.name}-opt-use-card`,
 				toggleChecked: Storage.getOption(`${this.name}-opt-use-card`,true)?" checked":""
 			},true)
@@ -679,7 +679,7 @@ class FullscreenChat extends Ext {
 			.ins("append","toggleCollapse",{collapseType: "on"},true)
 			.ins("append","caption",{
 				captionInput: "slider",
-				captionDescription: "スーパーチャットの不透明度",
+				captionDescription: this.i18n("CardOpacityDef"),
 				sliderOptionName: `${this.name}-opt-card-opacity-def`,
 				sliderValue: Storage.getOption(`${this.name}-opt-card-opacity-def`,0.9),
 				sliderMin: 0,
@@ -691,7 +691,7 @@ class FullscreenChat extends Ext {
 			}})
 			.ins("after","caption",{
 				captionInput: "slider",
-				captionDescription: "ホバー時の不透明度",
+				captionDescription: this.i18n("CardOpacityHover"),
 				sliderOptionName: `${this.name}-opt-card-opacity-hover`,
 				sliderValue: Storage.getOption(`${this.name}-opt-card-opacity-hover`,0.9),
 				sliderMin: 0,

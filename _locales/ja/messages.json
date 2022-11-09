@@ -53,6 +53,27 @@
 	"FullscreenChat_Description": {
 		"message": "フルスクリーンでのチャット覧表示"
 	},
+	"FullscreenChat_FontSize": {
+		"message": "文字サイズ"
+	},
+	"FullscreenChat_BackgroundBlur": {
+		"message": "背景のぼかし"
+	},
+	"FullscreenChat_OpacityDef": {
+		"message": "コメント欄の不透明度"
+	},
+	"FullscreenChat_OpacityHover": {
+		"message": "ホバー時の不透明度"
+	},
+	"FullscreenChat_UseCard": {
+		"message": "スーパーチャットの不透明度を設定"
+	},
+	"FullscreenChat_CardOpacityDef": {
+		"message": "スーパーチャットの不透明度"
+	},
+	"FullscreenChat_CardOpacityHover": {
+		"message": "ホバー時の不透明度"
+	},
 
 	"ChatTickerScroll_Description": {
 		"message": "スーパーチャット一覧のマウスでのスクロール"

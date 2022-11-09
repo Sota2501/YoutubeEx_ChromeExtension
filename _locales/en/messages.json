@@ -53,6 +53,27 @@
 	"FullscreenChat_Description": {
 		"message": "View chat list in full screen"
 	},
+	"FullscreenChat_FontSize": {
+		"message": "Font Size"
+	},
+	"FullscreenChat_BackgroundBlur": {
+		"message": "Blur"
+	},
+	"FullscreenChat_OpacityDef": {
+		"message": "Opacity"
+	},
+	"FullscreenChat_OpacityHover": {
+		"message": "Opacity on hover"
+	},
+	"FullscreenChat_UseCard": {
+		"message": "Use Opacity for Super Chat"
+	},
+	"FullscreenChat_CardOpacityDef": {
+		"message": "Opacity for Super Chat"
+	},
+	"FullscreenChat_CardOpacityHover": {
+		"message": "Opacity for Super Chat on hover"
+	},
 
 	"ChatTickerScroll_Description": {
 		"message": "Mouse scrolling in Super Chat list"
