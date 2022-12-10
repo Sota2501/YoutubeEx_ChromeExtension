@@ -11,9 +11,13 @@ Youtubeに追加機能を提供する拡張機能。追加したい項目をチ�
 	チャット欄の右上のボタンから設定画面を開くボタンにアクセス可能
 
 更新履歴
-	1.3.1 2022-11-09
+	1.3.2 (2022-12-11)
+		表示崩れの修正
+		固定化機能にスーパーチャットを対応
+		その他軽微な修正
+	1.3.1 (2022-11-09)
 		一部英訳されていなかった部分の追加
-	1.3.0 2022-11-07
+	1.3.0 (2022-11-07)
 		特定コメントの固定化機能の実装
 		フルスクリーンでのチャット欄表示機能の実装
 		スーパーチャット一覧のマウスでのスクロール機能の実装
@@ -33,6 +37,11 @@ How to open the settings screen
 	Click on the button in the upper right corner of the chat field to access the settings.
 
 Update history
+	1.3.2 (2022-12-11)
+		fix
+			Corrupted layout
+			Support Super Chat for Bottom pinning
+			Other minor things
 	1.3.1 (2022-11-09)
 		fix
 			Addition of some parts that were not translated to English

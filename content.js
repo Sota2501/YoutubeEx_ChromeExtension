@@ -55,6 +55,7 @@ class CommentPicker extends Ext {
 			</div>
 		</div>
 	`;
+	static anchor = false;
 	static opts = {};
 	static autoScrolling = false;
 	static userScrolling = false;
@@ -102,6 +103,8 @@ class CommentPicker extends Ext {
 				replacement.after(node);
 				replacement.remove();
 			});
+			this.addedItems.closest("#item-scroller").style.height = this.addedItems.clientHeight + "px";
+			this.anchor = false;
 			this.itemsCallback([{addedNodes:Array(...this.baseItems.children),removedNodes:[]}]);
 			this.observers.items.observe(this.baseItems,{childList:true});
 		}
@@ -129,6 +132,7 @@ class CommentPicker extends Ext {
 				this.addedItems.closest("#item-scroller").addEventListener("scroll",this.scrollEvent);
 				this.addedItems.closest("#item-scroller").nextElementSibling.addEventListener("click",this.scrollBottom);
 
+				this.anchor = false;
 				this.itemsCallback([{addedNodes:Array(...this.baseItems.children),removedNodes:[]}]);
 				if(!this.observers.list){
 					this.observers.list = new MutationObserver(this.listCallback);
@@ -175,17 +179,16 @@ class CommentPicker extends Ext {
 	static itemsCallback = (mutationList)=>{
 		mutationList.forEach(mutation=>{
 			if(mutation.addedNodes.length){
-				let anchor = false;
 				mutation.addedNodes.forEach(node=>{
 					if(
-						this.opts["opt-owner"] && node.getAttribute("author-type") == "owner" ||
+						this.opts["opt-owner"] && node.querySelector("#author-name.owner") ||
 						this.opts["opt-verified"] && node.querySelector('yt-live-chat-author-badge-renderer[type="verified"]') ||
-						this.opts["opt-moderator"] && node.getAttribute("author-type") == "moderator" || 
-						anchor
+						this.opts["opt-moderator"] && node.querySelector('yt-live-chat-author-badge-renderer[type="moderator"]') || 
+						this.anchor && !node.classList.contains("fixedComment")
 					){
-						anchor = false;
-						if(this.opts["opt-owner"] && node.getAttribute("author-type") == "owner" && YoutubeState.isLiveStreaming() && node.querySelector("#message").innerText.match(/\↓/g)){
-							anchor = true;
+						this.anchor = false;
+						if(this.opts["opt-owner"] && node.querySelector("#author-name.owner") && YoutubeState.isLiveStreaming() && node.querySelector("#message").innerText.match(/\↓/g)){
+							this.anchor = true;
 						}
 						const replacement = document.createElement("yt-live-chat-text-message-renderer");
 						replacement.classList.add("fixedComment");
@@ -775,9 +778,9 @@ class FullscreenChat extends Ext {
 			}
 
 			// 移動アイコン追加
-			this.moveBtn = (new DOMTemplate("#chat-messages > yt-live-chat-header-renderer > yt-icon-button#overflow:last-child"))
+			this.moveBtn = (new DOMTemplate("#chat-messages > yt-live-chat-header-renderer > yt-icon-button#overflow:last-of-type"))
 				.ins("before","ytIconButton",{id:"overflow",domTag:"yt-live-chat-header-renderer",svg:this.grabIcon})
-				.q("#chat-messages > yt-live-chat-header-renderer > yt-icon-button#overflow:nth-last-child(2)",null).tag(this.name)
+				.q("#chat-messages > yt-live-chat-header-renderer > yt-icon-button#overflow:nth-last-of-type(2)",null).tag(this.name)
 				.a("data-btn-id",0)
 				.on({t:"mousedown",f:this.iframeDownEvent})
 				.q();
