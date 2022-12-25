@@ -1095,7 +1095,7 @@ class DOMTemplate {
 		},
 		ytIcon: (dom,pos,templates)=>{
 			const ytIcon = document.createElement("yt-icon");
-			ytIcon.classList.add("style-scope","yt-button-renderer");
+			ytIcon.classList.add("style-scope",templates.domTag??"yt-button-renderer");
 			dom[pos](ytIcon);
 			this.#insh(ytIcon,"append",templates.svg);
 			return ytIcon;

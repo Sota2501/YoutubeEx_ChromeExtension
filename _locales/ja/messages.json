@@ -53,6 +53,9 @@
 	"FullscreenChat_Description": {
 		"message": "フルスクリーンでのチャット覧表示"
 	},
+	"FullscreenChat_TextOutline": {
+		"message": "テキスト縁取り"
+	},
 	"FullscreenChat_FontSize": {
 		"message": "文字サイズ"
 	},

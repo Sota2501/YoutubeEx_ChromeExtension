@@ -53,6 +53,9 @@
 	"FullscreenChat_Description": {
 		"message": "View chat list in full screen"
 	},
+	"FullscreenChat_TextOutline": {
+		"message": "Text Outline"
+	},
 	"FullscreenChat_FontSize": {
 		"message": "Font Size"
 	},

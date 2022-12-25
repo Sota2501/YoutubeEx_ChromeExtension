@@ -18,6 +18,9 @@ class CommentPicker extends Ext {
 	static name = "CommentPicker";
 	static description = this.i18n("Description");
 	static style = `
+		#chat {
+			overflow: hidden;
+		}
 		#chat > #item-list[data-ext-yc="${this.name}"] {
 			flex: unset;
 			max-height: 30%;
@@ -199,7 +202,6 @@ class CommentPicker extends Ext {
 						const addedScroller = this.addedItems.closest("#item-scroller");
 						const scrolling = addedScroller.scrollTop < addedScroller.scrollHeight - addedScroller.clientHeight;
 						this.addedItems.append(node);
-						addedScroller.style.height = this.addedItems.clientHeight + "px";
 						const baseScroller = this.baseItems.closest("#item-scroller");
 						baseScroller.scrollTo({"top":baseScroller.scrollHeight-baseScroller.clientHeight});
 						if(!scrolling){
@@ -435,7 +437,14 @@ class FullscreenChat extends Ext {
 				)::-webkit-scrollbar-thumb {
 					border-radius: 10px;
 					border-color: transparent;
-					background-color: rgba(240, 240, 240, 0.3);
+					background-color: hsl(0, 0%, 67%);
+				}
+				html.fullscreen :is(
+					#chat #item-scroller,
+					#participants,
+					#ext-yc-options
+				)::-webkit-scrollbar-thumb:hover {
+					background-color: hsl(0, 0%, 44%);
 				}
 
 
@@ -505,6 +514,55 @@ class FullscreenChat extends Ext {
 				}
 				#resizeButton > :nth-child(8) {
 					margin-top: auto;
+				}
+			`,
+			textOutline: `
+				html.fullscreen :is(
+					yt-live-chat-header-renderer,
+					yt-live-chat-participant-list-renderer #header,
+					#ext-yc-options-wrapper #header,
+					iron-pages#panel-pages
+				) svg {
+					filter: 
+						drop-shadow(1px 1px 3px var(--yt-live-chat-background-color))
+						drop-shadow(-1px 1px 3px var(--yt-live-chat-background-color))
+						drop-shadow(1px -1px 3px var(--yt-live-chat-background-color))
+						drop-shadow(-1px -1px 3px var(--yt-live-chat-background-color));
+				}
+				html.fullscreen :is(
+					#label-text.yt-dropdown-menu,
+					#label.yt-live-chat-text-input-field-renderer,
+					#count.yt-live-chat-message-input-renderer,
+					#ext-yc-options-wrapper,
+					yt-live-chat-text-message-renderer,
+					ytd-sponsorships-live-chat-gift-redemption-announcement-renderer
+				) {
+					text-shadow: 
+						1px 1px 3px var(--yt-live-chat-background-color),
+						-1px 1px 3px var(--yt-live-chat-background-color),
+						1px -1px 3px var(--yt-live-chat-background-color),
+						-1px -1px 3px var(--yt-live-chat-background-color);
+				}
+				html.fullscreen #card #header {
+					text-shadow: 
+						1px 1px 3px var(--yt-live-chat-paid-message-header-background-color,var(--yt-live-chat-sponsor-header-color,#1565c0)),
+						-1px 1px 3px var(--yt-live-chat-paid-message-header-background-color,var(--yt-live-chat-sponsor-header-color,#1565c0)),
+						1px -1px 3px var(--yt-live-chat-paid-message-header-background-color,var(--yt-live-chat-sponsor-header-color,#1565c0)),
+						-1px -1px 3px var(--yt-live-chat-paid-message-header-background-color,var(--yt-live-chat-sponsor-header-color,#1565c0));
+				}
+				html.fullscreen #card #content {
+					text-shadow: 
+						1px 1px 3px var(--yt-live-chat-paid-message-background-color,var(--yt-live-chat-sponsor-color,#1565c0)),
+						-1px 1px 3px var(--yt-live-chat-paid-message-background-color,var(--yt-live-chat-sponsor-color,#1565c0)),
+						1px -1px 3px var(--yt-live-chat-paid-message-background-color,var(--yt-live-chat-sponsor-color,#1565c0)),
+						-1px -1px 3px var(--yt-live-chat-paid-message-background-color,var(--yt-live-chat-sponsor-color,#1565c0));
+				}
+				html.fullscreen ytd-sponsorships-live-chat-header-renderer #header {
+					text-shadow: 
+						1px 1px 3px var(--yt-live-chat-sponsor-color),
+						-1px 1px 3px var(--yt-live-chat-sponsor-color),
+						1px -1px 3px var(--yt-live-chat-sponsor-color),
+						-1px -1px 3px var(--yt-live-chat-sponsor-color);
 				}
 			`,
 			fontSize: `
@@ -621,6 +679,16 @@ class FullscreenChat extends Ext {
 	static registOptions(wrapper){
 		(new DOMTemplate(wrapper))
 			.ins("append","caption",{
+				captionInput: "toggle",
+				captionDescription: this.i18n("TextOutline"),
+				toggleOptionName: `${this.name}-opt-text-outline`,
+				toggleChecked: Storage.getOption(`${this.name}-opt-text-outline`,true)?" checked":""
+			},true)
+			.on({q:"#ext-yc-toggle",t:"change",f:e=>{
+				Storage.setStage(e.target.getAttribute("data-option"),e.target.getAttribute("checked") != null);
+			}})
+			.q(null)
+			.ins("append","caption",{
 				captionInput: "slider",
 				captionDescription: this.i18n('FontSize'),
 				sliderOptionName: `${this.name}-opt-font-size`,
@@ -707,6 +775,13 @@ class FullscreenChat extends Ext {
 	}
 	static optionsUpdated(opts){
 		if(YoutubeState.isIframeChatFrame()){
+			if(opts["opt-text-outline"] != undefined){
+				if(opts["opt-text-outline"]){
+					this.styleIds.textOutline = this.setStyle(this.styles.child.textOutline);					
+				}else{
+					this.removeStyle(this.styleIds.textOutline);
+				}
+			}
 			if(opts["opt-font-size"] != undefined){
 				this.removeStyle(this.styleIds.fontSize);
 				this.styleIds.fontSize = this.setStyle(this.styles.child.fontSize,{fontSize:opts["opt-font-size"]});
@@ -765,6 +840,9 @@ class FullscreenChat extends Ext {
 			document.addEventListener("ext-yc-iframe-adjust-fixed-length",this.adjustFixedLengthIfram);
 		}else if(YoutubeState.isIframeChatFrame()){
 			this.setStyle(this.styles.child.base);
+			if(Storage.getOption(`${this.name}-opt-text-outline`,true)){
+				this.styleIds.textOutline = this.setStyle(this.styles.child.textOutline);
+			}
 			this.styleIds.fontSize = this.setStyle(this.styles.child.fontSize,{fontSize:Storage.getOption(`${this.name}-opt-font-size`,16)});
 			this.styleIds.backgroundBlur = this.setStyle(this.styles.child.backgroundBlur,{backgroundBlur:Storage.getOption(`${this.name}-opt-background-blur`,2)});
 			this.styleIds.opacityDef = this.setStyle(this.styles.child.opacityDef,{opacityDef:Storage.getOption(`${this.name}-opt-opacity-def`,0.6)});
