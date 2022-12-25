@@ -24,6 +24,9 @@
 	"Options_UseSyncDescription": {
 		"message": "設定はローカルにしていないデバイスに共有されます。"
 	},
+	"Options_ShowNotifyBadge": {
+		"message": "アップデートの通知バッジを表示"
+	},
 	"Options_Reload": {
 		"message": "設定を再読み込みする"
 	},

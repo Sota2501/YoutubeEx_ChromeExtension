@@ -719,6 +719,22 @@ class Storage {
 class DOMTemplate {
 	static #tmp = document.createElement("div");
 	static #styles = {
+		notificationBadge: `
+			html.extYcHasNotification :is(
+				#chat-messages yt-live-chat-header-renderer yt-icon-button:last-of-type,
+				#ext-yc-menu-item
+			) yt-icon:after {
+				display: flex;
+				position: absolute;
+				top: -2px;
+				right: -2px;
+				width: 11px;
+				height: 11px;
+				border-radius: 50%;
+				background: var(--yt-spec-themed-blue);
+				content: "";
+			}
+		`,
 		menuItem: `
 			#ext-yc-menu-item {
 				cursor: pointer;
@@ -1332,6 +1348,7 @@ class DOMTemplate {
 
 class Options extends Ext {
 	static name = "Options";
+	static v = 1;
 	static init(){
 		if(YoutubeState.isAppFrame()){
 			YoutubeEvent.addEventListener("exLoad",()=>{
@@ -1367,6 +1384,15 @@ class Options extends Ext {
 					}});
 				}
 				options.ins("append","caption",{
+					captionInput: "toggle",
+					captionDescription: this.i18n("ShowNotifyBadge"),
+					toggleOptionName: "flag-notification",
+					toggleChecked: (Storage.getStorage("flag-notification",true,false)?" checked":"")
+				},true)
+				.on({q:"#ext-yc-toggle",t:"change",f:e=>{
+					Storage.setStorage(e.target.getAttribute("data-option"),e.target.getAttribute("checked") != null,false);
+				}})
+				.ins("append","caption",{
 					captionInput: "toggle",
 					captionDescription: this.i18n("UseLocal"),
 					toggleOptionName: "flag-use-local",
@@ -1407,6 +1433,11 @@ class Options extends Ext {
 						}
 					}catch(e){
 						console.error(`chat-${ex}-init`,e);
+					}
+				}
+				if(Storage.getStorage("flag-notification",true,false)){
+					if(Storage.getStorage("Options-v",0,false) < this.v){
+						document.documentElement.classList.add("extYcHasNotification");
 					}
 				}
 				YoutubeEvent.addEventListener("storageChanged",this.optionsUpdated);
@@ -1479,6 +1510,8 @@ class Options extends Ext {
 		document.querySelector("#ext-yc-options-wrapper").click();
 		document.querySelector("#ext-yc-options-wrapper").classList.add("iron-selected");
 		document.querySelector("#chat-messages").classList.remove("iron-selected");
+		document.documentElement.classList.remove("extYcHasNotification");
+		Storage.setStorage("Options-v",this.v,false);
 	}
 	static backToChat = ()=>{
 		document.querySelector("#chat-messages").classList.add("iron-selected");

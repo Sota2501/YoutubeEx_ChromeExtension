@@ -24,6 +24,9 @@
 	"Options_UseSyncDescription": {
 		"message": "Shared to devices that do not have \"Use local storage\" set to ON."
 	},
+	"Options_ShowNotifyBadge": {
+		"message": "Show update notification badge"
+	},
 	"Options_Reload": {
 		"message": "Reload the setting"
 	},
