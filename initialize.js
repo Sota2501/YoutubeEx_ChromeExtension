@@ -649,7 +649,7 @@ class Storage {
 		let def = {v:this.v};
 		if(this.local["v"] == undefined || this.sync["v"] == undefined){
 			for(let ex in extensions){
-				def[ex] = true;	// TODO
+				def[ex] = true;
 			}
 		}
 		if(this.local["v"] == undefined){
@@ -657,7 +657,7 @@ class Storage {
 			chrome.storage.local.set(this.local);
 		}
 		if(this.sync["v"] == undefined){
-			this.sync = Object.assign({},def);
+			this.sync = Object.assign({"Options-v":Options.v+1},def);
 			chrome.storage.sync.set(this.sync);
 		}
 		let type = this.local["flag-use-local"] ? "local" : "sync";
@@ -844,6 +844,9 @@ class DOMTemplate {
 				text-transfoorm: var(--ytd-tab-system-text-transform);
 				flex: 1;
 				flex-basis: 1e-9px;
+			}
+			#ext-yc-caption-container #caption[is-new] {
+				text-decoration: underline var(--yt-spec-themed-blue);
 			}
 		`,
 		toggle: `
@@ -1060,7 +1063,7 @@ class DOMTemplate {
 		`,
 		caption: `
 			<div id="ext-yc-caption-container" class="style-scope">
-				<div id="caption" class="style-scope">[[captionDescription]]</div>
+				<div id="caption" class="style-scope"[[isNew]]>[[captionDescription]]</div>
 			</div>
 		`,
 		toggle: `
@@ -1386,12 +1389,18 @@ class Options extends Ext {
 				options.ins("append","caption",{
 					captionInput: "toggle",
 					captionDescription: this.i18n("ShowNotifyBadge"),
+					isNew: (Storage.getStorage("Options-v",0,false) < 1)?" is-new":"",
 					toggleOptionName: "flag-notification",
 					toggleChecked: (Storage.getStorage("flag-notification",true,false)?" checked":"")
 				},true)
 				.on({q:"#ext-yc-toggle",t:"change",f:e=>{
 					Storage.setStorage(e.target.getAttribute("data-option"),e.target.getAttribute("checked") != null,false);
 				}})
+				.ins("append","toggleCollapse",{collapseType: "on"},true)
+				.ins("append","caption",{captionDescription: this.i18n("NotifyDescription")})
+				.ins("after","toggleCollapse",{collapseType: "off"},true)
+				.ins("append","caption",{captionDescription: this.i18n("NoNotifyDescription")})
+				.q(null)
 				.ins("append","caption",{
 					captionInput: "toggle",
 					captionDescription: this.i18n("UseLocal"),
@@ -1415,6 +1424,7 @@ class Options extends Ext {
 							.q(null).ins("append","caption",{
 								captionInput: "toggle",
 								captionDescription: extensions[ex].description,
+								isNew: (Storage.getStorage("Options-v",0,false) < extensions[ex].optionsV)?" is-new":"",
 								toggleOptionName: ex,
 								toggleChecked: (Storage.getOption(ex,false)?" checked":"")
 							},true)
@@ -1436,7 +1446,7 @@ class Options extends Ext {
 					}
 				}
 				if(Storage.getStorage("flag-notification",true,false)){
-					if(Storage.getStorage("Options-v",0,false) < this.v){
+					if(Storage.getStorage("Options-v",0,false) != this.v){
 						document.documentElement.classList.add("extYcHasNotification");
 					}
 				}
@@ -1523,6 +1533,9 @@ class Options extends Ext {
 		itemOffset.style.height = itemOffset.children.item(0).clientHeight + "px";
 		itemOffset.style.minHeight = itemOffset.parentElement.clientHeight + "px";
 		
+		for(let e of document.querySelectorAll("#ext-yc-caption-container #caption[is-new]")){
+			e.removeAttribute("is-new");
+		}
 		// Storage変更適用
 		Storage.reflectStage();
 	}

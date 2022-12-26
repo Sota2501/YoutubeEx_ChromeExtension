@@ -27,6 +27,12 @@
 	"Options_ShowNotifyBadge": {
 		"message": "アップデートの通知バッジを表示"
 	},
+	"Options_NotifyDescription": {
+		"message": "新機能が実装されたときにバッジで通知します。"
+	},
+	"Options_NoNotifyDescription": {
+		"message": "新機能が実装されてもバッジで通知しません。"
+	},
 	"Options_Reload": {
 		"message": "設定を再読み込みする"
 	},

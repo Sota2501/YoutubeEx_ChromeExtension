@@ -27,6 +27,12 @@
 	"Options_ShowNotifyBadge": {
 		"message": "Show update notification badge"
 	},
+	"Options_NotifyDescription": {
+		"message": "Notify with badge if new features are implemented."
+	},
+	"Options_NoNotifyDescription": {
+		"message": "Not notify with badge even if new features are implemented."
+	},
 	"Options_Reload": {
 		"message": "Reload the setting"
 	},

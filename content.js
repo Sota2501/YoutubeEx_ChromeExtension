@@ -17,6 +17,7 @@ function init(){
 class CommentPicker extends Ext {
 	static name = "CommentPicker";
 	static description = this.i18n("Description");
+	static optionsV = 0;
 	static style = `
 		#chat {
 			overflow: hidden;
@@ -264,6 +265,7 @@ class CommentPicker extends Ext {
 class FullscreenChat extends Ext {
 	static name = "FullscreenChat";
 	static description = this.i18n("Description");
+	static optionsV = 1;
 	static styles = {
 		top: `
 			body.no-scroll #columns #secondary {
@@ -681,6 +683,7 @@ class FullscreenChat extends Ext {
 			.ins("append","caption",{
 				captionInput: "toggle",
 				captionDescription: this.i18n("TextOutline"),
+				isNew: (Storage.getStorage("Options-v",0,false) < 1)?" is-new":"",
 				toggleOptionName: `${this.name}-opt-text-outline`,
 				toggleChecked: Storage.getOption(`${this.name}-opt-text-outline`,true)?" checked":""
 			},true)
@@ -1108,6 +1111,7 @@ class FullscreenChat extends Ext {
 class ChatTickerScroll extends Ext {
 	static name = "ChatTickerScroll";
 	static description = this.i18n("Description");
+	static optionsV = 0;
 	static style = `
 		#ticker :is(#left-arrow-container, #right-arrow-container) {
 			display: none;
