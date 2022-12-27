@@ -657,7 +657,7 @@ class Storage {
 			chrome.storage.local.set(this.local);
 		}
 		if(this.sync["v"] == undefined){
-			this.sync = Object.assign({"Options-v":Options.v+1},def);
+			this.sync = Object.assign({"Options-v":-1},def);
 			chrome.storage.sync.set(this.sync);
 		}
 		let type = this.local["flag-use-local"] ? "local" : "sync";
@@ -834,7 +834,7 @@ class DOMTemplate {
 				flex-wrap: wrap;
 				align-items: center;
 				width: 100%;
-				margin: 8px 0;
+				margin: 4px 0;
 			}
 			#ext-yc-caption-container #caption {
 				color: var(--yt-spec-text-secondary);
@@ -1389,7 +1389,7 @@ class Options extends Ext {
 				options.ins("append","caption",{
 					captionInput: "toggle",
 					captionDescription: this.i18n("ShowNotifyBadge"),
-					isNew: (Storage.getStorage("Options-v",0,false) < 1)?" is-new":"",
+					isNew: this.checkUpdated(1)?" is-new":"",
 					toggleOptionName: "flag-notification",
 					toggleChecked: (Storage.getStorage("flag-notification",true,false)?" checked":"")
 				},true)
@@ -1397,9 +1397,9 @@ class Options extends Ext {
 					Storage.setStorage(e.target.getAttribute("data-option"),e.target.getAttribute("checked") != null,false);
 				}})
 				.ins("append","toggleCollapse",{collapseType: "on"},true)
-				.ins("append","caption",{captionDescription: this.i18n("NotifyDescription")})
+				.ins("append","caption",{captionDescription: this.i18n("NotifyDescription")+this.i18n("WebStoreURL")})
 				.ins("after","toggleCollapse",{collapseType: "off"},true)
-				.ins("append","caption",{captionDescription: this.i18n("NoNotifyDescription")})
+				.ins("append","caption",{captionDescription: this.i18n("NoNotifyDescription")+this.i18n("WebStoreURL")})
 				.q(null)
 				.ins("append","caption",{
 					captionInput: "toggle",
@@ -1424,7 +1424,7 @@ class Options extends Ext {
 							.q(null).ins("append","caption",{
 								captionInput: "toggle",
 								captionDescription: extensions[ex].description,
-								isNew: (Storage.getStorage("Options-v",0,false) < extensions[ex].optionsV)?" is-new":"",
+								isNew: this.checkUpdated(extensions[ex].optionsV)?" is-new":"",
 								toggleOptionName: ex,
 								toggleChecked: (Storage.getOption(ex,false)?" checked":"")
 							},true)
@@ -1446,7 +1446,7 @@ class Options extends Ext {
 					}
 				}
 				if(Storage.getStorage("flag-notification",true,false)){
-					if(Storage.getStorage("Options-v",0,false) != this.v){
+					if(this.checkUpdated(this.v,true)){
 						document.documentElement.classList.add("extYcHasNotification");
 					}
 				}
@@ -1538,6 +1538,14 @@ class Options extends Ext {
 		}
 		// Storage変更適用
 		Storage.reflectStage();
+	}
+	static checkUpdated(v,b=false){
+		const OptV = Storage.getStorage("Options-v",0,false);
+		if(OptV == -1){
+			return b;
+		}else{
+			return OptV < v;
+		}
 	}
 }
 

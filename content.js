@@ -683,7 +683,7 @@ class FullscreenChat extends Ext {
 			.ins("append","caption",{
 				captionInput: "toggle",
 				captionDescription: this.i18n("TextOutline"),
-				isNew: (Storage.getStorage("Options-v",0,false) < 1)?" is-new":"",
+				isNew: Options.checkUpdated(1)?" is-new":"",
 				toggleOptionName: `${this.name}-opt-text-outline`,
 				toggleChecked: Storage.getOption(`${this.name}-opt-text-outline`,true)?" checked":""
 			},true)

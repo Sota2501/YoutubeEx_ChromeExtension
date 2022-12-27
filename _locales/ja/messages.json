@@ -33,6 +33,9 @@
 	"Options_NoNotifyDescription": {
 		"message": "新機能が実装されてもバッジで通知しません。"
 	},
+	"Options_WebStoreURL": {
+		"message": "アップデート内容は<a href=\"https://chrome.google.com/webstore/detail/abgjhpgebjabcdihdnlmnjkkpaifgalg\" target=\"_blank\" class=\"yt-formatted-string\">こちら</a>"
+	},
 	"Options_Reload": {
 		"message": "設定を再読み込みする"
 	},

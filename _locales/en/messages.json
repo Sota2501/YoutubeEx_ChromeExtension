@@ -33,6 +33,9 @@
 	"Options_NoNotifyDescription": {
 		"message": "Not notify with badge even if new features are implemented."
 	},
+	"Options_WebStoreURL": {
+		"message": "Click <a href=\"https://chrome.google.com/webstore/detail/abgjhpgebjabcdihdnlmnjkkpaifgalg\" target=\"_blank\" class=\"yt-formatted-string\">here</a> for update history."
+	},
 	"Options_Reload": {
 		"message": "Reload the setting"
 	},
