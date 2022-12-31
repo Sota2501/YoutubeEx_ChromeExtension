@@ -89,6 +89,12 @@
 	"FullscreenChat_CardOpacityHover": {
 		"message": "Opacity for Super Chat on hover"
 	},
+	"FullscreenChat_UseChatDocking": {
+		"message": "Pin the chat list to the right side"
+	},
+	"FullscreenChat_ChatDockingDescription": {
+		"message": "To fix the chat list, grab and move it to the right edge of the screen."
+	},
 
 	"ChatTickerScroll_Description": {
 		"message": "Mouse scrolling in Super Chat list"

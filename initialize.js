@@ -548,7 +548,7 @@ class Ext {
 		return this.styleNum++;
 	}
 	static removeStyle(id){
-		const styles = document.querySelectorAll(`style[data-ext-yc="${this.name}"]`+(id?`[data-style-id="${id}"]`:""));
+		const styles = document.querySelectorAll(`style[data-ext-yc="${this.name}"]`+(id!=null?`[data-style-id="${id}"]`:""));
 		styles.forEach(e=>e.remove());
 	}
 	static removeAddedDOM(){
@@ -1351,7 +1351,7 @@ class DOMTemplate {
 
 class Options extends Ext {
 	static name = "Options";
-	static v = 1;
+	static v = 2;
 	static init(){
 		if(YoutubeState.isAppFrame()){
 			YoutubeEvent.addEventListener("exLoad",()=>{

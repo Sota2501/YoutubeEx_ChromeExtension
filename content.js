@@ -107,7 +107,6 @@ class CommentPicker extends Ext {
 				replacement.after(node);
 				replacement.remove();
 			});
-			this.addedItems.closest("#item-scroller").style.height = this.addedItems.clientHeight + "px";
 			this.anchor = false;
 			this.itemsCallback([{addedNodes:Array(...this.baseItems.children),removedNodes:[]}]);
 			this.observers.items.observe(this.baseItems,{childList:true});
@@ -173,7 +172,6 @@ class CommentPicker extends Ext {
 				this.observers.items.disconnect();
 				while(this.addedItems.firstChild) this.addedItems.removeChild(this.addedItems.firstChild);
 				const addedScroller = this.addedItems.closest("#item-scroller");
-				addedScroller.style.height = this.addedItems.clientHeight + "px";
 				if(addedScroller.scrollTop == addedScroller.scrollHeight - addedScroller.clientHeight){
 					this.scrollEvent();
 				}
@@ -188,27 +186,22 @@ class CommentPicker extends Ext {
 						this.opts["opt-owner"] && node.querySelector("#author-name.owner") ||
 						this.opts["opt-verified"] && node.querySelector('yt-live-chat-author-badge-renderer[type="verified"]') ||
 						this.opts["opt-moderator"] && node.querySelector('yt-live-chat-author-badge-renderer[type="moderator"]') || 
-						this.anchor && !node.classList.contains("fixedComment")
+						this.anchor == true && !node.classList.contains("fixedComment")
 					){
-						this.anchor = false;
-						if(this.opts["opt-owner"] && node.querySelector("#author-name.owner") && YoutubeState.isLiveStreaming() && node.querySelector("#message").innerText.match(/\↓/g)){
+						const liveAnchor = this.opts["opt-owner"] && node.querySelector("#author-name.owner") && YoutubeState.isLiveStreaming();
+						if(liveAnchor && node.querySelector("#message").innerText.match(/\↑/g)){
+							if(typeof this.anchor != "boolean"){
+								this.pickComment(this.anchor);
+							}
+						}
+						if(liveAnchor && node.querySelector("#message").innerText.match(/\↓/g)){
 							this.anchor = true;
+						}else{
+							this.anchor = false;
 						}
-						const replacement = document.createElement("yt-live-chat-text-message-renderer");
-						replacement.classList.add("fixedComment");
-						replacement.dataset.commentId = node.id;
-						node.after(replacement);
-						replacement.querySelector("#content > #message").innerText = this.i18n("ReplaceText");
-						replacement.querySelector("#menu").setAttribute("hidden","");
-						const addedScroller = this.addedItems.closest("#item-scroller");
-						const scrolling = addedScroller.scrollTop < addedScroller.scrollHeight - addedScroller.clientHeight;
-						this.addedItems.append(node);
-						const baseScroller = this.baseItems.closest("#item-scroller");
-						baseScroller.scrollTo({"top":baseScroller.scrollHeight-baseScroller.clientHeight});
-						if(!scrolling){
-							this.autoScrolling = addedScroller.scrollTop;
-							addedScroller.scrollTo({"top":addedScroller.scrollHeight-addedScroller.clientHeight,"behavior":"smooth"});
-						}
+						this.pickComment(node);
+					}else{
+						this.anchor = node;
 					}
 				});
 			}else if(mutation.removedNodes.length){
@@ -216,7 +209,6 @@ class CommentPicker extends Ext {
 					if(Array.from(node.classList).includes("fixedComment")){
 						this.addedItems.querySelector(`*[id="${node.dataset.commentId}"]`).remove();
 						const addedScroller = this.addedItems.closest("#item-scroller");
-						addedScroller.style.height = this.addedItems.clientHeight + "px";
 						if(addedScroller.scrollTop == addedScroller.scrollHeight - addedScroller.clientHeight){
 							this.scrollEvent();
 						}
@@ -224,6 +216,23 @@ class CommentPicker extends Ext {
 				});
 			}
 		});
+	}
+	static pickComment(elm){
+		const replacement = document.createElement("yt-live-chat-text-message-renderer");
+		replacement.classList.add("fixedComment");
+		replacement.dataset.commentId = elm.id;
+		elm.after(replacement);
+		replacement.querySelector("#content > #message").innerText = this.i18n("ReplaceText");
+		replacement.querySelector("#menu").setAttribute("hidden","");
+		const addedScroller = this.addedItems.closest("#item-scroller");
+		const scrolling = addedScroller.scrollTop < addedScroller.scrollHeight - addedScroller.clientHeight;
+		this.addedItems.append(elm);
+		const baseScroller = this.baseItems.closest("#item-scroller");
+		baseScroller.scrollTo({"top":baseScroller.scrollHeight-baseScroller.clientHeight});
+		if(!scrolling){
+			this.autoScrolling = addedScroller.scrollTop;
+			addedScroller.scrollTo({"top":addedScroller.scrollHeight-addedScroller.clientHeight,"behavior":"smooth"});
+		}
 	}
 	static scrollEvent = (e)=>{
 		const addedScroller = this.addedItems.closest("#item-scroller");
@@ -265,7 +274,7 @@ class CommentPicker extends Ext {
 class FullscreenChat extends Ext {
 	static name = "FullscreenChat";
 	static description = this.i18n("Description");
-	static optionsV = 1;
+	static optionsV = 2;
 	static styles = {
 		top: `
 			body.no-scroll #columns #secondary {
@@ -282,22 +291,97 @@ class FullscreenChat extends Ext {
 			body.no-scroll ytd-live-chat-frame#chat :not(iframe#chatframe) {
 				display: none;
 			}
+
+
+			body.no-scroll[chat-docking] #player-theater-container {
+				width: calc(100vw - 400px);
+			}
+			body.no-scroll[chat-docking] #player-theater-container .html5-video-player {
+				overflow: inherit;
+				z-index: unset;
+			}
+			body.no-scroll[chat-docking] #player-theater-container .html5-video-container {
+				position: absolute;
+				display: flex;
+				height: 100vh;
+			}
+			body.no-scroll[chat-docking] #player-theater-container .html5-video-container > video {
+				width: calc(100vw - 400px)!important;	/* TODO */
+				height: unset!important;
+				position: unset;
+				margin: auto;
+			}
+			body.no-scroll[chat-docking] #player-theater-container .ytp-storyboard-framepreview .ytp-storyboard-framepreview-img {
+				width: 100vw;
+				transform: scale(calc((1920 - 400 - 3) / 1920));	/* TODO */
+				transform-origin: left;
+			}
+			body.no-scroll[chat-docking] #player-theater-container .ytp-offline-slate {
+				position: relative;
+				width: 100vw;
+				height: 100vh;
+				scale: calc((1920 - 400 - 3) / 1920);
+				transform-origin: left;
+			}
+			body.no-scroll[chat-docking] #player-theater-container .ytp-iv-video-content {
+				width: calc(100vw - 400px)!important;	/* TODO */
+			}
+			body.no-scroll[chat-docking] #player-theater-container .ytp-gradient-bottom {
+				width: 100vw;
+				z-index: 602;
+			}
+			body.no-scroll[chat-docking] #player-theater-container .ytp-chrome-bottom {
+				z-index: 602;
+			}
+			body.no-scroll[chat-docking] ytd-live-chat-frame#chat {
+				border-radius: unset;
+			}
+			body.no-scroll[chat-docking] ytd-live-chat-frame#chat:hover {
+				z-index: 603;
+			}
+			body.no-scroll[chat-docking] ytd-live-chat-frame#chat > iframe {
+				border-radius: unset;
+			}
 		`,
 		child: {
 			base: `
-				html.fullscreen yt-live-chat-pinned-message-renderer > #message {
+				html.fullscreen:not([chat-docking]) yt-live-chat-pinned-message-renderer > #message {
 					z-index: 0;
 				}
-				html.fullscreen yt-live-chat-toast-renderer {
+				html.fullscreen:not([chat-docking]) yt-live-chat-toast-renderer {
 					z-index: -1;
 				}
-				html.fullscreen :is(
+				html.fullscreen:not([chat-docking]) :is(
 					yt-live-chat-banner-manager,
 					yt-live-chat-text-message-renderer > #menu
 				) {
 					background: none;
 				}
-				
+
+				html.fullscreen:not([chat-docking]) :is(
+					yt-live-chat-renderer,
+					yt-live-chat-header-renderer,
+					yt-live-chat-message-input-renderer,
+					yt-live-chat-text-message-renderer[author-is-owner],
+					yt-live-chat-ticker-renderer,
+					yt-live-chat-toast-renderer[is-showing-message],
+					yt-live-chat-restricted-participation-renderer > #container,
+					yt-live-chat-viewer-engagement-message-renderer > #card,
+					yt-live-chat-paid-message-renderer > #card > #header,
+					yt-live-chat-paid-message-renderer > #card > #content,
+					yt-live-chat-paid-sticker-renderer > #card,
+					yt-live-chat-membership-item-renderer > #card > #header,
+					yt-live-chat-membership-item-renderer > #card > #content,
+					ytd-sponsorships-live-chat-gift-purchase-announcement-renderer > #header > #header,
+					yt-live-chat-participant-list-renderer > #header,
+					#ext-yc-options-wrapper > #header,
+					#ext-yc-card,
+					#ext-yc-options-wrapper > #footer,
+					#ext-yc-options-wrapper > #footer > tp-yt-paper-button
+				):not(.yt-live-chat-banner-renderer) {
+					background: none;
+				}
+
 				html.fullscreen :is(
 					yt-live-chat-renderer,
 					yt-live-chat-header-renderer,
@@ -320,71 +404,70 @@ class FullscreenChat extends Ext {
 					#ext-yc-options-wrapper > #footer > tp-yt-paper-button
 				):not(.yt-live-chat-banner-renderer) {
 					position: relative;
-					background: none;
 					overflow: hidden;
 				}
-				
-				html.fullscreen yt-live-chat-renderer > iron-pages > *:not(yt-live-chat-ninja-message-renderer):before {
+
+				html.fullscreen:not([chat-docking]) yt-live-chat-renderer > iron-pages > *:not(yt-live-chat-ninja-message-renderer):before {
 					background-color: var(--yt-live-chat-background-color);
 				}
-				html.fullscreen yt-live-chat-header-renderer:before {
+				html.fullscreen:not([chat-docking]) yt-live-chat-header-renderer:before {
 					background-color: var(--yt-live-chat-header-background-color,var(--yt-deprecated-opalescence-soft-grey-opacity-lighten-3));
 				}
-				html.fullscreen yt-live-chat-message-input-renderer:before {
+				html.fullscreen:not([chat-docking]) yt-live-chat-message-input-renderer:before {
 					background-color: var(--yt-live-chat-action-panel-background-color,var(--yt-deprecated-opalescence-soft-grey-opacity-lighten-3));
 				}
-				html.fullscreen yt-live-chat-text-message-renderer[author-is-owner]:before {
+				html.fullscreen:not([chat-docking]) yt-live-chat-text-message-renderer[author-is-owner]:before {
 					background-color: var(--yt-live-chat-message-highlight-background-color);
 				}
-				html.fullscreen yt-live-chat-ticker-renderer:before {
+				html.fullscreen:not([chat-docking]) yt-live-chat-ticker-renderer:before {
 					background-color: var(--yt-live-chat-header-background-color);
 				}
-				html.fullscreen yt-live-chat-toast-renderer[is-showing-message]:before {
+				html.fullscreen:not([chat-docking]) yt-live-chat-toast-renderer[is-showing-message]:before {
 					background-color: var(--yt-live-chat-toast-background-color);
 				}
-				html.fullscreen yt-live-chat-restricted-participation-renderer > #container:before {
+				html.fullscreen:not([chat-docking]) yt-live-chat-restricted-participation-renderer > #container:before {
 					background-color: var(--yt-live-chat-action-panel-background-color,var(--yt-deprecated-opalescence-soft-grey-opacity-lighten-3));
 				}
-				html.fullscreen yt-live-chat-viewer-engagement-message-renderer > #card:before {
+				html.fullscreen:not([chat-docking]) yt-live-chat-viewer-engagement-message-renderer > #card:before {
 					background-color: var(--yt-live-chat-vem-background-color);
 				}
-				html.fullscreen yt-live-chat-paid-message-renderer > #card > #header:before {
+				html.fullscreen:not([chat-docking]) yt-live-chat-paid-message-renderer > #card > #header:before {
 					background-color: var(--yt-live-chat-paid-message-header-background-color,#125aac);
 				}
-				html.fullscreen yt-live-chat-paid-message-renderer > #card > #content:before {
+				html.fullscreen:not([chat-docking]) yt-live-chat-paid-message-renderer > #card > #content:before {
 					background-color: var(--yt-live-chat-paid-message-background-color,#1565c0);
 				}
-				html.fullscreen yt-live-chat-paid-sticker-renderer > #card:before {
+				html.fullscreen:not([chat-docking]) yt-live-chat-paid-sticker-renderer > #card:before {
 					background-color: var(--yt-live-chat-paid-sticker-background-color);
 				}
-				html.fullscreen yt-live-chat-membership-item-renderer > #card > #header:before {
+				html.fullscreen:not([chat-docking]) yt-live-chat-membership-item-renderer > #card > #header:before {
 					background-color: var(--yt-live-chat-sponsor-header-color);
 				}
-				html.fullscreen yt-live-chat-membership-item-renderer[show-only-header] > #card > #header:before {
+				html.fullscreen:not([chat-docking]) yt-live-chat-membership-item-renderer[show-only-header] > #card > #header:before {
 					background-color: var(--yt-live-chat-sponsor-color);
 				}
-				html.fullscreen yt-live-chat-membership-item-renderer > #card > #content:before {
+				html.fullscreen:not([chat-docking]) yt-live-chat-membership-item-renderer > #card > #content:before {
 					background-color: var(--yt-live-chat-sponsor-color);
 				}
-				html.fullscreen ytd-sponsorships-live-chat-gift-purchase-announcement-renderer > #header > #header:before {
+				html.fullscreen:not([chat-docking]) ytd-sponsorships-live-chat-gift-purchase-announcement-renderer > #header > #header:before {
 					background-color: var(--yt-live-chat-sponsor-color);
 				}
-				html.fullscreen yt-live-chat-participant-list-renderer > #header:before {
+				html.fullscreen:not([chat-docking]) yt-live-chat-participant-list-renderer > #header:before {
 					background-color: var(--yt-live-chat-action-panel-background-color,var(--yt-deprecated-opalescence-soft-grey-opacity-lighten-3));
 				}
-				html.fullscreen #ext-yc-options-wrapper > #header:before {
+				html.fullscreen:not([chat-docking]) #ext-yc-options-wrapper > #header:before {
 					background-color: var(--yt-live-chat-action-panel-background-color,var(--yt-deprecated-opalescence-soft-grey-opacity-lighten-3));
 				}
-				html.fullscreen #ext-yc-card:before {
+				html.fullscreen:not([chat-docking]) #ext-yc-card:before {
 					background-color: var(--yt-live-chat-vem-background-color);
 				}
-				html.fullscreen #ext-yc-options-wrapper > #footer:before {
+				html.fullscreen:not([chat-docking]) #ext-yc-options-wrapper > #footer:before {
 					background-color: var(--yt-live-chat-action-panel-background-color,var(--yt-deprecated-opalescence-soft-grey-opacity-lighten-3));
 				}
-				html.fullscreen #ext-yc-options-wrapper > #footer > tp-yt-paper-button:before {
+				html.fullscreen:not([chat-docking]) #ext-yc-options-wrapper > #footer > tp-yt-paper-button:before {
 					background-color: var(--yt-live-chat-vem-background-color);
 				}
-				
+
 				html.fullscreen #chat {
 					padding-right: 7px;
 					--scrollbar-width: 7px;
@@ -397,14 +480,14 @@ class FullscreenChat extends Ext {
 					--scrollbar-width: 7px;
 				}
 				html.fullscreen :is(
-					#chat #item-scroller,
+					#chat #item-list #item-scroller,
 					#participants,
 					#ext-yc-options
 				) {
 					padding-right: 7px;
 				}
 				html.fullscreen :is(
-					#chat #item-scroller,
+					#chat #item-list #item-scroller,
 					#participants,
 					#ext-yc-options
 				):hover {
@@ -412,28 +495,28 @@ class FullscreenChat extends Ext {
 					padding-right: 0;
 				}
 				html.fullscreen :is(
-					#chat #item-scroller,
+					#chat #item-list #item-scroller,
 					#participants,
 					#ext-yc-options
 				)::-webkit-scrollbar {
 					width: 0;
 				}
 				html.fullscreen :is(
-					#chat #item-scroller,
+					#chat #item-list #item-scroller,
 					#participants,
 					#ext-yc-options
 				):hover::-webkit-scrollbar {
 					width: var(--scrollbar-width);
 				}
 				html.fullscreen :is(
-					#chat #item-scroller,
+					#chat #item-list #item-scroller,
 					#participants,
 					#ext-yc-options
 				)::-webkit-scrollbar-track {
 					background-color: transparent;
 				}
 				html.fullscreen :is(
-					#chat #item-scroller,
+					#chat #item-list #item-scroller,
 					#participants,
 					#ext-yc-options
 				)::-webkit-scrollbar-thumb {
@@ -442,7 +525,7 @@ class FullscreenChat extends Ext {
 					background-color: hsl(0, 0%, 67%);
 				}
 				html.fullscreen :is(
-					#chat #item-scroller,
+					#chat #item-list #item-scroller,
 					#participants,
 					#ext-yc-options
 				)::-webkit-scrollbar-thumb:hover {
@@ -460,14 +543,10 @@ class FullscreenChat extends Ext {
 					cursor: grabbing;
 				}
 				
-				html.fullscreen #author-name.yt-live-chat-author-chip {
-					font-weight: 600;
-				}
-				
-				html.fullscreen yt-live-chat-ninja-message-renderer {
+				html.fullscreen:not([chat-docking]) yt-live-chat-ninja-message-renderer {	/* TODO */
 					display: none;
 				}
-				
+
 				#resizeButton {
 					position: absolute;
 					display: none;
@@ -479,7 +558,7 @@ class FullscreenChat extends Ext {
 					grid-template-rows: 8px 1fr 8px;
 					pointer-events: none;
 				}
-				html.fullscreen #resizeButton {
+				html.fullscreen:not([chat-docking]) #resizeButton {	/* TODO */
 					display: grid;
 				}
 				#resizeButton > * {
@@ -519,52 +598,56 @@ class FullscreenChat extends Ext {
 				}
 			`,
 			textOutline: `
-				html.fullscreen :is(
-					yt-live-chat-header-renderer,
-					yt-live-chat-participant-list-renderer #header,
-					#ext-yc-options-wrapper #header,
-					iron-pages#panel-pages
-				) svg {
+				html.fullscreen:not([chat-docking]) :is(
+					:is(
+						yt-live-chat-header-renderer,
+						yt-live-chat-participant-list-renderer #header,
+						#ext-yc-options-wrapper #header,
+						iron-pages#panel-pages
+					) svg,
+					yt-live-chat-text-message-renderer #message img
+				) {
 					filter: 
-						drop-shadow(1px 1px 3px var(--yt-live-chat-background-color))
-						drop-shadow(-1px 1px 3px var(--yt-live-chat-background-color))
-						drop-shadow(1px -1px 3px var(--yt-live-chat-background-color))
-						drop-shadow(-1px -1px 3px var(--yt-live-chat-background-color));
+						drop-shadow(1px 1px .5px var(--yt-live-chat-background-color))
+						drop-shadow(-1px 1px .5px var(--yt-live-chat-background-color))
+						drop-shadow(1px -1px .5px var(--yt-live-chat-background-color))
+						drop-shadow(-1px -1px .5px var(--yt-live-chat-background-color));
 				}
-				html.fullscreen :is(
+				html.fullscreen:not([chat-docking]) :is(
 					#label-text.yt-dropdown-menu,
-					#label.yt-live-chat-text-input-field-renderer,
-					#count.yt-live-chat-message-input-renderer,
+					#input-panel,
 					#ext-yc-options-wrapper,
-					yt-live-chat-text-message-renderer,
-					ytd-sponsorships-live-chat-gift-redemption-announcement-renderer
+					yt-live-chat-text-message-renderer:not([author-type="owner"]),
+					yt-live-chat-text-message-renderer[author-type="owner"] #content > :not(yt-live-chat-author-chip),
+					ytd-sponsorships-live-chat-gift-redemption-announcement-renderer,
+					yt-live-chat-viewer-engagement-message-renderer
 				) {
 					text-shadow: 
-						1px 1px 3px var(--yt-live-chat-background-color),
-						-1px 1px 3px var(--yt-live-chat-background-color),
-						1px -1px 3px var(--yt-live-chat-background-color),
-						-1px -1px 3px var(--yt-live-chat-background-color);
+						1px 1px 1.5px var(--yt-live-chat-background-color),
+						-1px 1px 1.5px var(--yt-live-chat-background-color),
+						1px -1px 1.5px var(--yt-live-chat-background-color),
+						-1px -1px 1.5px var(--yt-live-chat-background-color);
 				}
-				html.fullscreen #card #header {
+				html.fullscreen:not([chat-docking]) #card #header {
 					text-shadow: 
-						1px 1px 3px var(--yt-live-chat-paid-message-header-background-color,var(--yt-live-chat-sponsor-header-color,#1565c0)),
-						-1px 1px 3px var(--yt-live-chat-paid-message-header-background-color,var(--yt-live-chat-sponsor-header-color,#1565c0)),
-						1px -1px 3px var(--yt-live-chat-paid-message-header-background-color,var(--yt-live-chat-sponsor-header-color,#1565c0)),
-						-1px -1px 3px var(--yt-live-chat-paid-message-header-background-color,var(--yt-live-chat-sponsor-header-color,#1565c0));
+						1px 1px 1.5px var(--yt-live-chat-paid-message-header-background-color,var(--yt-live-chat-sponsor-header-color,#1565c0)),
+						-1px 1px 1.5px var(--yt-live-chat-paid-message-header-background-color,var(--yt-live-chat-sponsor-header-color,#1565c0)),
+						1px -1px 1.5px var(--yt-live-chat-paid-message-header-background-color,var(--yt-live-chat-sponsor-header-color,#1565c0)),
+						-1px -1px 1.5px var(--yt-live-chat-paid-message-header-background-color,var(--yt-live-chat-sponsor-header-color,#1565c0));
 				}
-				html.fullscreen #card #content {
+				html.fullscreen:not([chat-docking]) #card #content:not(.yt-live-chat-viewer-engagement-message-renderer) {
 					text-shadow: 
-						1px 1px 3px var(--yt-live-chat-paid-message-background-color,var(--yt-live-chat-sponsor-color,#1565c0)),
-						-1px 1px 3px var(--yt-live-chat-paid-message-background-color,var(--yt-live-chat-sponsor-color,#1565c0)),
-						1px -1px 3px var(--yt-live-chat-paid-message-background-color,var(--yt-live-chat-sponsor-color,#1565c0)),
-						-1px -1px 3px var(--yt-live-chat-paid-message-background-color,var(--yt-live-chat-sponsor-color,#1565c0));
+						1px 1px 1.5px var(--yt-live-chat-paid-message-background-color,var(--yt-live-chat-sponsor-color,#1565c0)),
+						-1px 1px 1.5px var(--yt-live-chat-paid-message-background-color,var(--yt-live-chat-sponsor-color,#1565c0)),
+						1px -1px 1.5px var(--yt-live-chat-paid-message-background-color,var(--yt-live-chat-sponsor-color,#1565c0)),
+						-1px -1px 1.5px var(--yt-live-chat-paid-message-background-color,var(--yt-live-chat-sponsor-color,#1565c0));
 				}
-				html.fullscreen ytd-sponsorships-live-chat-header-renderer #header {
+				html.fullscreen:not([chat-docking]) ytd-sponsorships-live-chat-header-renderer #header {
 					text-shadow: 
-						1px 1px 3px var(--yt-live-chat-sponsor-color),
-						-1px 1px 3px var(--yt-live-chat-sponsor-color),
-						1px -1px 3px var(--yt-live-chat-sponsor-color),
-						-1px -1px 3px var(--yt-live-chat-sponsor-color);
+						1px 1px 1.5px var(--yt-live-chat-sponsor-color),
+						-1px 1px 1.5px var(--yt-live-chat-sponsor-color),
+						1px -1px 1.5px var(--yt-live-chat-sponsor-color),
+						-1px -1px 1.5px var(--yt-live-chat-sponsor-color);
 				}
 			`,
 			fontSize: `
@@ -573,13 +656,13 @@ class FullscreenChat extends Ext {
 				}
 			`,
 			backgroundBlur: `
-				html.fullscreen yt-live-chat-renderer > iron-pages > * {
+				html.fullscreen:not([chat-docking]) yt-live-chat-renderer > iron-pages > * {
 					backdrop-filter: blur([[backgroundBlur]]px);
 				}
 			`,
 			opacityDef: `
-				html.fullscreen yt-live-chat-banner-renderer > yt-live-interactivity-component-background,
-				html.fullscreen :is(
+				html.fullscreen:not([chat-docking]) yt-live-chat-banner-renderer > yt-live-interactivity-component-background,
+				html.fullscreen:not([chat-docking]) :is(
 					yt-live-chat-renderer > iron-pages > *:not(yt-live-chat-ninja-message-renderer),
 					yt-live-chat-header-renderer,
 					yt-live-chat-message-input-renderer,
@@ -604,8 +687,8 @@ class FullscreenChat extends Ext {
 				}
 			`,
 			opacityHover: `
-				html.fullscreen:hover yt-live-chat-banner-renderer > yt-live-interactivity-component-background,
-				html.fullscreen:hover :is(
+				html.fullscreen:not([chat-docking]):hover yt-live-chat-banner-renderer > yt-live-interactivity-component-background,
+				html.fullscreen:not([chat-docking]):hover :is(
 					yt-live-chat-renderer > iron-pages > *:not(yt-live-chat-ninja-message-renderer),
 					yt-live-chat-header-renderer,
 					yt-live-chat-message-input-renderer,
@@ -624,8 +707,8 @@ class FullscreenChat extends Ext {
 				}
 			`,
 			cardOpacityDef: `
-				html.fullscreen yt-live-chat-banner-renderer > yt-live-interactivity-component-background,
-				html.fullscreen :is(
+				html.fullscreen:not([chat-docking]) yt-live-chat-banner-renderer > yt-live-interactivity-component-background,
+				html.fullscreen:not([chat-docking]) :is(
 					yt-live-chat-viewer-engagement-message-renderer > #card,
 					yt-live-chat-paid-message-renderer > #card > #header,
 					yt-live-chat-paid-message-renderer > #card > #content,
@@ -645,8 +728,8 @@ class FullscreenChat extends Ext {
 				}
 			`,
 			cardOpacityHover: `
-				html.fullscreen:hover yt-live-chat-banner-renderer > yt-live-interactivity-component-background,
-				html.fullscreen:hover :is(
+				html.fullscreen:not([chat-docking]):hover yt-live-chat-banner-renderer > yt-live-interactivity-component-background,
+				html.fullscreen:not([chat-docking]):hover :is(
 					yt-live-chat-viewer-engagement-message-renderer > #card,
 					yt-live-chat-paid-message-renderer > #card > #header,
 					yt-live-chat-paid-message-renderer > #card > #content,
@@ -774,10 +857,33 @@ class FullscreenChat extends Ext {
 			},true)
 			.on({q:"#ext-yc-slider",t:"change",f:e=>{
 				Storage.setStage(e.target.getAttribute("data-option"),Number(e.target.getAttribute("value")));
-			}});
+			}})
+			.q(null)
+			.ins("append","caption",{
+				captionInput: "toggle",
+				captionDescription: this.i18n("UseChatDocking"),
+				isNew: Options.checkUpdated(2)?" is-new":"",
+				toggleOptionName: `${this.name}-opt-use-chat-docking`,
+				toggleChecked: Storage.getOption(`${this.name}-opt-use-chat-docking`,false)?" checked":""
+			},true)
+			.on({q:"#ext-yc-toggle",t:"change",f:e=>{
+				Storage.setStage(e.target.getAttribute("data-option"),e.target.getAttribute("checked") != null);
+			}})
+			.ins("append","toggleCollapse",{collapseType:"on"},true)
+			.ins("append","caption",{captionDescription: this.i18n("ChatDockingDescription")});
 	}
 	static optionsUpdated(opts){
-		if(YoutubeState.isIframeChatFrame()){
+		if(YoutubeState.isAppFrame()){
+			if(opts["opt-use-chat-docking"] != undefined){
+				if(opts["opt-use-chat-docking"]){
+					if(YoutubeState.isFullscreen() && Storage.getStorage(`${this.name}-frame-chat-docking`,false,true)){
+						this.setIframe({detail:true});
+					}
+				}else{
+					this.setIframe({detail:false});
+				}
+			}
+		}else if(YoutubeState.isIframeChatFrame()){
 			if(opts["opt-text-outline"] != undefined){
 				if(opts["opt-text-outline"]){
 					this.styleIds.textOutline = this.setStyle(this.styles.child.textOutline);					
@@ -831,16 +937,26 @@ class FullscreenChat extends Ext {
 					this.styleIds.cardOpacityHover = this.setStyle(this.styles.child.cardOpacityHover,{cardOpacityHover:opts["opt-card-opacity-hover"]});
 				}
 			}
+			if(opts["opt-use-chat-docking"] != undefined){
+				if(opts["opt-use-chat-docking"]){
+					if(YoutubeState.isFullscreen() && Storage.getStorage(`${this.name}-frame-chat-docking`,false,true)){
+						document.documentElement.setAttribute("chat-docking","");
+					}
+				}else{
+					document.documentElement.removeAttribute("chat-docking")
+				}
+			}
 		}
 	}
 	static init(){
 		if(YoutubeState.isAppFrame()){
 			this.setStyle(this.styles.top);
+			YoutubeEvent.addEventListener("ytLoad",this.resetChatDocking);
 
 			document.addEventListener("ext-yc-iframe-set",this.setIframe);
 			document.addEventListener("ext-yc-iframe-grab",this.iframeGrabed);
 			document.addEventListener("ext-yc-iframe-ungrab",this.iframeUngrabed);
-			document.addEventListener("ext-yc-iframe-adjust-fixed-length",this.adjustFixedLengthIfram);
+			document.addEventListener("ext-yc-iframe-adjust-fixed-length",this.adjustFixedLengthIframe);
 		}else if(YoutubeState.isIframeChatFrame()){
 			this.setStyle(this.styles.child.base);
 			if(Storage.getOption(`${this.name}-opt-text-outline`,true)){
@@ -883,18 +999,39 @@ class FullscreenChat extends Ext {
 			this.fullscreenHandler = YoutubeEvent.addEventListener("ytFullscreen",e=>{
 				if(e.detail.args[0]){
 					document.documentElement.classList.add("fullscreen");
-					this.iframeSet(true);
+					if(Storage.getOption(`${this.name}-opt-use-chat-docking`,false) && Storage.getStorage(`${this.name}-frame-chat-docking`,false,true)){
+						document.documentElement.setAttribute("chat-docking","");
+						this.iframeSet(true);
+					}else{
+						this.iframeSet(false);
+					}
 				}else{
 					document.documentElement.classList.remove("fullscreen");
-					this.iframeSet(false);
+					document.documentElement.removeAttribute("chat-docking");
+					this.iframeSet(null);
 				}
 			},{frame:"app"});
+			this.dispatchHandler = YoutubeEvent.addEventListener("dispatch",e=>{
+				if(e.detail.type == `${this.name}-chat-docking`){
+					if(e.detail.data){
+						document.documentElement.setAttribute("chat-docking","");
+					}else{
+						document.documentElement.removeAttribute("chat-docking");
+					}
+				}
+			});
 			if(YoutubeState.isFullscreen()){
 				document.documentElement.classList.add("fullscreen");
-				this.iframeSet(true);
+				if(Storage.getOption(`${this.name}-opt-use-chat-docking`,false) && Storage.getStorage(`${this.name}-frame-chat-docking`,false,true)){
+					document.documentElement.setAttribute("chat-docking","");
+					this.iframeSet(true);
+				}else{
+					this.iframeSet(false);
+				}
 			}else{
 				document.documentElement.classList.remove("fullscreen");
-				this.iframeSet(false);
+				document.documentElement.removeAttribute("chat-docking");
+				this.iframeSet(null);
 			}
 		}
 	}
@@ -904,19 +1041,22 @@ class FullscreenChat extends Ext {
 			document.removeEventListener("ext-yc-iframe-grab",this.iframeGrabed);
 			document.removeEventListener("ext-yc-iframe-ungrab",this.iframeUngrabed);
 			document.removeEventListener("ext-yc-iframe-move",this.moveIframe);
-			this.chatFrame.style.minHeight = "";
-			this.chatFrame.style.top = "";
-			this.chatFrame.style.left = "";
-			this.chatFrame.style.width = "";
-			this.chatFrame.style.height = "";
+			YoutubeEvent.removeEventListener("ytLoad",this.resetChatDocking);
+			this.setIframe({detail:null})
 			document.documentElement.classList.remove("fullscreen");
 		}else if(YoutubeState.isIframeChatFrame()){
 			YoutubeEvent.removeEventListener("ytFullscreen",this.fullscreenHandler,{frame:"app"});
 			this.fullscreenHandler = null;
+			YoutubeEvent.removeEventListener("dispatch",this.dispatchHandler);
+			this.dispatchHandler = null;
 			this.moveBtn.removeEventListener("mousedown",this.iframeDownEvent);
 			this.resizeBtn.removeEventListener("mousedown",this.iframeDownEvent);
 			document.removeEventListener("mousemove",this.iframeMoveEvent);
 			document.removeEventListener("mouseup",this.iframeUpEvent);
+			document.removeEventListener("keydown",this.iframeAdjustFixedLength);
+			document.removeEventListener("keyup",this.iframeAdjustFixedLength);
+			document.documentElement.classList.remove("fullscreen");
+			document.documentElement.removeAttribute("chat-docking");
 		}
 		this.removeAddedDOM();
 	}
@@ -944,58 +1084,93 @@ class FullscreenChat extends Ext {
 	}
 	static iframeUpEvent = (e)=>{
 		document.removeEventListener("mousemove",this.iframeMoveEvent);
+		document.removeEventListener("keydown",this.iframeAdjustFixedLength);
+		document.removeEventListener("keyup",this.iframeAdjustFixedLength);
 		top.document.dispatchEvent(new CustomEvent("ext-yc-iframe-ungrab",{detail:e}));
 	}
 	static setIframe = (e)=>{
-		if(e.detail){
-			this.chatFrame = document.querySelector("ytd-live-chat-frame#chat");
-			this.chatFrame.style.minHeight = "400px";
-			this.chatFrame.style.top = Storage.getStorage(`${this.name}-frame-top`,0,true) + "px";
-			this.chatFrame.style.left = Storage.getStorage(`${this.name}-frame-left`,0,true) + "px";
-			this.chatFrame.style.width = Storage.getStorage(`${this.name}-frame-width`,400,true) + "px";
-			this.chatFrame.style.height = Storage.getStorage(`${this.name}-frame-height`,600,true) + "px";
+		this.chatFrame = document.querySelector("ytd-live-chat-frame#chat");
+		if(e.detail != null){
+			if(e.detail){
+				document.body.setAttribute("chat-docking","");
+				this.chatFrame.style.minHeight = "";
+				this.chatFrame.style.top = "0";
+				this.chatFrame.style.left = "";
+				this.chatFrame.style.right = "0";
+				this.chatFrame.style.width = "400px"; // Storage.getStorage(`${this.name}-frame-width-docking`,400,true) + "px";
+				this.chatFrame.style.height = "100vh";
+			}else{
+				document.body.removeAttribute("chat-docking");
+				this.chatFrame.style.minHeight = "400px";
+				this.chatFrame.style.top = Storage.getStorage(`${this.name}-frame-top`,0,true) + "px";
+				this.chatFrame.style.left = Storage.getStorage(`${this.name}-frame-left`,0,true) + "px";
+				this.chatFrame.style.right = "";
+				this.chatFrame.style.width = Storage.getStorage(`${this.name}-frame-width`,400,true) + "px";
+				this.chatFrame.style.height = Storage.getStorage(`${this.name}-frame-height`,600,true) + "px";
+			}
 		}else{
-			this.chatFrame = document.querySelector("ytd-live-chat-frame#chat");
+			document.body.removeAttribute("chat-docking");
 			this.chatFrame.style.minHeight = "";
 			this.chatFrame.style.top = "";
 			this.chatFrame.style.left = "";
+			this.chatFrame.style.right = "";
 			this.chatFrame.style.width = "";
 			this.chatFrame.style.height = "";
 		}
 	}
-	static adjustFixedLengthIfram = (e)=>{
+	static resetChatDocking = (e)=>{
+		document.body.removeAttribute("chat-docking");
+	}
+	static adjustFixedLengthIframe = (e)=>{
 		this.basePos.adjust = e.detail;
 	}
 	static iframeGrabed = (e)=>{
 		this.basePos = {
 			grabId: e.detail.target.closest("[data-btn-id]").getAttribute("data-btn-id"),
 			adjust: false,
-			offsetWidth: this.chatFrame.offsetWidth,
-			offsetHeight: this.chatFrame.offsetHeight,
 			offsetLeft: this.chatFrame.offsetLeft,
 			offsetTop: this.chatFrame.offsetTop,
-			offsetRight: window.screen.width - this.chatFrame.offsetLeft - this.chatFrame.offsetWidth,
-			offsetBottom: window.screen.height - this.chatFrame.offsetTop - this.chatFrame.offsetHeight,
 			grabX: e.detail.screenX,
 			grabY: e.detail.screenY
 		};
+		document.body.removeAttribute("chat-docking");
+		this.chatFrame.style.minHeight = "400px";
+		this.chatFrame.style.width = Storage.getStorage(`${this.name}-frame-width`,400,true) + "px";
+		this.chatFrame.style.height = Storage.getStorage(`${this.name}-frame-height`,600,true) + "px";
+		if(Storage.getOption(`${this.name}-opt-use-chat-docking`,false)){
+			Storage.setStorage(`${this.name}-frame-chat-docking`,false,true);
+			YoutubeEvent.dispatchEvent("dispatch",{type:`${this.name}-chat-docking`,data: false},{frame: "iframe-chat"});
+		}
+		Object.assign(this.basePos,{
+			offsetWidth: this.chatFrame.offsetWidth,
+			offsetHeight: this.chatFrame.offsetHeight,
+			offsetRight: window.screen.width - this.basePos.offsetLeft - this.chatFrame.offsetWidth,
+			offsetBottom: window.screen.height - this.basePos.offsetTop - this.chatFrame.offsetHeight
+		});
 		document.addEventListener("ext-yc-iframe-move",this.moveIframe);
 	}
 	static moveIframe = (e)=>{
 		const pos = this.calcFramePos(e);
 		this.chatFrame.style.top = pos.top + "px";
 		this.chatFrame.style.left = pos.left + "px";
+		this.chatFrame.style.right = "";
 		this.chatFrame.style.width = pos.width + "px";
 		this.chatFrame.style.height = pos.height + "px";
 	}
 	static iframeUngrabed = (e)=>{
-		const pos = this.calcFramePos(e);
-		Storage.setStorages({
-			"FullscreenChat-frame-top": pos.top,
-			"FullscreenChat-frame-left": pos.left,
-			"FullscreenChat-frame-width": pos.width,
-			"FullscreenChat-frame-height": pos.height
-		},true);
+		if(Storage.getOption(`${this.name}-opt-use-chat-docking`,false) && this.basePos.offsetRight - e.detail.screenX + this.basePos.grabX < -30){
+			YoutubeEvent.dispatchEvent("dispatch",{type:`${this.name}-chat-docking`,data: true},{frame: "iframe-chat"});
+			this.setIframe({detail:true});
+			Storage.setStorage(`${this.name}-frame-chat-docking`,true,true);
+		}else{
+			const pos = this.calcFramePos(e);
+			Storage.setStorages({
+				"FullscreenChat-frame-top": pos.top,
+				"FullscreenChat-frame-left": pos.left,
+				"FullscreenChat-frame-width": pos.width,
+				"FullscreenChat-frame-height": pos.height
+			},true);
+		}
 		document.removeEventListener("ext-yc-iframe-move",this.moveIframe);
 	}
 	static calcFramePos = (e)=>{
@@ -1142,7 +1317,7 @@ class ChatTickerScroll extends Ext {
 		if(opts["opt-button-hide"]){
 			this.setStyle(this.style);
 		}else{
-			this.removeStyle();
+			this.removeStyle(null);
 		}
 	}
 	static init(){
@@ -1158,7 +1333,7 @@ class ChatTickerScroll extends Ext {
 	}
 	static deinit(){
 		if(YoutubeState.isChatFrame()){
-			this.removeStyle();
+			this.removeStyle(null);
 			this.ticker.removeEventListener("wheel",this.scrollTicker);
 		}
 	}

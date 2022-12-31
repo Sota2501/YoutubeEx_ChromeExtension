@@ -75,7 +75,7 @@
 		"message": "背景のぼかし"
 	},
 	"FullscreenChat_OpacityDef": {
-		"message": "コメント欄の不透明度"
+		"message": "チャット欄の不透明度"
 	},
 	"FullscreenChat_OpacityHover": {
 		"message": "ホバー時の不透明度"
@@ -88,6 +88,12 @@
 	},
 	"FullscreenChat_CardOpacityHover": {
 		"message": "ホバー時の不透明度"
+	},
+	"FullscreenChat_UseChatDocking": {
+		"message": "チャット欄の右固定"
+	},
+	"FullscreenChat_ChatDockingDescription": {
+		"message": "チャット欄を掴んで画面右端に移動することで固定化されます。"
 	},
 
 	"ChatTickerScroll_Description": {
