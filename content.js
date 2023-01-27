@@ -189,25 +189,30 @@ class CommentPicker extends Ext {
 						this.anchor == true && !node.classList.contains("fixedComment")
 					){
 						const liveAnchor = this.opts["opt-owner"] && node.querySelector("#author-name.owner") && YoutubeState.isLiveStreaming();
-						if(liveAnchor && node.querySelector("#message").innerText.match(/\↑/g)){
-							if(typeof this.anchor != "boolean"){
-								this.pickComment(this.anchor);
+						const prevCheck = (elm)=>{
+							if(elm.querySelector("#message").innerText.match(/\↑/g)){
+								prevCheck(elm.previousElementSibling);
+								this.pickComment(elm.previousElementSibling);
 							}
 						}
-						if(liveAnchor && node.querySelector("#message").innerText.match(/\↓/g)){
+						if(liveAnchor){
+							prevCheck(node);
+						}
+						if((liveAnchor || this.anchor) && node.querySelector("#message").innerText.match(/\↓/g)){
 							this.anchor = true;
 						}else{
 							this.anchor = false;
 						}
 						this.pickComment(node);
-					}else{
-						this.anchor = node;
 					}
 				});
 			}else if(mutation.removedNodes.length){
 				mutation.removedNodes.forEach(node=>{
 					if(Array.from(node.classList).includes("fixedComment")){
-						this.addedItems.querySelector(`*[id="${node.dataset.commentId}"]`).remove();
+						const picked = this.addedItems.querySelector(`*[id="${node.dataset.commentId}"]`)
+						if(picked){
+							picked.remove();
+						}
 						const addedScroller = this.addedItems.closest("#item-scroller");
 						if(addedScroller.scrollTop == addedScroller.scrollHeight - addedScroller.clientHeight){
 							this.scrollEvent();
