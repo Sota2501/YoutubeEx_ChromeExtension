@@ -298,11 +298,15 @@ class FullscreenChat extends Ext {
 			}
 
 
+			body.no-scroll[chat-docking] ytd-watch-flexy {
+				overflow: clip;
+			}
 			body.no-scroll[chat-docking] #player-theater-container {
 				width: calc(100vw - 400px);
+				overflow: unset;
 			}
 			body.no-scroll[chat-docking] #player-theater-container .html5-video-player {
-				overflow: inherit;
+				overflow: unset;
 				z-index: unset;
 			}
 			body.no-scroll[chat-docking] #player-theater-container .html5-video-container {
@@ -318,14 +322,14 @@ class FullscreenChat extends Ext {
 			}
 			body.no-scroll[chat-docking] #player-theater-container .ytp-storyboard-framepreview .ytp-storyboard-framepreview-img {
 				width: 100vw;
-				transform: scale(calc((1920 - 400 - 3) / 1920));	/* TODO */
+				transform: scale(calc((1920 - 400) / 1920));	/* TODO */
 				transform-origin: left;
 			}
 			body.no-scroll[chat-docking] #player-theater-container .ytp-offline-slate {
 				position: relative;
 				width: 100vw;
 				height: 100vh;
-				scale: calc((1920 - 400 - 3) / 1920);
+				scale: calc((1920 - 400) / 1920);
 				transform-origin: left;
 			}
 			body.no-scroll[chat-docking] #player-theater-container .ytp-iv-video-content {
@@ -980,9 +984,9 @@ class FullscreenChat extends Ext {
 			}
 
 			// 移動アイコン追加
-			this.moveBtn = (new DOMTemplate("#chat-messages > yt-live-chat-header-renderer > yt-icon-button#overflow:last-of-type"))
+			this.moveBtn = (new DOMTemplate("#chat-messages > yt-live-chat-header-renderer > yt-live-chat-button"))
 				.ins("before","ytIconButton",{id:"overflow",domTag:"yt-live-chat-header-renderer",svg:this.grabIcon})
-				.q("#chat-messages > yt-live-chat-header-renderer > yt-icon-button#overflow:nth-last-of-type(2)",null).tag(this.name)
+				.q("#chat-messages > yt-live-chat-header-renderer > yt-icon-button#overflow",null).tag(this.name)
 				.a("data-btn-id",0)
 				.on({t:"mousedown",f:this.iframeDownEvent})
 				.q();

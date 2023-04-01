@@ -1454,7 +1454,7 @@ class Options extends Ext {
 			});
 
 			// ポップアップのメニューアイテム作成
-			document.querySelector("#chat-messages > yt-live-chat-header-renderer > yt-icon-button#overflow:last-of-type").addEventListener("click",()=>{
+			document.querySelector("#chat-messages > yt-live-chat-header-renderer > yt-live-chat-button").addEventListener("click",()=>{
 				(new DOMTemplate("yt-live-chat-app > tp-yt-iron-dropdown tp-yt-paper-listbox"))
 					.ins("append","menuItem",{svg:"extIcon"})
 					.on({q:"#ext-yc-menu-item",t:"click",f:this.openOptions});
