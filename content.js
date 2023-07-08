@@ -301,45 +301,45 @@ class FullscreenChat extends Ext {
 			body.no-scroll[chat-docking] ytd-watch-flexy {
 				overflow: clip;
 			}
-			body.no-scroll[chat-docking] #player-theater-container {
+			body.no-scroll[chat-docking] #player-wide-container {
 				width: calc(100vw - 400px);
 				overflow: unset;
 			}
-			body.no-scroll[chat-docking] #player-theater-container .html5-video-player {
+			body.no-scroll[chat-docking] #player-wide-container .html5-video-player {
 				overflow: unset;
 				z-index: unset;
 			}
-			body.no-scroll[chat-docking] #player-theater-container .html5-video-container {
+			body.no-scroll[chat-docking] #player-wide-container .html5-video-container {
 				position: absolute;
 				display: flex;
 				height: 100vh;
 			}
-			body.no-scroll[chat-docking] #player-theater-container .html5-video-container > video {
+			body.no-scroll[chat-docking] #player-wide-container .html5-video-container > video {
 				width: calc(100vw - 400px)!important;	/* TODO */
 				height: unset!important;
 				position: unset;
 				margin: auto;
 			}
-			body.no-scroll[chat-docking] #player-theater-container .ytp-storyboard-framepreview .ytp-storyboard-framepreview-img {
+			body.no-scroll[chat-docking] #player-wide-container .ytp-storyboard-framepreview .ytp-storyboard-framepreview-img {
 				width: 100vw;
 				transform: scale(calc((1920 - 400) / 1920));	/* TODO */
 				transform-origin: left;
 			}
-			body.no-scroll[chat-docking] #player-theater-container .ytp-offline-slate {
+			body.no-scroll[chat-docking] #player-wide-container .ytp-offline-slate {
 				position: relative;
 				width: 100vw;
 				height: 100vh;
 				scale: calc((1920 - 400) / 1920);
 				transform-origin: left;
 			}
-			body.no-scroll[chat-docking] #player-theater-container .ytp-iv-video-content {
+			body.no-scroll[chat-docking] #player-wide-container .ytp-iv-video-content {
 				width: calc(100vw - 400px)!important;	/* TODO */
 			}
-			body.no-scroll[chat-docking] #player-theater-container .ytp-gradient-bottom {
+			body.no-scroll[chat-docking] #player-wide-container .ytp-gradient-bottom {
 				width: 100vw;
 				z-index: 602;
 			}
-			body.no-scroll[chat-docking] #player-theater-container .ytp-chrome-bottom {
+			body.no-scroll[chat-docking] #player-wide-container .ytp-chrome-bottom {
 				z-index: 602;
 			}
 			body.no-scroll[chat-docking] ytd-live-chat-frame#chat {
