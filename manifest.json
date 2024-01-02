@@ -24,6 +24,9 @@
     "all_frames": true,
     "js": [
       "initialize.js",
+      "CommentPicker/script.js",
+      "FullscreenChat/script.js",
+      "ChatTickerScroll/script.js",
       "content.js"
     ]
   }],
