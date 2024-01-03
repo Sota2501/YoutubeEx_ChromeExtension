@@ -1,0 +1,33 @@
+yt-live-chat-app[yc-comment-picker] #chat {
+	overflow: hidden;
+
+	> #item-list[data-ext-yc="CommentPicker"] {
+		flex: unset;
+		max-height: 30%;
+		border-top: 1px solid rgba(255,255,255,0.1);
+
+		& #live-chat-item-list-panel {
+			position: relative;
+			display: block;
+			flex: 1;
+			overflow: hidden;
+			z-index: 0;
+
+			& #contents {
+				position: unset;
+				height: 100%;
+
+				& #item-scroller {
+					flex: unset;
+					overflow-y: scroll;
+					padding-right: 0;
+
+					& #items {
+						position: unset;
+						padding: unset;
+					}
+				}
+			}
+		}
+	}
+}

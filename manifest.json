@@ -28,6 +28,11 @@
       "FullscreenChat/script.js",
       "ChatTickerScroll/script.js",
       "content.js"
+    ],
+    "css": [
+      "CommentPicker/style.css",
+      "FullscreenChat/style.css",
+      "ChatTickerScroll/style.css"
     ]
   }],
   "permissions": [

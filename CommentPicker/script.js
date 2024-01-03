@@ -2,36 +2,6 @@ class CommentPicker extends Ext {
 	static name = "CommentPicker";
 	static description = this.i18n("Description");
 	static optionsV = 0;
-	static style = `
-		#chat {
-			overflow: hidden;
-		}
-		#chat > #item-list[data-ext-yc="${this.name}"] {
-			flex: unset;
-			max-height: 30%;
-			border-top: 1px solid rgba(255,255,255,0.1);
-		}
-		#chat > #item-list[data-ext-yc="${this.name}"] #live-chat-item-list-panel {
-			position: relative;
-			display: block;
-			flex: 1;
-			overflow: hidden;
-			z-index: 0;
-		}
-		#chat > #item-list[data-ext-yc="${this.name}"] #contents {
-			position: unset;
-			height: 100%;
-		}
-		#chat > #item-list[data-ext-yc="${this.name}"] #item-scroller {
-			flex: unset;
-			overflow-y: scroll;
-			padding-right: 0;
-		}
-		#chat > #item-list[data-ext-yc="${this.name}"] #items {
-			position: unset;
-			padding: unset;
-		}
-	`;
 	static container = `
 		<div id="live-chat-item-list-panel" class="style-scope yt-live-chat-renderer">
 			<div id="contents" class="style-scope yt-live-chat-item-list-renderer">
@@ -99,7 +69,7 @@ class CommentPicker extends Ext {
 	static init(){
 		if(YoutubeState.isChatFrame()){
 			YoutubeEvent.addEventListener("load",()=>{
-				this.setStyle(this.style);
+				document.querySelector("yt-live-chat-app").setAttribute("yc-comment-picker","");
 				this.opts["opt-owner"] = Storage.getOption(`${this.name}-opt-owner`,true);
 				this.opts["opt-verified"] = Storage.getOption(`${this.name}-opt-verified`,true);
 				this.opts["opt-moderator"] = Storage.getOption(`${this.name}-opt-moderator`,false);
@@ -145,6 +115,7 @@ class CommentPicker extends Ext {
 				replacement.remove();
 			});
 			this.removeAddedDOM();
+			document.querySelector("yt-live-chat-app").removeAttribute("yc-comment-picker");
 		}
 	}
 	static listCallback = (mutationList)=>{
