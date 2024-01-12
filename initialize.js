@@ -766,8 +766,8 @@ class DOMTemplate {
 			#ext-yc-options-wrapper #header {
 				padding: 8px;
 				height: 48px;
+				border-bottom: var(--yt-live-chat-header-bottom-border,none);
 				box-sizing: border-box;
-				background-color: var(--yt-live-chat-action-panel-background-color,var(--yt-deprecated-opalescence-soft-grey-opacity-lighten-3));
 				font-size: var(--yt-live-chat-header-font-size,18px);
 				line-height: 24px;
 				box-shadow: var(--yt-live-chat-header-box-shadow);
@@ -787,7 +787,6 @@ class DOMTemplate {
 				height: 48px;
 				padding: 6px;
 				padding-right: 13px;
-				background-color: var(--yt-live-chat-action-panel-background-color,var(--yt-deprecated-opalescence-soft-grey-opacity-lighten-3));
 				border-bottom: 1px solid var(--yt-spec-10-percent-layer);
 				box-sizing: border-box;
 				display: flex;
