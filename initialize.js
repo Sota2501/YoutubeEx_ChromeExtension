@@ -986,6 +986,7 @@ class DOMTemplate {
 				background: gray;
 				font-size: 16px;
 				text-align: center;
+				text-shadow: none;
 				box-sizing: border-box;
 			}
 		`
