@@ -339,6 +339,13 @@ yt-live-chat-app[yc-fullscreen-chat] {
 				-1px 0px 2px var(--yt-live-chat-background-color),
 				-1px -1px 2px var(--yt-live-chat-background-color);
 
+			& :is(img, svg) {
+				filter: 
+					drop-shadow(1px 1px .5px var(--yt-live-chat-background-color))
+					drop-shadow(1px -1px .5px var(--yt-live-chat-background-color))
+					drop-shadow(-1px 1px .5px var(--yt-live-chat-background-color))
+					drop-shadow(-1px -1px .5px var(--yt-live-chat-background-color));
+			}
 			& button {
 				text-shadow: unset;
 			}
@@ -355,7 +362,9 @@ yt-live-chat-app[yc-fullscreen-chat] {
 				yt-tooltip-renderer,
 				.yt-spec-button-shape-next--call-to-action-inverse.yt-spec-button-shape-next--text,
 				.yt-spec-button-shape-next--call-to-action.yt-spec-button-shape-next--filled,
-				.tp-yt-paper-tooltip[style-target=tooltip]
+				.tp-yt-paper-tooltip[style-target=tooltip],
+				#banner-content.yt-live-chat-qna-start-panel-renderer,
+				#poll-editor.yt-live-chat-poll-editor-panel-renderer
 			) {
 				text-shadow: none;
 			}
@@ -429,8 +438,19 @@ yt-live-chat-app[yc-fullscreen-chat] {
 					-1px 0px 2px var(--yt-live-chat-vem-background-color),
 					-1px -1px 2px var(--yt-live-chat-vem-background-color);
 			}
+			& #banner-container.yt-live-chat-banner-renderer {
+				text-shadow: 
+					1px 1px 2px #0f0f0f,
+					1px 0px 2px #0f0f0f,
+					1px -1px 2px #0f0f0f,
+					0px 1px 2px #0f0f0f,
+					0px -1px 2px #0f0f0f,
+					-1px 1px 2px #0f0f0f,
+					-1px 0px 2px #0f0f0f,
+					-1px -1px 2px #0f0f0f;
+			}
 			/* img-outline not-applicable-list */
-			& :not(:is(
+			& :is(
 				#items.yt-live-chat-ticker-renderer,
 				#left-arrow-container.yt-live-chat-ticker-renderer,
 				#right-arrow-container.yt-live-chat-ticker-renderer,
@@ -438,14 +458,13 @@ yt-live-chat-app[yc-fullscreen-chat] {
 				yt-button-renderer.yt-live-chat-membership-item-renderer,
 				yt-button-renderer.ytd-sponsorships-live-chat-gift-purchase-announcement-renderer,
 				#author-photo,
-				yt-live-chat-author-badge-renderer[type="verified"],
-				#show-more.yt-live-chat-item-list-renderer
-			) :is(img, svg)):is(img, svg) {
-				filter: 
-					drop-shadow(1px 1px .5px var(--yt-live-chat-background-color))
-					drop-shadow(1px -1px .5px var(--yt-live-chat-background-color))
-					drop-shadow(-1px 1px .5px var(--yt-live-chat-background-color))
-					drop-shadow(-1px -1px .5px var(--yt-live-chat-background-color));
+				yt-live-chat-author-badge-renderer[type="verified"] #image,
+				#show-more.yt-live-chat-item-list-renderer,
+				#banner-content.yt-live-chat-qna-start-panel-renderer,
+				#poll-editor.yt-live-chat-poll-editor-panel-renderer,
+				.avatar.ytd-sponsorships-avatar-renderer
+			) :is(img, svg) {
+				filter: none;
 			}
 			/* img-outline card */
 			& yt-live-chat-paid-sticker-renderer:not([dashboard-money-feed]) #card.yt-live-chat-paid-sticker-renderer :is(img, svg) {
@@ -482,6 +501,35 @@ yt-live-chat-app[yc-fullscreen-chat] {
 					drop-shadow(1px -1px .5px var(--yt-live-chat-vem-background-color))
 					drop-shadow(-1px 1px .5px var(--yt-live-chat-vem-background-color))
 					drop-shadow(-1px -1px .5px var(--yt-live-chat-vem-background-color));
+			}
+			& #banner-container.yt-live-chat-banner-renderer :is(img, svg) {
+				filter: 
+					drop-shadow(1px 1px .5px #0f0f0f)
+					drop-shadow(1px -1px .5px #0f0f0f)
+					drop-shadow(-1px 1px .5px #0f0f0f)
+					drop-shadow(-1px -1px .5px #0f0f0f);
+			}
+			/* margin */
+			& :is(
+				yt-dropdown-menu .yt-dropdown-menu[style-target=label-text],
+				tp-yt-paper-item-body,
+				tp-yt-paper-item-body > *,
+				#author-name.single-line.yt-live-chat-author-chip,
+				#primary-text.ytd-sponsorships-live-chat-header-renderer,
+				yt-live-chat-banner-header-renderer,
+				#content.yt-live-chat-text-message-renderer,
+				yt-live-chat-text-input-field-renderer[updated-input-visuals] #label.yt-live-chat-text-input-field-renderer,
+				#input.yt-live-chat-text-input-field-renderer,
+				#title.yt-live-chat-product-picker-panel-view-model,
+				.yt-core-attributed-string--ellipsis-truncate,
+				#content-top.yt-live-chat-call-for-questions-renderer #metadata-text.yt-live-chat-call-for-questions-renderer,
+				#label-text.yt-live-chat-poll-choice,
+				.yt-spec-button-shape-next__button-text-content
+			) {
+				margin-left: -2px;
+				margin-right: -2px;
+				padding-left: 2px;
+				padding-right: 2px;
 			}
 		}
 		/* optional font-size */
