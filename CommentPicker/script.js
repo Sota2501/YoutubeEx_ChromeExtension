@@ -17,6 +17,7 @@ class CommentPicker extends Ext {
 	static opts = {};
 	static autoScrolling = false;
 	static userScrolling = false;
+	static scrollButtonTimeoutId = false;
 	static baseItems;
 	static addedItems;
 	static observers = {};
@@ -205,11 +206,17 @@ class CommentPicker extends Ext {
 		}else{
 			if(addedScroller.scrollTop == addedScroller.scrollHeight - addedScroller.clientHeight){
 				addedScroller.nextElementSibling.setAttribute("disabled","");
-				setTimeout(()=>{
+				if(this.scrollButtonTimeoutId !== false){
+					clearTimeout(this.scrollButtonTimeoutId);
+				}
+				this.scrollButtonTimeoutId = setTimeout(()=>{
 					addedScroller.nextElementSibling.style.visibility = "hidden";
 					this.userScrolling = false;
 				},150);
 			}else{
+				if(this.scrollButtonTimeoutId !== false){
+					clearTimeout(this.scrollButtonTimeoutId);
+				}
 				addedScroller.nextElementSibling.removeAttribute("disabled");
 				addedScroller.nextElementSibling.style.visibility = "visible";
 				this.userScrolling = true;
