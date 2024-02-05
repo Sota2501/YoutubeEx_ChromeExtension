@@ -137,6 +137,7 @@ yt-live-chat-app[yc-fullscreen-chat] {
 				#right-arrow-container.yt-live-chat-ticker-renderer,
 				tp-yt-paper-listbox.yt-dropdown-menu,
 				ytd-menu-popup-renderer,
+				#dropdown.yt-live-chat-text-input-field-renderer,
 				#header.yt-live-chat-product-picker-panel-view-model,
 				yt-live-chat-product-picker-panel-item-view-model
 			) {
@@ -152,6 +153,9 @@ yt-live-chat-app[yc-fullscreen-chat] {
 			& yt-live-chat-message-input-renderer[updated-input-visuals] #input-container.yt-live-chat-message-input-renderer {
 				background: none;
 				backdrop-filter: contrast(0.8);
+			}
+			& yt-live-chat-text-input-field-suggestion:hover tp-yt-paper-item.yt-live-chat-text-input-field-suggestion, yt-live-chat-text-input-field-suggestion[active] tp-yt-paper-item.yt-live-chat-text-input-field-suggestion {
+				background: var(--yt-spec-10-percent-layer);
 			}
 			& :is(#search-panel.yt-emoji-picker-renderer, #search-panel.yt-emoji-picker-renderer:focus-within) {
 				background: none;
@@ -188,6 +192,7 @@ yt-live-chat-app[yc-fullscreen-chat] {
 				yt-live-chat-renderer,
 				tp-yt-paper-listbox.yt-dropdown-menu,
 				ytd-menu-popup-renderer,
+				#dropdown.yt-live-chat-text-input-field-renderer,
 				#header.yt-live-chat-product-picker-panel-view-model,
 				yt-live-chat-product-picker-panel-item-view-model
 			) {
@@ -200,6 +205,7 @@ yt-live-chat-app[yc-fullscreen-chat] {
 				#spinner-container.yt-live-chat-poll-editor-panel-renderer,
 				tp-yt-paper-listbox.yt-dropdown-menu,
 				ytd-menu-popup-renderer,
+				#dropdown.yt-live-chat-text-input-field-renderer,
 				#header.yt-live-chat-product-picker-panel-view-model,
 				yt-live-chat-product-picker-panel-item-view-model
 			)::before {
@@ -216,6 +222,7 @@ yt-live-chat-app[yc-fullscreen-chat] {
 				#spinner-container.yt-live-chat-qna-start-panel-renderer,
 				#spinner-container.yt-live-chat-poll-editor-panel-renderer,
 				tp-yt-paper-listbox.yt-dropdown-menu,
+				#dropdown.yt-live-chat-text-input-field-renderer,
 				yt-live-chat-product-picker-panel-view-model
 			) {
 				backdrop-filter: blur(8px);
@@ -544,6 +551,9 @@ yt-live-chat-app[yc-fullscreen-chat] {
 			ytd-menu-popup-renderer::before {
 				background-color: var(--yt-spec-menu-background);
 			}
+			#dropdown.yt-live-chat-text-input-field-renderer::before {
+				background-color: var(--yt-live-chat-text-input-field-suggestion-background-color,#fff);
+			}
 			:is(#header.yt-live-chat-product-picker-panel-view-model, yt-live-chat-product-picker-panel-item-view-model)::before {
 				z-index: -1;
 				background-color: var(--yt-spec-base-background);
@@ -555,6 +565,7 @@ yt-live-chat-app[yc-fullscreen-chat] {
 				#spinner-container.yt-live-chat-poll-editor-panel-renderer,
 				tp-yt-paper-listbox.yt-dropdown-menu,
 				ytd-menu-popup-renderer,
+				#dropdown.yt-live-chat-text-input-field-renderer,
 				#header.yt-live-chat-product-picker-panel-view-model,
 				yt-live-chat-product-picker-panel-item-view-model
 			)::before {
@@ -569,6 +580,7 @@ yt-live-chat-app[yc-fullscreen-chat] {
 			#spinner-container.yt-live-chat-poll-editor-panel-renderer,
 			tp-yt-paper-listbox.yt-dropdown-menu,
 			ytd-menu-popup-renderer,
+			#dropdown.yt-live-chat-text-input-field-renderer,
 			#header.yt-live-chat-product-picker-panel-view-model,
 			yt-live-chat-product-picker-panel-item-view-model
 		)::before {
