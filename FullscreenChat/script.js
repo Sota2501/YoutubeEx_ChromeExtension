@@ -17,7 +17,9 @@ class FullscreenChat extends Ext {
 			</g>
 		</svg>
 	`;
-	static basePos = {};
+	static grab = {};
+	static base = {};
+	static adjust = false;
 	static registOptions(wrapper){
 		(new DOMTemplate(wrapper))
 			.ins("append","caption",{
@@ -201,9 +203,9 @@ class FullscreenChat extends Ext {
 			YoutubeEvent.addEventListener("ytLoad",this.resetChatDocking);
 
 			document.addEventListener("ext-yc-iframe-set",this.setIframe);
-			document.addEventListener("ext-yc-iframe-grab",this.iframeGrabed);
-			document.addEventListener("ext-yc-iframe-ungrab",this.iframeUngrabed);
-			document.addEventListener("ext-yc-iframe-adjust-fixed-length",this.adjustFixedLengthIframe);
+			document.addEventListener("ext-yc-iframe-grab",this.grabMainEvent);
+			document.addEventListener("ext-yc-iframe-ungrab",this.ungrabMainEvent);
+			document.addEventListener("ext-yc-iframe-adjust-fixed-length",this.adjustMainEvent);
 		}else if(YoutubeState.isIframeChatFrame()){
 			document.querySelector("yt-live-chat-app").setAttribute("yc-fullscreen-chat","");
 			if(Storage.getOption(`${this.name}-opt-text-outline`,true)){
@@ -226,7 +228,7 @@ class FullscreenChat extends Ext {
 				.ins("before","ytIconButton",{id:"overflow",domTag:"yt-live-chat-header-renderer",svg:this.grabIcon})
 				.q("#chat-messages > yt-live-chat-header-renderer > yt-icon-button#overflow",null).tag(this.name)
 				.a("data-btn-id",0)
-				.on({t:"mousedown",f:this.iframeDownEvent})
+				.on({t:"mousedown",f:this.grabIframeEvent})
 				.q();
 
 			// リサイズ用ボタン追加
@@ -240,24 +242,10 @@ class FullscreenChat extends Ext {
 				this.resizeBtn.append(btn);
 			}
 			document.querySelector("yt-live-chat-app").append(this.resizeBtn);
-			this.resizeBtn.addEventListener("mousedown",this.iframeDownEvent);
+			this.resizeBtn.addEventListener("mousedown",this.grabIframeEvent);
 
 			// フルスクリーン切り替え処理
-			this.fullscreenHandler = YoutubeEvent.addEventListener("ytFullscreen",e=>{
-				if(e.detail.args[0]){
-					document.querySelector("yt-live-chat-app").setAttribute("yc-fullscreen-chat-fullscreen","");
-					if(Storage.getOption(`${this.name}-opt-use-chat-docking`,false) && Storage.getStorage(`${this.name}-frame-chat-docking`,false,true)){
-						document.querySelector("yt-live-chat-app").setAttribute("yc-fullscreen-chat-chat-docking","");
-						this.iframeSet(true);
-					}else{
-						this.iframeSet(false);
-					}
-				}else{
-					document.querySelector("yt-live-chat-app").removeAttribute("yc-fullscreen-chat-fullscreen");
-					document.querySelector("yt-live-chat-app").removeAttribute("yc-fullscreen-chat-chat-docking");
-					this.iframeSet(null);
-				}
-			},{frame:"app"});
+			this.fullscreenHandler = YoutubeEvent.addEventListener("ytFullscreen", this.fullscreenMainEvent, {frame: "app"});
 			this.dispatchHandler = YoutubeEvent.addEventListener("dispatch",e=>{
 				if(e.detail.type == `${this.name}-chat-docking`){
 					if(e.detail.data){
@@ -267,27 +255,15 @@ class FullscreenChat extends Ext {
 					}
 				}
 			});
-			if(YoutubeState.isFullscreen()){
-				document.querySelector("yt-live-chat-app").setAttribute("yc-fullscreen-chat-fullscreen","");
-				if(Storage.getOption(`${this.name}-opt-use-chat-docking`,false) && Storage.getStorage(`${this.name}-frame-chat-docking`,false,true)){
-					document.querySelector("yt-live-chat-app").setAttribute("yc-fullscreen-chat-chat-docking","");
-					this.iframeSet(true);
-				}else{
-					this.iframeSet(false);
-				}
-			}else{
-				document.querySelector("yt-live-chat-app").removeAttribute("yc-fullscreen-chat-fullscreen");
-				document.querySelector("yt-live-chat-app").removeAttribute("yc-fullscreen-chat-chat-docking");
-				this.iframeSet(null);
-			}
+			this.fullscreenMainEvent();
 		}
 	}
 	static deinit(){
 		if(YoutubeState.isAppFrame()){
 			document.removeEventListener("ext-yc-iframe-set",this.setIframe);
-			document.removeEventListener("ext-yc-iframe-grab",this.iframeGrabed);
-			document.removeEventListener("ext-yc-iframe-ungrab",this.iframeUngrabed);
-			document.removeEventListener("ext-yc-iframe-move",this.moveIframe);
+			document.removeEventListener("ext-yc-iframe-grab",this.grabMainEvent);
+			document.removeEventListener("ext-yc-iframe-ungrab",this.ungrabMainEvent);
+			document.removeEventListener("ext-yc-iframe-move",this.moveMainEvent);
 			YoutubeEvent.removeEventListener("ytLoad",this.resetChatDocking);
 			this.setIframe({detail:null})
 			document.querySelector("ytd-app").removeAttribute("yc-fullscreen-chat");
@@ -298,12 +274,12 @@ class FullscreenChat extends Ext {
 			this.fullscreenHandler = null;
 			YoutubeEvent.removeEventListener("dispatch",this.dispatchHandler);
 			this.dispatchHandler = null;
-			this.moveBtn.removeEventListener("mousedown",this.iframeDownEvent);
-			this.resizeBtn.removeEventListener("mousedown",this.iframeDownEvent);
-			document.removeEventListener("mousemove",this.iframeMoveEvent);
-			document.removeEventListener("mouseup",this.iframeUpEvent);
-			document.removeEventListener("keydown",this.iframeAdjustFixedLength);
-			document.removeEventListener("keyup",this.iframeAdjustFixedLength);
+			this.moveBtn.removeEventListener("mousedown",this.grabIframeEvent);
+			this.resizeBtn.removeEventListener("mousedown",this.grabIframeEvent);
+			document.removeEventListener("mousemove",this.moveIframeEvent);
+			document.removeEventListener("mouseup",this.ungrabIframeEvent);
+			document.removeEventListener("keydown",this.adjustIframeEvent);
+			document.removeEventListener("keyup",this.adjustIframeEvent);
 			document.querySelector("yt-live-chat-app").removeAttribute("yc-fullscreen-chat");
 			document.querySelector("yt-live-chat-app").removeAttribute("yc-fullscreen-chat-fullscreen");
 			document.querySelector("yt-live-chat-app").removeAttribute("yc-fullscreen-chat-text-outline");
@@ -317,33 +293,247 @@ class FullscreenChat extends Ext {
 		}
 		this.removeAddedDOM();
 	}
-	static iframeSet = (e)=>{
-		top.document.dispatchEvent(new CustomEvent("ext-yc-iframe-set",{detail:e}));
-	}
-	static iframeAdjustFixedLength = (e)=>{
-		if(e.keyCode == 16){
-			if(e.type == "keydown"){
-				top.document.dispatchEvent(new CustomEvent("ext-yc-iframe-adjust-fixed-length",{detail:true}));
-			}else if(e.type == "keyup"){
-				top.document.dispatchEvent(new CustomEvent("ext-yc-iframe-adjust-fixed-length",{detail:false}));
+	static calcChatPosition(grabId, baseTop, baseLeft, baseWidth, baseHeight, moveX, moveY, adjust = false){
+		let calced = {};
+		if(grabId == "0"){
+			if(baseTop + moveY < 0){
+				calced.top = 0;
+			}else if(window.innerHeight - baseTop - baseHeight - moveY < 0){
+				calced.top = window.innerHeight - baseHeight;
+			}else{
+				const top = baseTop + moveY;
+				if(adjust){
+					calced.top = Math.round(top / 20) * 20;
+				}else{
+					calced.top = top;
+				}
+			}
+			if(baseLeft + moveX < 0){
+				calced.left = 0;
+			}else if(window.innerWidth - baseLeft - baseWidth - moveX < 0){
+				calced.left = window.innerWidth - baseWidth;
+			}else{
+				const left = baseLeft + moveX;
+				if(adjust){
+					calced.left = Math.round(left / 20) * 20;
+				}else{
+					calced.left = left;
+				}
+			}
+			calced.width = baseWidth;
+			calced.height = baseHeight;
+		}
+		if("123".indexOf(grabId) >= 0){
+			if(baseTop + moveY < 0){
+				calced.top = 0;
+				calced.height = baseTop + baseHeight;
+			}else if(baseHeight - moveY < 400){
+				calced.top = baseTop + baseHeight - 400;
+				calced.height = 400;
+			}else{
+				const height = baseHeight - moveY;
+				const top = baseTop + moveY;
+				if(adjust){
+					calced.height = Math.round(height / 20) * 20;
+					calced.top = top + height - calced.height
+				}else{
+					calced.height = height;
+					calced.top = top;
+				}
 			}
 		}
+		if("789".indexOf(grabId) >= 0){
+			if(baseHeight + moveY < 400){
+				calced.height = 400;
+			}else if(window.innerHeight - baseTop - baseHeight - moveY < 0){
+				calced.height = window.innerHeight - baseTop;
+			}else{
+				const height = baseHeight + moveY;
+				if(adjust){
+					calced.height = Math.round(height / 20) * 20;
+				}else{
+					calced.height = height;
+				}
+			}
+		}
+		if("28".indexOf(grabId) >= 0){
+			calced.left = baseLeft;
+			calced.width = baseWidth;
+		}
+		if("147".indexOf(grabId) >= 0){
+			if(baseLeft + moveX < 0){
+				calced.left = 0;
+				calced.width = baseLeft + baseWidth;
+			}else if(baseWidth - moveX < 300){
+				calced.left = baseLeft + baseWidth - 300;
+				calced.width = 300;
+			}else{
+				const width = baseWidth - moveX;
+				const left = baseLeft + moveX;
+				if(adjust){
+					calced.width = Math.round(width / 20) * 20;
+					calced.left = left + width - calced.width;
+				}else{
+					calced.width = width;
+					calced.left = left;
+				}
+			}
+		}
+		if("369".indexOf(grabId) >= 0){
+			if(baseWidth + moveX < 300){
+				calced.width = 300;
+			}else if(window.innerWidth - baseLeft - baseWidth - moveX < 0){
+				calced.width = window.innerWidth - baseLeft;
+			}else{
+				const width = baseWidth + moveX;
+				if(adjust){
+					calced.width = Math.round(width / 20) * 20;
+				}else{
+					calced.width = width;
+				}
+			}
+		}
+		if("46".indexOf(grabId) >= 0){
+			calced.top = baseTop;
+			calced.height = baseHeight;
+		}
+		return calced;
 	}
-	static iframeDownEvent = (e)=>{
-		top.document.dispatchEvent(new CustomEvent("ext-yc-iframe-grab",{detail:e}));
-		document.addEventListener("mousemove",this.iframeMoveEvent);
-		document.addEventListener("mouseup",this.iframeUpEvent,{once:true});
-		document.addEventListener("keydown",this.iframeAdjustFixedLength);
-		document.addEventListener("keyup",this.iframeAdjustFixedLength);
+	static setChatPosition(top, left, width, height, save = false){
+		if(window.innerHeight < top + height){
+			top = window.innerHeight - height;
+			if(top < 0){
+				top = 0;
+				height = window.innerHeight;
+				if(height < 400){
+					height = 400;
+				}
+			}
+		}
+		if(window.innerWidth < width + left){
+			left = window.innerWidth - width;
+			if(left < 0){
+				left = 0;
+				width = window.innerWidth;
+				if(width < 300){
+					width = 300;
+				}
+			}
+		}
+
+		this.chatFrame.style.top = top + "px";
+		this.chatFrame.style.left = left + "px";
+		this.chatFrame.style.width = width + "px";
+		this.chatFrame.style.height = height + "px";
+
+		if(save){
+			Storage.setStorages({
+				"FullscreenChat-frame-top": top,
+				"FullscreenChat-frame-left": left,
+				"FullscreenChat-frame-width": width,
+				"FullscreenChat-frame-height": height,
+				"FullscreenChat-frame-chat-docking": false
+			}, true);
+		}
 	}
-	static iframeMoveEvent = (e)=>{
-		top.document.dispatchEvent(new CustomEvent("ext-yc-iframe-move",{detail:e}));
+	static setChatDocking(){
+		document.querySelector("ytd-app").setAttribute("yc-fullscreen-chat-chat-docking", "");
+		this.chatFrame.style.minHeight = "";
+		this.chatFrame.style.top = "0";
+		this.chatFrame.style.left = "";
+		this.chatFrame.style.right = "0";
+		this.chatFrame.style.width = "400px";
+		this.chatFrame.style.height = "100vh";
+
+		Storage.setStorage("FullscreenChat-frame-chat-docking", true, true);
 	}
-	static iframeUpEvent = (e)=>{
-		document.removeEventListener("mousemove",this.iframeMoveEvent);
-		document.removeEventListener("keydown",this.iframeAdjustFixedLength);
-		document.removeEventListener("keyup",this.iframeAdjustFixedLength);
-		top.document.dispatchEvent(new CustomEvent("ext-yc-iframe-ungrab",{detail:e}));
+	static setChatUndocking(){
+		document.querySelector("ytd-app").removeAttribute("yc-fullscreen-chat-chat-docking");
+		this.chatFrame.style.minHeight = "400px";
+		this.chatFrame.style.right = "";
+	}
+	static fullscreenMainEvent = (e)=>{
+		if(YoutubeState.isFullscreen()){
+			document.querySelector("yt-live-chat-app").setAttribute("yc-fullscreen-chat-fullscreen", "");
+			if(Storage.getOption(`${this.name}-opt-use-chat-docking`, false) && Storage.getStorage(`${this.name}-frame-chat-docking`, false, true)){
+				document.querySelector("yt-live-chat-app").setAttribute("yc-fullscreen-chat-chat-docking", "");
+				top.document.dispatchEvent(new CustomEvent("ext-yc-iframe-set", {detail: true}));
+			}else{
+				top.document.dispatchEvent(new CustomEvent("ext-yc-iframe-set", {detail: false}));
+			}
+		}else{
+			document.querySelector("yt-live-chat-app").removeAttribute("yc-fullscreen-chat-fullscreen");
+			document.querySelector("yt-live-chat-app").removeAttribute("yc-fullscreen-chat-chat-docking");
+			top.document.dispatchEvent(new CustomEvent("ext-yc-iframe-set", {detail: null}));
+		}
+	}
+	static grabMainEvent = (e)=>{
+		this.grab = {
+			id: e.detail.target.closest("[data-btn-id]").getAttribute("data-btn-id"),
+			x: this.chatFrame.offsetLeft + e.detail.pageX,
+			y: this.chatFrame.offsetTop + e.detail.pageY
+		}
+		this.base = {
+			top: Storage.getStorage(`${this.name}-frame-top`, 0, true),
+			left: Storage.getStorage(`${this.name}-frame-left`, 0, true),
+			width: Storage.getStorage(`${this.name}-frame-width`, 400, true),
+			height: Storage.getStorage(`${this.name}-frame-height`, 600, true)
+		}
+		this.adjust = false;
+		if(Storage.getOption(`${this.name}-opt-use-chat-docking`, false) && Storage.getStorage(`${this.name}-frame-chat-docking`, false, true)){
+			this.base.top = 0;
+			this.base.left = window.innerWidth - this.base.width;
+			this.setChatUndocking();
+			this.setChatPosition(this.base.top, this.base.left, this.base.width, this.base.height);
+			YoutubeEvent.dispatchEvent("dispatch", {type: `${this.name}-chat-docking`, data: false}, {frame: "iframe-chat"});
+		}
+		document.addEventListener("ext-yc-iframe-move", this.moveMainEvent);
+	}
+	static moveMainEvent = (e)=>{
+		const moveX = this.chatFrame.offsetLeft + e.detail.pageX - this.grab.x;
+		const moveY = this.chatFrame.offsetTop + e.detail.pageY - this.grab.y;
+		const next = this.calcChatPosition(this.grab.id, this.base.top, this.base.left, this.base.width, this.base.height, moveX, moveY, this.adjust);
+		this.setChatPosition(next.top, next.left, next.width, next.height);
+	}
+	static ungrabMainEvent = (e)=>{
+		if(Storage.getOption(`${this.name}-opt-use-chat-docking`, false) && this.grab.id == "0" && e.detail.pageX - (this.grab.x - this.base.left) > 30){
+			YoutubeEvent.dispatchEvent("dispatch", {type: `${this.name}-chat-docking`, data: true}, {frame: "iframe-chat"});
+			this.setChatDocking();
+		}else{
+			const moveX = this.chatFrame.offsetLeft + e.detail.pageX - this.grab.x;
+			const moveY = this.chatFrame.offsetTop + e.detail.pageY - this.grab.y;
+			const next = this.calcChatPosition(this.grab.id, this.base.top, this.base.left, this.base.width, this.base.height, moveX, moveY, this.adjust);
+			this.setChatPosition(next.top, next.left, next.width, next.height, true);
+		}
+		document.removeEventListener("ext-yc-iframe-move", this.moveMainEvent);
+	}
+	static adjustMainEvent = (e)=>{
+		this.adjust = e.detail;
+	}
+	static grabIframeEvent = (e)=>{
+		top.document.dispatchEvent(new CustomEvent("ext-yc-iframe-grab", {detail: e}));
+		document.addEventListener("mousemove", this.moveIframeEvent);
+		document.addEventListener("mouseup", this.ungrabIframeEvent, {once: true});
+		document.addEventListener("keydown", this.adjustIframeEvent);
+		document.addEventListener("keyup", this.adjustIframeEvent);
+	}
+	static moveIframeEvent = (e)=>{
+		top.document.dispatchEvent(new CustomEvent("ext-yc-iframe-move", {detail: e}));
+	}
+	static ungrabIframeEvent = (e)=>{
+		document.removeEventListener("mousemove", this.moveIframeEvent);
+		document.removeEventListener("keydown", this.adjustIframeEvent);
+		document.removeEventListener("keyup", this.adjustIframeEvent);
+		top.document.dispatchEvent(new CustomEvent("ext-yc-iframe-ungrab", {detail: e}));
+	}
+	static adjustIframeEvent = (e)=>{
+		if(e.keyCode == 16){
+			if(e.type == "keydown"){
+				top.document.dispatchEvent(new CustomEvent("ext-yc-iframe-adjust-fixed-length", {detail: true}));
+			}else if(e.type == "keyup"){
+				top.document.dispatchEvent(new CustomEvent("ext-yc-iframe-adjust-fixed-length", {detail: false}));
+			}
+		}
 	}
 	static setIframe = (e)=>{
 		this.chatFrame = document.querySelector("ytd-live-chat-frame#chat");
@@ -377,165 +567,5 @@ class FullscreenChat extends Ext {
 	}
 	static resetChatDocking = (e)=>{
 		document.querySelector("ytd-app").removeAttribute("yc-fullscreen-chat-chat-docking");
-	}
-	static adjustFixedLengthIframe = (e)=>{
-		this.basePos.adjust = e.detail;
-	}
-	static iframeGrabed = (e)=>{
-		this.basePos = {
-			grabId: e.detail.target.closest("[data-btn-id]").getAttribute("data-btn-id"),
-			adjust: false,
-			offsetLeft: this.chatFrame.offsetLeft,
-			offsetTop: this.chatFrame.offsetTop,
-			grabX: e.detail.screenX,
-			grabY: e.detail.screenY
-		};
-		document.querySelector("ytd-app").removeAttribute("yc-fullscreen-chat-chat-docking");
-		this.chatFrame.style.minHeight = "400px";
-		this.chatFrame.style.width = Storage.getStorage(`${this.name}-frame-width`,400,true) + "px";
-		this.chatFrame.style.height = Storage.getStorage(`${this.name}-frame-height`,600,true) + "px";
-		if(Storage.getOption(`${this.name}-opt-use-chat-docking`,false)){
-			Storage.setStorage(`${this.name}-frame-chat-docking`,false,true);
-			YoutubeEvent.dispatchEvent("dispatch",{type:`${this.name}-chat-docking`,data: false},{frame: "iframe-chat"});
-		}
-		Object.assign(this.basePos,{
-			offsetWidth: this.chatFrame.offsetWidth,
-			offsetHeight: this.chatFrame.offsetHeight,
-			offsetRight: window.screen.width - this.basePos.offsetLeft - this.chatFrame.offsetWidth,
-			offsetBottom: window.screen.height - this.basePos.offsetTop - this.chatFrame.offsetHeight
-		});
-		document.addEventListener("ext-yc-iframe-move",this.moveIframe);
-	}
-	static moveIframe = (e)=>{
-		const pos = this.calcFramePos(e);
-		this.chatFrame.style.top = pos.top + "px";
-		this.chatFrame.style.left = pos.left + "px";
-		this.chatFrame.style.right = "";
-		this.chatFrame.style.width = pos.width + "px";
-		this.chatFrame.style.height = pos.height + "px";
-	}
-	static iframeUngrabed = (e)=>{
-		if(Storage.getOption(`${this.name}-opt-use-chat-docking`,false) && this.basePos.offsetRight - e.detail.screenX + this.basePos.grabX < -30){
-			YoutubeEvent.dispatchEvent("dispatch",{type:`${this.name}-chat-docking`,data: true},{frame: "iframe-chat"});
-			this.setIframe({detail:true});
-			Storage.setStorage(`${this.name}-frame-chat-docking`,true,true);
-		}else{
-			const pos = this.calcFramePos(e);
-			Storage.setStorages({
-				"FullscreenChat-frame-top": pos.top,
-				"FullscreenChat-frame-left": pos.left,
-				"FullscreenChat-frame-width": pos.width,
-				"FullscreenChat-frame-height": pos.height
-			},true);
-		}
-		document.removeEventListener("ext-yc-iframe-move",this.moveIframe);
-	}
-	static calcFramePos = (e)=>{
-		let calced = {};
-		const moveX = e.detail.screenX - this.basePos.grabX;
-		const moveY = e.detail.screenY - this.basePos.grabY;
-		if(this.basePos.grabId == "0"){
-			if(this.basePos.offsetTop + moveY < 0){
-				calced.top = 0;
-			}else if(this.basePos.offsetBottom - moveY < 0){
-				calced.top = this.basePos.offsetTop + this.basePos.offsetBottom;
-			}else{
-				const top = this.basePos.offsetTop + moveY;
-				if(this.basePos.adjust){
-					calced.top = Math.round(top / 20) * 20;
-				}else{
-					calced.top = top;
-				}
-			}
-			if(this.basePos.offsetLeft + moveX < 0){
-				calced.left = 0;
-			}else if(this.basePos.offsetRight - moveX < 0){
-				calced.left = this.basePos.offsetLeft + this.basePos.offsetRight;
-			}else{
-				const left = this.basePos.offsetLeft + moveX;
-				if(this.basePos.adjust){
-					calced.left = Math.round(left / 20) * 20;
-				}else{
-					calced.left = left;
-				}
-			}
-			calced.width = this.basePos.offsetWidth;
-			calced.height = this.basePos.offsetHeight;
-		}
-		if("123".indexOf(this.basePos.grabId) >= 0){
-			if(this.basePos.offsetTop + moveY < 0){
-				calced.top = 0;
-				calced.height = this.basePos.offsetTop + this.basePos.offsetHeight;
-			}else if(this.basePos.offsetHeight - moveY < 400){
-				calced.top = this.basePos.offsetTop + this.basePos.offsetHeight - 400;
-				calced.height = 400;
-			}else{
-				const height = this.basePos.offsetHeight - moveY;
-				const top = this.basePos.offsetTop + moveY;
-				if(this.basePos.adjust){
-					calced.height = Math.round(height / 20) * 20;
-					calced.top = top + height - calced.height
-				}else{
-					calced.height = height;
-					calced.top = top;
-				}
-			}
-		}
-		if("789".indexOf(this.basePos.grabId) >= 0){
-			if(this.basePos.offsetHeight + moveY < 400){
-				calced.height = 400;
-			}else if(this.basePos.offsetBottom - moveY < 0){
-				calced.height = this.basePos.offsetHeight + this.basePos.offsetBottom;
-			}else{
-				const height = this.basePos.offsetHeight + moveY;
-				if(this.basePos.adjust){
-					calced.height = Math.round(height / 20) * 20;
-				}else{
-					calced.height = height;
-				}
-			}
-		}
-		if("28".indexOf(this.basePos.grabId) >= 0){
-			calced.left = this.basePos.offsetLeft;
-			calced.width = this.basePos.offsetWidth;
-		}
-		if("147".indexOf(this.basePos.grabId) >= 0){
-			if(this.basePos.offsetLeft + moveX < 0){
-				calced.left = 0;
-				calced.width = this.basePos.offsetLeft + this.basePos.offsetWidth;
-			}else if(this.basePos.offsetWidth - moveX < 300){
-				calced.left = this.basePos.offsetLeft + this.basePos.offsetWidth - 300;
-				calced.width = 300;
-			}else{
-				const width = this.basePos.offsetWidth - moveX;
-				const left = this.basePos.offsetLeft + moveX;
-				if(this.basePos.adjust){
-					calced.width = Math.round(width / 20) * 20;
-					calced.left = left + width - calced.width;
-				}else{
-					calced.width = width;
-					calced.left = left;
-				}
-			}
-		}
-		if("369".indexOf(this.basePos.grabId) >= 0){
-			if(this.basePos.offsetWidth + moveX < 300){
-				calced.width = 300;
-			}else if(this.basePos.offsetRight - moveX < 0){
-				calced.width = this.basePos.offsetWidth + this.basePos.offsetRight;
-			}else{
-				const width = this.basePos.offsetWidth + moveX;
-				if(this.basePos.adjust){
-					calced.width = Math.round(width / 20) * 20;
-				}else{
-					calced.width = width;
-				}
-			}
-		}
-		if("46".indexOf(this.basePos.grabId) >= 0){
-			calced.top = this.basePos.offsetTop;
-			calced.height = this.basePos.offsetHeight;
-		}
-		return calced;
 	}
 }
