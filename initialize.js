@@ -721,7 +721,7 @@ class DOMTemplate {
 	static #styles = {
 		notificationBadge: `
 			html.extYcHasNotification :is(
-				#chat-messages yt-live-chat-header-renderer yt-icon-button:last-of-type,
+				#live-chat-header-context-menu.yt-live-chat-header-renderer,
 				#ext-yc-menu-item
 			) yt-icon:after {
 				display: flex;
