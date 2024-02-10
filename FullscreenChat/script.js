@@ -248,7 +248,7 @@ class FullscreenChat extends Ext {
 			this.resizeBtn.addEventListener("touchstart",this.grabIframeEvent);
 
 			// フルスクリーン切り替え処理
-			this.fullscreenHandler = YoutubeEvent.addEventListener("ytFullscreen", this.fullscreenMainEvent, {frame: "app"});
+			this.fullscreenHandler = YoutubeEvent.addEventListener("ytFullscreen", this.fullscreenIframeEvent, {frame: "app"});
 			this.dispatchHandler = YoutubeEvent.addEventListener("dispatch",e=>{
 				if(e.detail.type == `${this.name}-chat-docking`){
 					if(e.detail.data){
@@ -258,7 +258,7 @@ class FullscreenChat extends Ext {
 					}
 				}
 			});
-			this.fullscreenMainEvent();
+			this.fullscreenIframeEvent();
 		}
 	}
 	static deinit(){
@@ -459,21 +459,6 @@ class FullscreenChat extends Ext {
 		this.chatFrame.style.minHeight = "400px";
 		this.chatFrame.style.right = "";
 	}
-	static fullscreenMainEvent = (e)=>{
-		if(YoutubeState.isFullscreen()){
-			document.querySelector("yt-live-chat-app").setAttribute("yc-fullscreen-chat-fullscreen", "");
-			if(Storage.getOption(`${this.name}-opt-use-chat-docking`, false) && Storage.getStorage(`${this.name}-frame-chat-docking`, false, true)){
-				document.querySelector("yt-live-chat-app").setAttribute("yc-fullscreen-chat-chat-docking", "");
-				top.document.dispatchEvent(new CustomEvent("ext-yc-iframe-set", {detail: true}));
-			}else{
-				top.document.dispatchEvent(new CustomEvent("ext-yc-iframe-set", {detail: false}));
-			}
-		}else{
-			document.querySelector("yt-live-chat-app").removeAttribute("yc-fullscreen-chat-fullscreen");
-			document.querySelector("yt-live-chat-app").removeAttribute("yc-fullscreen-chat-chat-docking");
-			top.document.dispatchEvent(new CustomEvent("ext-yc-iframe-set", {detail: null}));
-		}
-	}
 	static grabMainEvent = (e)=>{
 		this.grab = {
 			id: e.detail.target.closest("[data-btn-id]").getAttribute("data-btn-id"),
@@ -516,6 +501,21 @@ class FullscreenChat extends Ext {
 	}
 	static adjustMainEvent = (e)=>{
 		this.adjust = e.detail;
+	}
+	static fullscreenIframeEvent = (e)=>{
+		if(YoutubeState.isFullscreen()){
+			document.querySelector("yt-live-chat-app").setAttribute("yc-fullscreen-chat-fullscreen", "");
+			if(Storage.getOption(`${this.name}-opt-use-chat-docking`, false) && Storage.getStorage(`${this.name}-frame-chat-docking`, false, true)){
+				document.querySelector("yt-live-chat-app").setAttribute("yc-fullscreen-chat-chat-docking", "");
+				top.document.dispatchEvent(new CustomEvent("ext-yc-iframe-set", {detail: true}));
+			}else{
+				top.document.dispatchEvent(new CustomEvent("ext-yc-iframe-set", {detail: false}));
+			}
+		}else{
+			document.querySelector("yt-live-chat-app").removeAttribute("yc-fullscreen-chat-fullscreen");
+			document.querySelector("yt-live-chat-app").removeAttribute("yc-fullscreen-chat-chat-docking");
+			top.document.dispatchEvent(new CustomEvent("ext-yc-iframe-set", {detail: null}));
+		}
 	}
 	static grabIframeEvent = (e)=>{
 		if(this.moving !== false){
