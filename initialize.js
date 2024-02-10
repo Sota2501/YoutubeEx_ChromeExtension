@@ -1148,6 +1148,7 @@ class DOMTemplate {
 		},
 		slider: (dom,pos,templates)=>{
 			dom = this.#insh(dom,pos,"slider",templates);
+			let moving = false;
 			let min = templates.sliderMin??0;
 			let max = templates.sliderMax??100;
 			let steps = templates.sliderSteps??(max-min);
@@ -1177,23 +1178,67 @@ class DOMTemplate {
 				setStep(pos);
 			}
 			const move = (e)=>{
-				let absX = e.pageX - dom.getBoundingClientRect().left - 9;
-				setPos(absX);
+				if(e.type == "mousemove"){
+					let absX = e.pageX - dom.getBoundingClientRect().left - 9;
+					setPos(absX);
+				}else if(e.type == "touchmove"){
+					for(let i = 0; i < e.changedTouches.length; i++){
+						if(e.changedTouches[i].identifier == moving){
+							let absX = e.changedTouches[i].pageX - dom.getBoundingClientRect().left - 9;
+							setPos(absX);
+							break;
+						}
+					}
+				}
 			}
 			setValue(templates.sliderValue);
 			dom.addEventListener("mousedown",e=>{
+				if(moving !== false){
+					return;
+				}
+				moving = true;
 				dom.children[0].setAttribute("active","");
 				if(dom.getAttribute("disabled") == null){
 					move(e);
 					document.addEventListener("mousemove",move);
 					document.addEventListener("mouseup",e=>{
 						dom.dispatchEvent(new Event("change"));
+						dom.children[0].removeAttribute("active");
 						document.removeEventListener("mousemove",move);
+						moving = false;
 					},{once:true});
 				}
-				document.addEventListener("mouseup",e=>{
-					dom.children[0].removeAttribute("active");
-				});
+			});
+			dom.addEventListener("touchstart",e=>{
+				if(moving !== false){
+					return;
+				}
+				moving = e.changedTouches[0].identifier;
+				e.preventDefault();
+				dom.children[0].setAttribute("active","");
+				if(dom.getAttribute("disabled") == null){
+					move(e);
+					document.addEventListener("touchmove",move);
+					const touchend = e=>{
+						let touch = false;
+						for(let i = 0; i < e.changedTouches.length; i++){
+							if(e.changedTouches[i].identifier == moving){
+								touch = e.changedTouches[i];
+								break;
+							}
+						}
+						if(!touch){
+							return;
+						}
+
+						dom.dispatchEvent(new Event("change"));
+						dom.children[0].removeAttribute("active");
+						document.removeEventListener("touchmove",move);
+						document.removeEventListener("touchend",touchend);
+						moving = false;
+					};
+					document.addEventListener("touchend",touchend);
+				}
 			});
 			dom.addEventListener("keydown",e=>{
 				if(dom.getAttribute("disabled") == null){

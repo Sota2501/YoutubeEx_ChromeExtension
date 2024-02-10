@@ -20,6 +20,7 @@ class FullscreenChat extends Ext {
 	static grab = {};
 	static base = {};
 	static adjust = false;
+	static moving = false;
 	static registOptions(wrapper){
 		(new DOMTemplate(wrapper))
 			.ins("append","caption",{
@@ -229,6 +230,7 @@ class FullscreenChat extends Ext {
 				.q("#chat-messages > yt-live-chat-header-renderer > yt-icon-button#overflow",null).tag(this.name)
 				.a("data-btn-id",0)
 				.on({t:"mousedown",f:this.grabIframeEvent})
+				.on({t:"touchstart",f:this.grabIframeEvent})
 				.q();
 
 			// リサイズ用ボタン追加
@@ -243,6 +245,7 @@ class FullscreenChat extends Ext {
 			}
 			document.querySelector("yt-live-chat-app").append(this.resizeBtn);
 			this.resizeBtn.addEventListener("mousedown",this.grabIframeEvent);
+			this.resizeBtn.addEventListener("touchstart",this.grabIframeEvent);
 
 			// フルスクリーン切り替え処理
 			this.fullscreenHandler = YoutubeEvent.addEventListener("ytFullscreen", this.fullscreenMainEvent, {frame: "app"});
@@ -275,9 +278,13 @@ class FullscreenChat extends Ext {
 			YoutubeEvent.removeEventListener("dispatch",this.dispatchHandler);
 			this.dispatchHandler = null;
 			this.moveBtn.removeEventListener("mousedown",this.grabIframeEvent);
+			this.moveBtn.removeEventListener("touchstart",this.grabIframeEvent);
 			this.resizeBtn.removeEventListener("mousedown",this.grabIframeEvent);
+			this.resizeBtn.removeEventListener("touchstart",this.grabIframeEvent);
 			document.removeEventListener("mousemove",this.moveIframeEvent);
+			document.removeEventListener("touchmove",this.moveIframeEvent);
 			document.removeEventListener("mouseup",this.ungrabIframeEvent);
+			document.removeEventListener("touchend",this.ungrabIframeEvent);
 			document.removeEventListener("keydown",this.adjustIframeEvent);
 			document.removeEventListener("keyup",this.adjustIframeEvent);
 			document.querySelector("yt-live-chat-app").removeAttribute("yc-fullscreen-chat");
@@ -511,20 +518,88 @@ class FullscreenChat extends Ext {
 		this.adjust = e.detail;
 	}
 	static grabIframeEvent = (e)=>{
-		top.document.dispatchEvent(new CustomEvent("ext-yc-iframe-grab", {detail: e}));
-		document.addEventListener("mousemove", this.moveIframeEvent);
-		document.addEventListener("mouseup", this.ungrabIframeEvent, {once: true});
-		document.addEventListener("keydown", this.adjustIframeEvent);
-		document.addEventListener("keyup", this.adjustIframeEvent);
+		if(this.moving !== false){
+			return;
+		}
+
+		if(e.type == "mousedown"){
+			this.moving = true;
+			top.document.dispatchEvent(new CustomEvent("ext-yc-iframe-grab", {detail: {
+				target: e.target,
+				pageX: e.pageX,
+				pageY: e.pageY
+			}}));
+			document.addEventListener("mousemove", this.moveIframeEvent);
+			document.addEventListener("mouseup", this.ungrabIframeEvent, {once: true});
+			document.addEventListener("keydown", this.adjustIframeEvent);
+			document.addEventListener("keyup", this.adjustIframeEvent);
+		}else if(e.type == "touchstart"){
+			let touch = e.changedTouches[0];
+			this.moving = touch.identifier;
+			e.preventDefault();
+			top.document.dispatchEvent(new CustomEvent("ext-yc-iframe-grab", {detail: {
+				target: e.target,
+				pageX: touch.pageX,
+				pageY: touch.pageY
+			}}));
+			document.addEventListener("touchmove", this.moveIframeEvent);
+			document.addEventListener("touchend", this.ungrabIframeEvent);
+		}
 	}
 	static moveIframeEvent = (e)=>{
-		top.document.dispatchEvent(new CustomEvent("ext-yc-iframe-move", {detail: e}));
+		if(e.type == "mousemove"){
+			top.document.dispatchEvent(new CustomEvent("ext-yc-iframe-move", {detail: {
+				pageX: e.pageX,
+				pageY: e.pageY
+			}}));
+		}else if(e.type == "touchmove"){
+			let touch = false;
+			for(let i = 0; i < e.changedTouches.length; i++){
+				if(e.changedTouches[i].identifier === this.moving){
+					touch = e.changedTouches[i];
+					break;
+				}
+			}
+			if(!touch){
+				return;
+			}
+
+			top.document.dispatchEvent(new CustomEvent("ext-yc-iframe-move", {detail: {
+				pageX: touch.pageX,
+				pageY: touch.pageY
+			}}));
+		}
 	}
 	static ungrabIframeEvent = (e)=>{
-		document.removeEventListener("mousemove", this.moveIframeEvent);
-		document.removeEventListener("keydown", this.adjustIframeEvent);
-		document.removeEventListener("keyup", this.adjustIframeEvent);
-		top.document.dispatchEvent(new CustomEvent("ext-yc-iframe-ungrab", {detail: e}));
+		if(e.type == "mouseup"){
+			document.removeEventListener("mousemove", this.moveIframeEvent);
+			document.removeEventListener("keydown", this.adjustIframeEvent);
+			document.removeEventListener("keyup", this.adjustIframeEvent);
+			top.document.dispatchEvent(new CustomEvent("ext-yc-iframe-ungrab", {detail: {
+				pageX: e.pageX,
+				pageY: e.pageY
+			}}));
+			this.moving = false;
+		}else if(e.type == "touchend"){
+			let touch = false;
+			for(let i = 0; i < e.changedTouches.length; i++){
+				if(e.changedTouches[i].identifier === this.moving){
+					touch = e.changedTouches[i];
+					break;
+				}
+			}
+			if(!touch){
+				return;
+			}
+
+			document.removeEventListener("touchmove", this.moveIframeEvent);
+			document.removeEventListener("touchend", this.ungrabIframeEvent);
+			top.document.dispatchEvent(new CustomEvent("ext-yc-iframe-ungrab", {detail: {
+				pageX: touch.pageX,
+				pageY: touch.pageY
+			}}));
+			this.moving = false;
+		}
 	}
 	static adjustIframeEvent = (e)=>{
 		if(e.keyCode == 16){
