@@ -11,6 +11,11 @@ Youtubeに追加機能を提供する拡張機能。追加したい項目をチ�
 	チャット欄の右上のボタンから設定画面を開くボタンにアクセス可能
 
 更新履歴
+	1.3.11 (2024-02-11)
+		タブレット端末への対応
+		ページの倍率変更時にチャットの移動が正常に動作しない問題の修正
+		スタイルの微修正
+		その他軽微な修正
 	1.3.10 (2024-01-14)
 		スタイルの微修正
 	1.3.9 (2024-01-14)
@@ -58,6 +63,12 @@ How to open the settings screen
 	Click on the button in the upper right corner of the chat field to access the settings.
 
 Update history
+	1.3.11 (2024-02-11)
+		fix
+			Compatible with tablet devices
+			Chat movement does not work properly when changing page magnification
+			Minor style corrections
+			Other minor things
 	1.3.10 (2024-01-14)
 		fix
 			Minor style corrections
