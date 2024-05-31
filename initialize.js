@@ -1109,7 +1109,7 @@ class DOMTemplate {
 			ytIconButton.id = templates.id;
 			ytIconButton.classList.add("style-scope",templates.domTag);
 			dom[pos](ytIconButton);
-			this.#func.ytIcon(ytIconButton.querySelector("#button"),"prepend",templates);
+			this.#func.ytIcon(ytIconButton,"prepend",templates);
 			return ytIconButton;
 		},
 		ytIcon: (dom,pos,templates)=>{
@@ -1418,7 +1418,7 @@ class Options extends Ext {
 					.ins("before","optionsPage")
 					.r("#ext-yc-options-wrapper",true).q("#header yt-button-renderer").ins("append","backButton")
 					.on({q:"yt-icon-button",t:"click",f:this.backToChat})
-					.q("#header button").ins("append","ytIcon",{id:"overflow",domTag:"yt-live-chat-header-renderer",svg:"backIcon"})
+					.q("#header yt-icon-button").ins("append","ytIcon",{id:"overflow",domTag:"yt-live-chat-header-renderer",svg:"backIcon"})
 					.q("#footer").ins("append","paperButton",{title:this.i18n("Reload")})
 					.on({q:"tp-yt-paper-button:first-child",t:"click",f:Storage.resetOptions})
 					.ins("append","paperButton",{title:this.i18n(`Save${Storage.getStorage("flag-use-local",false,true)?"Local":"Sync"}`)})
