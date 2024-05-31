@@ -529,40 +529,21 @@ class YoutubeEvent {
 }
 
 class Ext {
-	static name = "";
-	static description = "";
-	static styleNum = 1;
-	static registOptions(){}
-	static init(){}
-	static deinit(){}
-	static optionsUpdated(){}
-	static tagAddedDOM(dom){
+	name = "";
+	description = "";
+	registOptions(){}
+	init(){}
+	deinit(){}
+	optionsUpdated(){}
+	tagAddedDOM(dom){
 		dom.setAttribute("data-ext-yc",this.name);
 	}
-	static setStyle(css,replacers={}){
-		const style = document.createElement("style");
-		this.tagAddedDOM(style);
-		style.setAttribute("data-style-id",this.styleNum);
-		style.innerHTML = this.replaceAll(css,replacers);
-		document.head.appendChild(style);
-		return this.styleNum++;
-	}
-	static removeStyle(id){
-		const styles = document.querySelectorAll(`style[data-ext-yc="${this.name}"]`+(id!=null?`[data-style-id="${id}"]`:""));
-		styles.forEach(e=>e.remove());
-	}
-	static removeAddedDOM(){
+	removeAddedDOM(){
 		const dom = document.querySelectorAll(`[data-ext-yc="${this.name}"]`);
 		dom.forEach(e=>e.remove());
 	}
-	static i18n(key){
+	i18n(key){
 		return chrome.i18n.getMessage(`${this.name}_${key}`);
-	}
-	static replaceAll(str,replacers){
-		for(let replacer in replacers){
-			str = str.replaceAll("[["+replacer+"]]",replacers[replacer]);
-		}
-		return str;
 	}
 }
 
@@ -1395,9 +1376,9 @@ class DOMTemplate {
 }
 
 class Options extends Ext {
-	static name = "Options";
-	static v = 2;
-	static init(){
+	name = "Options";
+	v = 2;
+	init(){
 		if(YoutubeState.isAppFrame()){
 			YoutubeEvent.addEventListener("exLoad",()=>{
 				for(let ex in extensions){
@@ -1434,7 +1415,7 @@ class Options extends Ext {
 				options.ins("append","caption",{
 					captionInput: "toggle",
 					captionDescription: this.i18n("ShowNotifyBadge"),
-					isNew: this.checkUpdated(1)?" is-new":"",
+					isNew: Options.checkUpdated(1)?" is-new":"",
 					toggleOptionName: "flag-notification",
 					toggleChecked: (Storage.getStorage("flag-notification",true,false)?" checked":"")
 				},true)
@@ -1469,7 +1450,7 @@ class Options extends Ext {
 							.q(null).ins("append","caption",{
 								captionInput: "toggle",
 								captionDescription: extensions[ex].description,
-								isNew: this.checkUpdated(extensions[ex].optionsV)?" is-new":"",
+								isNew: Options.checkUpdated(extensions[ex].optionsV)?" is-new":"",
 								toggleOptionName: ex,
 								toggleChecked: (Storage.getOption(ex,false)?" checked":"")
 							},true)
@@ -1491,7 +1472,7 @@ class Options extends Ext {
 					}
 				}
 				if(Storage.getStorage("flag-notification",true,false)){
-					if(this.checkUpdated(this.v,true)){
+					if(Options.checkUpdated(this.v,true)){
 						document.documentElement.classList.add("extYcHasNotification");
 					}
 				}
@@ -1506,7 +1487,7 @@ class Options extends Ext {
 			});
 		}
 	}
-	static optionsUpdated = (e)=>{
+	optionsUpdated = (e)=>{
 		switch(e.detail.key){
 			case "stage":
 				if(YoutubeState.isChatFrame()){
@@ -1543,7 +1524,7 @@ class Options extends Ext {
 				break;
 		}
 	}
-	static getExUpdated = (name,stage)=>{
+	getExUpdated = (name,stage)=>{
 		let data = {};
 		for(let k in stage){
 			const m = k.match(new RegExp(`^${name}(\\-(.+))?`));
@@ -1561,14 +1542,14 @@ class Options extends Ext {
 			return data;
 		}
 	}
-	static openOptions = ()=>{
+	openOptions = ()=>{
 		document.querySelector("#ext-yc-options-wrapper").click();
 		document.querySelector("#ext-yc-options-wrapper").classList.add("iron-selected");
 		document.querySelector("#chat-messages").classList.remove("iron-selected");
 		document.documentElement.classList.remove("extYcHasNotification");
 		Storage.setStorage("Options-v",this.v,false);
 	}
-	static backToChat = ()=>{
+	backToChat = ()=>{
 		document.querySelector("#chat-messages").classList.add("iron-selected");
 		document.querySelector("#ext-yc-options-wrapper").classList.remove("iron-selected");
 		const itemOffset = document.querySelector("#chat-messages #item-offset");
@@ -1598,5 +1579,6 @@ if(YoutubeState.parentsFrameIsYT() != false){
 	YoutubeEvent.init();
 	Storage.init();
 	DOMTemplate.init();
-	Options.init();
+	let options = new Options();
+	options.init();
 }

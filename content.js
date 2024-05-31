@@ -6,7 +6,7 @@ function init(){
 		ChatTickerScroll
 	];
 	for(let ex of exts){
-		extensions[ex.name] = ex;
+		extensions[ex.name] = new ex();
 	}
 	YoutubeEvent.addEventListener("storageLoad",()=>{
 		YoutubeEvent.dispatchEvent("exLoad");

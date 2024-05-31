@@ -1,17 +1,17 @@
 class ChatTickerScroll extends Ext {
-	static name = "ChatTickerScroll";
-	static description = this.i18n("Description");
-	static optionsV = 0;
-	static ticker;
-	static buttons = {
+	name = "ChatTickerScroll";
+	description = this.i18n("Description");
+	optionsV = 0;
+	ticker;
+	buttons = {
 		true: document.querySelector("#ticker #left-arrow-container yt-icon"),
 		false: document.querySelector("#ticker #right-arrow-container yt-icon")
 	};
-	static timeoutHandlers = {
+	timeoutHandlers = {
 		true: null,
 		false: null
 	};
-	static registOptions(wrapper){
+	registOptions(wrapper){
 		(new DOMTemplate(wrapper))
 			.ins("append","caption",{
 				captionInput: "toggle",
@@ -23,14 +23,14 @@ class ChatTickerScroll extends Ext {
 				Storage.setStage(e.target.getAttribute("data-option"),e.target.getAttribute("checked") != null);
 			}})
 	}
-	static optionsUpdated(opts){
+	optionsUpdated(opts){
 		if(opts["opt-button-hide"]){
 			document.querySelector("yt-live-chat-app").setAttribute("yc-chat-ticker-scroll-button-hide","");
 		}else{
 			document.querySelector("yt-live-chat-app").removeAttribute("yc-chat-ticker-scroll-button-hide");
 		}
 	}
-	static init(){
+	init(){
 		if(YoutubeState.isChatFrame()){
 			YoutubeEvent.addEventListener("load",()=>{
 				document.querySelector("yt-live-chat-app").setAttribute("yc-chat-ticker-scroll","");
@@ -42,14 +42,14 @@ class ChatTickerScroll extends Ext {
 			});
 		}
 	}
-	static deinit(){
+	deinit(){
 		if(YoutubeState.isChatFrame()){
 			document.querySelector("yt-live-chat-app").removeAttribute("yc-chat-ticker-scroll");
 			document.querySelector("yt-live-chat-app").removeAttribute("yc-chat-ticker-scroll-button-hide");
 			this.ticker.removeEventListener("wheel",this.scrollTicker);
 		}
 	}
-	static scrollTicker = (e)=>{
+	scrollTicker = (e)=>{
 		const left = e.wheelDelta >= 0;
 		if(this.timeoutHandlers[left]){
 			clearTimeout(this.timeoutHandlers[left]);

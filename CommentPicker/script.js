@@ -1,8 +1,8 @@
 class CommentPicker extends Ext {
-	static name = "CommentPicker";
-	static description = this.i18n("Description");
-	static optionsV = 0;
-	static container = `
+	name = "CommentPicker";
+	description = this.i18n("Description");
+	optionsV = 0;
+	container = `
 		<div id="live-chat-item-list-panel" class="style-scope yt-live-chat-renderer">
 			<div id="contents" class="style-scope yt-live-chat-item-list-renderer">
 				<div id="item-scroller" class="style-scope yt-live-chat-item-list-renderer animated">
@@ -13,15 +13,15 @@ class CommentPicker extends Ext {
 			</div>
 		</div>
 	`;
-	static anchor = false;
-	static opts = {};
-	static autoScrolling = false;
-	static userScrolling = false;
-	static scrollButtonTimeoutId = false;
-	static baseItems;
-	static addedItems;
-	static observers = {};
-	static registOptions(wrapper){
+	anchor = false;
+	opts = {};
+	autoScrolling = false;
+	userScrolling = false;
+	scrollButtonTimeoutId = false;
+	baseItems;
+	addedItems;
+	observers = {};
+	registOptions(wrapper){
 		(new DOMTemplate(wrapper))
 			.ins("append","caption",{
 				captionInput: "toggle",
@@ -53,7 +53,7 @@ class CommentPicker extends Ext {
 				Storage.setStage(e.target.getAttribute("data-option"),e.target.getAttribute("checked") != null);
 			}});
 	}
-	static optionsUpdated(opts){
+	optionsUpdated(opts){
 		if(YoutubeState.isChatFrame()){
 			Object.assign(this.opts,opts);
 			this.observers.items.disconnect();
@@ -67,7 +67,7 @@ class CommentPicker extends Ext {
 			this.observers.items.observe(this.baseItems,{childList:true});
 		}
 	}
-	static init(){
+	init(){
 		if(YoutubeState.isChatFrame()){
 			YoutubeEvent.addEventListener("load",()=>{
 				document.querySelector("yt-live-chat-app").setAttribute("yc-comment-picker","");
@@ -103,7 +103,7 @@ class CommentPicker extends Ext {
 			});
 		}
 	}
-	static deinit(){
+	deinit(){
 		if(YoutubeState.isChatFrame()){
 			this.observers.list.disconnect();
 			this.observers.items.disconnect();
@@ -119,7 +119,7 @@ class CommentPicker extends Ext {
 			document.querySelector("yt-live-chat-app").removeAttribute("yc-comment-picker");
 		}
 	}
-	static listCallback = (mutationList)=>{
+	listCallback = (mutationList)=>{
 		mutationList.forEach(mutation=>{
 			if(mutation.addedNodes.length){
 				this.baseItems = mutation.addedNodes[0].querySelector("#items");
@@ -134,7 +134,7 @@ class CommentPicker extends Ext {
 			}
 		});
 	}
-	static itemsCallback = (mutationList)=>{
+	itemsCallback = (mutationList)=>{
 		mutationList.forEach(mutation=>{
 			if(mutation.addedNodes.length){
 				mutation.addedNodes.forEach(node=>{
@@ -178,7 +178,7 @@ class CommentPicker extends Ext {
 			}
 		});
 	}
-	static pickComment(elm){
+	pickComment(elm){
 		const replacement = document.createElement("yt-live-chat-text-message-renderer");
 		replacement.classList.add("fixedComment");
 		replacement.dataset.commentId = elm.id;
@@ -195,7 +195,7 @@ class CommentPicker extends Ext {
 			addedScroller.scrollTo({"top":addedScroller.scrollHeight-addedScroller.clientHeight,"behavior":"smooth"});
 		}
 	}
-	static scrollEvent = (e)=>{
+	scrollEvent = (e)=>{
 		const addedScroller = this.addedItems.closest("#item-scroller");
 		if(this.autoScrolling !== false){
 			if(this.autoScrolling < addedScroller.scrollTop && addedScroller.scrollTop < addedScroller.scrollHeight - addedScroller.clientHeight){
@@ -223,7 +223,7 @@ class CommentPicker extends Ext {
 			}
 		}
 	}
-	static resizeEvent = (e)=>{
+	resizeEvent = (e)=>{
 		const addedScroller = this.addedItems.closest("#item-scroller");
 		if(!this.userScrolling){
 			this.autoScrolling = addedScroller.scrollTop;
@@ -232,7 +232,7 @@ class CommentPicker extends Ext {
 			this.scrollEvent();
 		}
 	}
-	static scrollBottom = (e)=>{
+	scrollBottom = (e)=>{
 		const addedScroller = this.addedItems.closest("#item-scroller");
 		addedScroller.scrollTo({top:addedScroller.scrollHeight-addedScroller.clientHeight});
 	}

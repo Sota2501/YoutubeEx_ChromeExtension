@@ -1,8 +1,8 @@
 class FullscreenChat extends Ext {
-	static name = "FullscreenChat";
-	static description = this.i18n("Description");
-	static optionsV = 2;
-	static grabIcon = `
+	name = "FullscreenChat";
+	description = this.i18n("Description");
+	optionsV = 2;
+	grabIcon = `
 		<svg viewBox="0 0 24 24" focusable="false" class="style-scope yt-icon" style="pointer-events: none; display: block; width: 100%; height: 100%;">
 			<style>
 				yt-icon-button.yt-live-chat-header-renderer yt-icon.yt-live-chat-header-renderer {
@@ -17,11 +17,11 @@ class FullscreenChat extends Ext {
 			</g>
 		</svg>
 	`;
-	static grab = {};
-	static base = {};
-	static adjust = false;
-	static moving = false;
-	static registOptions(wrapper){
+	grab = {};
+	base = {};
+	adjust = false;
+	moving = false;
+	registOptions(wrapper){
 		(new DOMTemplate(wrapper))
 			.ins("append","caption",{
 				captionInput: "toggle",
@@ -132,7 +132,7 @@ class FullscreenChat extends Ext {
 			.ins("append","toggleCollapse",{collapseType:"on"},true)
 			.ins("append","caption",{captionDescription: this.i18n("ChatDockingDescription")});
 	}
-	static optionsUpdated(opts){
+	optionsUpdated(opts){
 		if(YoutubeState.isAppFrame()){
 			if(opts["opt-use-chat-docking"] != undefined){
 				if(opts["opt-use-chat-docking"]){
@@ -198,7 +198,7 @@ class FullscreenChat extends Ext {
 			}
 		}
 	}
-	static init(){
+	init(){
 		if(YoutubeState.isAppFrame()){
 			document.querySelector("ytd-app").setAttribute("yc-fullscreen-chat","");
 			YoutubeEvent.addEventListener("ytLoad",this.resetChatDocking);
@@ -261,7 +261,7 @@ class FullscreenChat extends Ext {
 			this.fullscreenIframeEvent();
 		}
 	}
-	static deinit(){
+	deinit(){
 		if(YoutubeState.isAppFrame()){
 			document.removeEventListener("ext-yc-iframe-set",this.setIframe);
 			document.removeEventListener("ext-yc-iframe-grab",this.grabMainEvent);
@@ -300,7 +300,7 @@ class FullscreenChat extends Ext {
 		}
 		this.removeAddedDOM();
 	}
-	static calcChatPosition(grabId, baseTop, baseLeft, baseWidth, baseHeight, moveX, moveY, adjust = false){
+	calcChatPosition(grabId, baseTop, baseLeft, baseWidth, baseHeight, moveX, moveY, adjust = false){
 		let calced = {};
 		if(grabId == "0"){
 			if(baseTop + moveY < 0){
@@ -406,7 +406,7 @@ class FullscreenChat extends Ext {
 		}
 		return calced;
 	}
-	static setChatPosition(top, left, width, height, save = false){
+	setChatPosition(top, left, width, height, save = false){
 		if(window.innerHeight < top + height){
 			top = window.innerHeight - height;
 			if(top < 0){
@@ -443,7 +443,7 @@ class FullscreenChat extends Ext {
 			}, true);
 		}
 	}
-	static setChatDocking(){
+	setChatDocking(){
 		document.querySelector("ytd-app").setAttribute("yc-fullscreen-chat-chat-docking", "");
 		this.chatFrame.style.minHeight = "";
 		this.chatFrame.style.top = "0";
@@ -454,12 +454,12 @@ class FullscreenChat extends Ext {
 
 		Storage.setStorage("FullscreenChat-frame-chat-docking", true, true);
 	}
-	static setChatUndocking(){
+	setChatUndocking(){
 		document.querySelector("ytd-app").removeAttribute("yc-fullscreen-chat-chat-docking");
 		this.chatFrame.style.minHeight = "400px";
 		this.chatFrame.style.right = "";
 	}
-	static resizeMainEvent = (e)=>{
+	resizeMainEvent = (e)=>{
 		if(Storage.getOption(`${this.name}-opt-use-chat-docking`, false) && Storage.getStorage(`${this.name}-frame-chat-docking`, false, true)){
 			return;
 		}
@@ -470,7 +470,7 @@ class FullscreenChat extends Ext {
 		let height = Storage.getStorage(`${this.name}-frame-height`, 600, true);
 		this.setChatPosition(top, left, width, height);
 	}
-	static grabMainEvent = (e)=>{
+	grabMainEvent = (e)=>{
 		this.grab = {
 			id: e.detail.target.closest("[data-btn-id]").getAttribute("data-btn-id"),
 			x: this.chatFrame.offsetLeft + e.detail.pageX,
@@ -492,13 +492,13 @@ class FullscreenChat extends Ext {
 		}
 		document.addEventListener("ext-yc-iframe-move", this.moveMainEvent);
 	}
-	static moveMainEvent = (e)=>{
+	moveMainEvent = (e)=>{
 		const moveX = this.chatFrame.offsetLeft + e.detail.pageX - this.grab.x;
 		const moveY = this.chatFrame.offsetTop + e.detail.pageY - this.grab.y;
 		const next = this.calcChatPosition(this.grab.id, this.base.top, this.base.left, this.base.width, this.base.height, moveX, moveY, this.adjust);
 		this.setChatPosition(next.top, next.left, next.width, next.height);
 	}
-	static ungrabMainEvent = (e)=>{
+	ungrabMainEvent = (e)=>{
 		if(Storage.getOption(`${this.name}-opt-use-chat-docking`, false) && this.grab.id == "0" && e.detail.pageX - (this.grab.x - this.base.left) > 30){
 			YoutubeEvent.dispatchEvent("dispatch", {type: `${this.name}-chat-docking`, data: true}, {frame: "iframe-chat"});
 			this.setChatDocking();
@@ -510,25 +510,27 @@ class FullscreenChat extends Ext {
 		}
 		document.removeEventListener("ext-yc-iframe-move", this.moveMainEvent);
 	}
-	static adjustMainEvent = (e)=>{
+	adjustMainEvent = (e)=>{
 		this.adjust = e.detail;
 	}
-	static fullscreenIframeEvent = (e)=>{
-		if(YoutubeState.isFullscreen()){
-			document.querySelector("yt-live-chat-app").setAttribute("yc-fullscreen-chat-fullscreen", "");
-			if(Storage.getOption(`${this.name}-opt-use-chat-docking`, false) && Storage.getStorage(`${this.name}-frame-chat-docking`, false, true)){
-				document.querySelector("yt-live-chat-app").setAttribute("yc-fullscreen-chat-chat-docking", "");
-				top.document.dispatchEvent(new CustomEvent("ext-yc-iframe-set", {detail: true}));
+	fullscreenIframeEvent = (e)=>{
+		setTimeout(()=>{
+			if(YoutubeState.isFullscreen()){
+				document.querySelector("yt-live-chat-app").setAttribute("yc-fullscreen-chat-fullscreen", "");
+				if(Storage.getOption(`${this.name}-opt-use-chat-docking`, false) && Storage.getStorage(`${this.name}-frame-chat-docking`, false, true)){
+					document.querySelector("yt-live-chat-app").setAttribute("yc-fullscreen-chat-chat-docking", "");
+					top.document.dispatchEvent(new CustomEvent("ext-yc-iframe-set", {detail: true}));
+				}else{
+					top.document.dispatchEvent(new CustomEvent("ext-yc-iframe-set", {detail: false}));
+				}
 			}else{
-				top.document.dispatchEvent(new CustomEvent("ext-yc-iframe-set", {detail: false}));
+				document.querySelector("yt-live-chat-app").removeAttribute("yc-fullscreen-chat-fullscreen");
+				document.querySelector("yt-live-chat-app").removeAttribute("yc-fullscreen-chat-chat-docking");
+				top.document.dispatchEvent(new CustomEvent("ext-yc-iframe-set", {detail: null}));
 			}
-		}else{
-			document.querySelector("yt-live-chat-app").removeAttribute("yc-fullscreen-chat-fullscreen");
-			document.querySelector("yt-live-chat-app").removeAttribute("yc-fullscreen-chat-chat-docking");
-			top.document.dispatchEvent(new CustomEvent("ext-yc-iframe-set", {detail: null}));
-		}
+		});
 	}
-	static grabIframeEvent = (e)=>{
+	grabIframeEvent = (e)=>{
 		if(this.moving !== false){
 			return;
 		}
@@ -557,7 +559,7 @@ class FullscreenChat extends Ext {
 			document.addEventListener("touchend", this.ungrabIframeEvent);
 		}
 	}
-	static moveIframeEvent = (e)=>{
+	moveIframeEvent = (e)=>{
 		if(e.type == "mousemove"){
 			top.document.dispatchEvent(new CustomEvent("ext-yc-iframe-move", {detail: {
 				pageX: e.pageX,
@@ -581,7 +583,7 @@ class FullscreenChat extends Ext {
 			}}));
 		}
 	}
-	static ungrabIframeEvent = (e)=>{
+	ungrabIframeEvent = (e)=>{
 		if(e.type == "mouseup"){
 			document.removeEventListener("mousemove", this.moveIframeEvent);
 			document.removeEventListener("keydown", this.adjustIframeEvent);
@@ -612,7 +614,7 @@ class FullscreenChat extends Ext {
 			this.moving = false;
 		}
 	}
-	static adjustIframeEvent = (e)=>{
+	adjustIframeEvent = (e)=>{
 		if(e.keyCode == 16){
 			if(e.type == "keydown"){
 				top.document.dispatchEvent(new CustomEvent("ext-yc-iframe-adjust-fixed-length", {detail: true}));
@@ -621,7 +623,7 @@ class FullscreenChat extends Ext {
 			}
 		}
 	}
-	static setIframe = (e)=>{
+	setIframe = (e)=>{
 		this.chatFrame = document.querySelector("ytd-live-chat-frame#chat");
 		if(e.detail != null){
 			if(e.detail){
@@ -653,7 +655,7 @@ class FullscreenChat extends Ext {
 			window.removeEventListener("resize",this.resizeMainEvent);
 		}
 	}
-	static resetChatDocking = (e)=>{
+	resetChatDocking = (e)=>{
 		document.querySelector("ytd-app").removeAttribute("yc-fullscreen-chat-chat-docking");
 	}
 }
